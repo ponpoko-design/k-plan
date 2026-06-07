@@ -449,27 +449,14 @@ function render() {
 // ===== D&D =====
 function dropTask(toDay, toSlot) {
   if (!dragInfo) return;
-  const {t} = dragInfo;
-  const wk = getWeekKey();
-  if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
-  const lo = localOverrides[wk];
-
-  // ローカル追加タスクなら移動
-  const idx = (lo.added||[]).findIndex(a => a.uid === t.uid);
-  if (idx >= 0) {
-    lo.added[idx]._dayIdx = toDay;
-    lo.added[idx].slot = SLOTS[toSlot];
-  } else {
-    // 元タスクを非表示にして新しい位置に追加
-    lo.hidden = lo.hidden || {};
-    const hkey = t.display_type === 'weekly' ? t.uid+'_'+t._dayIdx : t.uid;
-    lo.hidden[hkey] = true;
-    if (!lo.added) lo.added = [];
-    lo.added.push({...t, _dayIdx: toDay, slot: SLOTS[toSlot], _slotIdx: toSlot, uid: t.uid+'_moved_'+Date.now()});
-  }
-  saveLocal();
+  const t = dragInfo.t;
+  const task = {
+    key: t._dayIdx + '-' + t._slotIdx,
+    id: t.id,
+    uid: t.uid
+  };
   dragInfo = null;
-  render();
+  openMoveModal(task, toDay, toSlot);
 }
 
 // ===== Detail modal =====
