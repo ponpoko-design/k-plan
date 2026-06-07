@@ -35,7 +35,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 .cal-hcell.today{background:#f5d020;color:var(--navy);border-radius:5px;margin:2px;}
 .cal-hcell:first-child{border-right:1px solid var(--navy3);}
 
-.cal-body{flex:1;display:grid;grid-template-rows:0.55fr 0.35fr 1fr 1fr 1fr;min-height:0;}
+.cal-body{flex:1;display:grid;grid-template-rows:0.61fr 0.42fr 1fr 1fr 1fr;min-height:0;}
 .time-row{display:grid;grid-template-columns:40px repeat(7,1fr);border-bottom:3px solid var(--sep);min-height:0;}
 .time-lbl{background:var(--navy2);color:white;font-size:13px;writing-mode:vertical-rl;display:flex;align-items:center;justify-content:center;border-right:3px solid var(--sep);font-weight:700;letter-spacing:2px;width:40px;flex-shrink:0;}
 .day-cell{background:white;border-right:3px solid var(--sep);padding:3px 2px;display:flex;flex-direction:column;gap:2px;overflow:hidden;cursor:pointer;transition:background .1s;min-height:0;-webkit-user-select:none;}
@@ -43,7 +43,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 .day-cell.drag-over{background:#ddeeff;outline:2px dashed #378add;}
 
 /* タスクカード */
-.card{border-radius:4px;padding:2px 5px;font-size:13px;font-weight:700;cursor:grab;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;line-height:1.4;text-align:center;touch-action:none;}
+.card{border-radius:4px;padding:3px 5px;font-size:13px;font-weight:700;cursor:grab;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;line-height:1.5;text-align:center;touch-action:none;}
 .card:active{cursor:grabbing;opacity:.7;}
 .card-ghost{opacity:0.3!important;background:#ccc!important;}
 .card-chosen{transform:scale(1.05);box-shadow:0 4px 12px rgba(0,0,0,0.3);}
