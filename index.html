@@ -424,6 +424,9 @@ function render() {
     card.textContent = name.length > 8 ? name.slice(0,8) : name;
     card.title = name + (t.study_time ? ' ('+t.study_time+'分)' : '');
     card.draggable = true;
+    card.setAttribute('data-key', t._dayIdx + '-' + t._slotIdx);
+    card.setAttribute('data-id', t.id || t.uid || '');
+    card.setAttribute('data-uid', t.uid || '');
     card.addEventListener('dragstart', e => {
       dragInfo = {t, fromDay: t._dayIdx, fromSlot: t._slotIdx};
       card.classList.add('dragging');
@@ -1047,7 +1050,7 @@ function _addTouch() {
 function _tStart(e) {
   _tActive = false; _tDropCell = null;
   _tCard = e.currentTarget;
-  _tTask = {key:_tCard.getAttribute('data-key'), id:parseInt(_tCard.getAttribute('data-id'))};
+  _tTask = {key:_tCard.getAttribute('data-key'), id:parseInt(_tCard.getAttribute('data-id')), uid:_tCard.getAttribute('data-uid')};
 
   _tTimer = setTimeout(() => {
     _tActive = true;
@@ -1141,8 +1144,8 @@ function confirmMove() {
 
   // 元タスクを取得
   const allTasks = getTasksForWeek();
-  const orig = allTasks.find(t => t.id === task.id);
-  if (!orig) { alert('元タスクが見つからない id:'+task.id); closeMoveModal(); return; }
+  const orig = allTasks.find(t => t.uid === task.uid || t.id === task.id);
+  if (!orig) { alert('元タスクが見つからない uid:'+task.uid+' id:'+task.id); closeMoveModal(); return; }
 
   // 元タスクを非表示（display_typeに応じてkeyを決定）
   if (orig.display_type === 'weekly') {
