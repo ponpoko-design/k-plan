@@ -403,7 +403,7 @@ function render() {
   for (let d = 0; d < 7; d++) for (let s = 0; s < 5; s++) {
     const cell = document.getElementById('c'+d+'-'+s);
     cell.innerHTML = '';
-    cell.onclick = (e) => { if(e.target===cell) openAdd(d, s); };
+    cell.onclick = null; // 新規追加はボトムナビから
     cell.ondragover = ev => { ev.preventDefault(); cell.classList.add('drag-over'); };
     cell.ondragleave = () => cell.classList.remove('drag-over');
     cell.ondrop = ev => { ev.preventDefault(); cell.classList.remove('drag-over'); dropTask(d, s); };
@@ -1130,7 +1130,7 @@ function closeMoveModal() {
 }
 
 function confirmMove() {
-  if (!_pendingMove) return;
+  if (!_pendingMove) { alert('pendingMoveがない'); return; }
   const {task, toDay, toSlot} = _pendingMove;
   const type = document.querySelector('input[name="moveType"]:checked').value;
   const wk = getWeekKey();
@@ -1142,7 +1142,7 @@ function confirmMove() {
   // 元タスクを取得
   const allTasks = getTasksForWeek();
   const orig = allTasks.find(t => t.id === task.id);
-  if (!orig) { closeMoveModal(); return; }
+  if (!orig) { alert('元タスクが見つからない id:'+task.id); closeMoveModal(); return; }
 
   // 元タスクを非表示（display_typeに応じてkeyを決定）
   if (orig.display_type === 'weekly') {
