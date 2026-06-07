@@ -449,14 +449,27 @@ function render() {
 // ===== D&D =====
 function dropTask(toDay, toSlot) {
   if (!dragInfo) return;
-  const t = dragInfo.t;
-  const task = {
-    key: t._dayIdx + '-' + t._slotIdx,
-    id: t.id,
-    uid: t.uid
-  };
+  const {t} = dragInfo;
+  const wk = getWeekKey();
+  if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
+  const lo = localOverrides[wk];
+
+  // ローカル追加タスクなら移動
+  const idx = (lo.added||[]).findIndex(a => a.uid === t.uid);
+  if (idx >= 0) {
+    lo.added[idx]._dayIdx = toDay;
+    lo.added[idx].slot = SLOTS[toSlot];
+  } else {
+    // 元タスクを非表示にして新しい位置に追加
+    lo.hidden = lo.hidden || {};
+    const hkey = t.display_type === 'weekly' ? t.uid+'_'+t._dayIdx : t.uid;
+    lo.hidden[hkey] = true;
+    if (!lo.added) lo.added = [];
+    lo.added.push({...t, _dayIdx: toDay, slot: SLOTS[toSlot], _slotIdx: toSlot, uid: t.uid+'_moved_'+Date.now()});
+  }
+  saveLocal();
   dragInfo = null;
-  openMoveModal(task, toDay, toSlot);
+  render();
 }
 
 // ===== Detail modal =====
@@ -1120,7 +1133,7 @@ function closeMoveModal() {
 }
 
 function confirmMove() {
-  if (!_pendingMove) { alert('pendingMoveがない'); return; }
+  if (!_pendingMove) return;
   const {task, toDay, toSlot} = _pendingMove;
   const type = document.querySelector('input[name="moveType"]:checked').value;
   const wk = getWeekKey();
@@ -1129,10 +1142,17 @@ function confirmMove() {
   if (!lo.hidden) lo.hidden = {};
   if (!lo.added) lo.added = [];
 
-  // 元タスクを取得
+  // 元タスクを取得（keyでdayIdxとslotIdxも照合）
   const allTasks = getTasksForWeek();
-  const orig = allTasks.find(t => t.uid === task.uid || t.id === task.id);
-  if (!orig) { alert('元タスクが見つからない uid:'+task.uid+' id:'+task.id); closeMoveModal(); return; }
+  const keyParts = task.key ? task.key.split('-') : [];
+  const fromDayIdx = keyParts.length >= 1 ? parseInt(keyParts[0]) : -1;
+  const fromSlotIdx = keyParts.length >= 2 ? parseInt(keyParts[1]) : -1;
+  const orig = allTasks.find(t => 
+    (t.uid === task.uid || t.id === task.id) && 
+    t._dayIdx === fromDayIdx && 
+    t._slotIdx === fromSlotIdx
+  ) || allTasks.find(t => t.uid === task.uid || t.id === task.id);
+  if (!orig) { closeMoveModal(); return; }
 
   // 元タスクを非表示（display_typeに応じてkeyを決定）
   if (orig.display_type === 'weekly') {
