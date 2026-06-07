@@ -1000,7 +1000,7 @@ if (sessionStorage.getItem('auth') === '1') {
 </script>
 </body>
 </html>
-<!-- _260607.1150 --><script>
+<!-- _260607.1155 --><script>
 // ===== タッチD&D (Safari iOS対応版) =====
 let _tTask = null;
 let _tCard = null;
@@ -1200,11 +1200,10 @@ function _addTouch() {
     // タップ（短押し）で詳細表示
     card.onclick = function(e) {
       e.stopPropagation();
-      if (_tActive) return; // ドラッグ中は無視
-      const key = card.getAttribute('data-key');
+      if (_tActive) return;
       const id = parseInt(card.getAttribute('data-id'));
-      const wk = loadTasks();
-      const task = (wk[key]||[]).find(t => t.id === id);
+      const tasks = getTasksForWeek();
+      const task = tasks.find(t => t.id === id);
       if (task) openDetail(task);
     };
   });
