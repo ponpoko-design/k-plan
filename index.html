@@ -45,6 +45,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 /* タスクカード */
 .card{border-radius:4px;padding:2px 5px;font-size:13px;font-weight:700;cursor:grab;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;line-height:1.4;text-align:center;touch-action:none;}
 .card:active{cursor:grabbing;opacity:.7;}
+.card-ghost{opacity:0.3!important;background:#ccc!important;}
+.card-chosen{transform:scale(1.05);box-shadow:0 4px 12px rgba(0,0,0,0.3);}
+.card-dragging{opacity:0.85;box-shadow:0 6px 20px rgba(0,0,0,0.4);transform:scale(1.1);z-index:9999;}
 .card.dragging{opacity:.35;}
 .card.math{background:var(--c-math);color:var(--c-math-t);}
 .card.jp{background:var(--c-jp);color:var(--c-jp-t);}
@@ -997,7 +1000,7 @@ if (sessionStorage.getItem('auth') === '1') {
 </script>
 </body>
 </html>
-<!-- _260607.1100 --><script>
+<!-- _260607.1115 --><script>
 // ===== タッチD&D (Safari iOS対応版) =====
 let _tTask = null;
 let _tCard = null;
@@ -1155,6 +1158,71 @@ const _origRender = render;
 window.render = function() {
   _origRender();
   setTimeout(() => { _addTouch(); fitModals(); }, 150);
+};
+render();
+</script>
+</body<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script>
+// ===== SortableJS によるD&D =====
+let _sortables = [];
+
+function _initSortable() {
+  // 既存のSortableを破棄
+  _sortables.forEach(s => s.destroy());
+  _sortables = [];
+
+  document.querySelectorAll('.day-cell').forEach(cell => {
+    const s = Sortable.create(cell, {
+      group: 'schedule',
+      animation: 150,
+      delay: 300,
+      delayOnTouchOnly: true,
+      touchStartThreshold: 5,
+      forceFallback: true,
+      fallbackClass: 'card-dragging',
+      fallbackOnBody: true,
+      ghostClass: 'card-ghost',
+      chosenClass: 'card-chosen',
+      onEnd: function(evt) {
+        const card = evt.item;
+        const fromCell = evt.from;
+        const toCell = evt.to;
+        if (!fromCell || !toCell) return;
+
+        const fromMatch = fromCell.id.match(/^c(\d+)-(\d+)$/);
+        const toMatch = toCell.id.match(/^c(\d+)-(\d+)$/);
+        if (!fromMatch || !toMatch) return;
+
+        const fromDay = parseInt(fromMatch[1]);
+        const fromSlot = parseInt(fromMatch[2]);
+        const toDay = parseInt(toMatch[1]);
+        const toSlot = parseInt(toMatch[2]);
+
+        const key = fromDay + '-' + fromSlot;
+        const id = parseInt(card.getAttribute('data-id'));
+
+        // SortableがDOMを動かしてしまうのでrenderで元に戻す
+        dragInfo = {key, id};
+        dropTask(toDay, toSlot);
+      }
+    });
+    _sortables.push(s);
+  });
+}
+
+function fitModals() {
+  const maxH = Math.floor(window.innerHeight * 0.88);
+  document.querySelectorAll('.modal-bg .modal').forEach(m => {
+    m.style.maxHeight = maxH + 'px';
+    m.style.overflowY = 'auto';
+  });
+}
+window.addEventListener('resize', fitModals);
+
+const _origRender = render;
+window.render = function() {
+  _origRender();
+  setTimeout(() => { _initSortable(); fitModals(); }, 150);
 };
 render();
 </script>
