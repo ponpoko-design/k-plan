@@ -1000,7 +1000,7 @@ if (sessionStorage.getItem('auth') === '1') {
 </script>
 </body>
 </html>
-<!-- _260607.1115 --><script>
+<!-- _260607.1125 --><script>
 // ===== タッチD&D (Safari iOS対応版) =====
 let _tTask = null;
 let _tCard = null;
@@ -1163,31 +1163,33 @@ render();
 </script>
 </body<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script>
-// ===== SortableJS によるD&D =====
+// ===== SortableJS D&D =====
 let _sortables = [];
 
 function _initSortable() {
-  // 既存のSortableを破棄
   _sortables.forEach(s => s.destroy());
   _sortables = [];
 
   document.querySelectorAll('.day-cell').forEach(cell => {
     const s = Sortable.create(cell, {
-      group: 'schedule',
-      animation: 150,
-      delay: 300,
+      group: {
+        name: 'schedule',
+        pull: true,
+        put: true
+      },
+      animation: 120,
+      delay: 200,
       delayOnTouchOnly: true,
-      touchStartThreshold: 5,
-      forceFallback: true,
-      fallbackClass: 'card-dragging',
-      fallbackOnBody: true,
+      touchStartThreshold: 3,
+      forceFallback: false,
       ghostClass: 'card-ghost',
       chosenClass: 'card-chosen',
-      onEnd: function(evt) {
+      dragClass: 'card-dragging',
+      onAdd: function(evt) {
+        // 別セルへの移動が完了したときに呼ばれる
         const card = evt.item;
         const fromCell = evt.from;
         const toCell = evt.to;
-        if (!fromCell || !toCell) return;
 
         const fromMatch = fromCell.id.match(/^c(\d+)-(\d+)$/);
         const toMatch = toCell.id.match(/^c(\d+)-(\d+)$/);
@@ -1197,11 +1199,9 @@ function _initSortable() {
         const fromSlot = parseInt(fromMatch[2]);
         const toDay = parseInt(toMatch[1]);
         const toSlot = parseInt(toMatch[2]);
-
-        const key = fromDay + '-' + fromSlot;
         const id = parseInt(card.getAttribute('data-id'));
+        const key = fromDay + '-' + fromSlot;
 
-        // SortableがDOMを動かしてしまうのでrenderで元に戻す
         dragInfo = {key, id};
         dropTask(toDay, toSlot);
       }
