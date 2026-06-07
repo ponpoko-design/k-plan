@@ -1000,7 +1000,7 @@ if (sessionStorage.getItem('auth') === '1') {
 </script>
 </body>
 </html>
-<!-- _260607.1125 --><script>
+<!-- _260607.1140 --><script>
 // ===== タッチD&D (Safari iOS対応版) =====
 let _tTask = null;
 let _tCard = null;
@@ -1161,53 +1161,103 @@ window.render = function() {
 };
 render();
 </script>
-</body<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
-<script>
-// ===== SortableJS D&D =====
-let _sortables = [];
+</body<script>
+// ===== タップ方式 移動 =====
+let _selectedTask = null;
+let _selectedCard = null;
 
-function _initSortable() {
-  _sortables.forEach(s => s.destroy());
-  _sortables = [];
+function _addTapToCards() {
+  document.querySelectorAll('.card').forEach(card => {
+    // 既存のclickイベントを上書き
+    card.onclick = function(e) {
+      e.stopPropagation();
+      const key = card.getAttribute('data-key');
+      const id = parseInt(card.getAttribute('data-id'));
 
-  document.querySelectorAll('.day-cell').forEach(cell => {
-    const s = Sortable.create(cell, {
-      group: {
-        name: 'schedule',
-        pull: true,
-        put: true
-      },
-      animation: 120,
-      delay: 200,
-      delayOnTouchOnly: true,
-      touchStartThreshold: 3,
-      forceFallback: false,
-      ghostClass: 'card-ghost',
-      chosenClass: 'card-chosen',
-      dragClass: 'card-dragging',
-      onAdd: function(evt) {
-        // 別セルへの移動が完了したときに呼ばれる
-        const card = evt.item;
-        const fromCell = evt.from;
-        const toCell = evt.to;
-
-        const fromMatch = fromCell.id.match(/^c(\d+)-(\d+)$/);
-        const toMatch = toCell.id.match(/^c(\d+)-(\d+)$/);
-        if (!fromMatch || !toMatch) return;
-
-        const fromDay = parseInt(fromMatch[1]);
-        const fromSlot = parseInt(fromMatch[2]);
-        const toDay = parseInt(toMatch[1]);
-        const toSlot = parseInt(toMatch[2]);
-        const id = parseInt(card.getAttribute('data-id'));
-        const key = fromDay + '-' + fromSlot;
-
-        dragInfo = {key, id};
-        dropTask(toDay, toSlot);
+      if (_selectedTask && _selectedTask.key === key && _selectedTask.id === id) {
+        // 同じカードを再タップ → 選択解除
+        _clearSelection();
+        return;
       }
-    });
-    _sortables.push(s);
+
+      if (_selectedTask) {
+        // 別のカードをタップ → そちらを選択に切り替え
+        _clearSelection();
+      }
+
+      // 選択状態にする
+      _selectedTask = {key, id};
+      _selectedCard = card;
+      card.style.outline = '3px solid #1a2744';
+      card.style.outlineOffset = '1px';
+      card.style.transform = 'scale(1.08)';
+      card.style.zIndex = '10';
+      card.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+
+      // ガイドメッセージ表示
+      _showGuide('移動先のマスをタップしてください　✕でキャンセル');
+    };
   });
+
+  // セルのタップ→ドロップ
+  document.querySelectorAll('.day-cell').forEach(cell => {
+    cell.onclick = function(e) {
+      if (!_selectedTask) return;
+      if (e.target.classList.contains('card')) return;
+      const m = cell.id.match(/^c(\d+)-(\d+)$/);
+      if (!m) return;
+      dragInfo = _selectedTask;
+      dropTask(parseInt(m[1]), parseInt(m[2]));
+      _clearSelection();
+      _hideGuide();
+    };
+  });
+}
+
+function _clearSelection() {
+  if (_selectedCard) {
+    _selectedCard.style.outline = '';
+    _selectedCard.style.outlineOffset = '';
+    _selectedCard.style.transform = '';
+    _selectedCard.style.zIndex = '';
+    _selectedCard.style.boxShadow = '';
+  }
+  _selectedTask = null;
+  _selectedCard = null;
+  _hideGuide();
+}
+
+// ガイドバー
+function _showGuide(msg) {
+  let bar = document.getElementById('_tapGuide');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = '_tapGuide';
+    Object.assign(bar.style, {
+      position: 'fixed', bottom: '60px', left: '50%',
+      transform: 'translateX(-50%)',
+      background: '#1a2744', color: 'white',
+      padding: '10px 20px', borderRadius: '20px',
+      fontSize: '13px', fontWeight: '700',
+      zIndex: '9998', whiteSpace: 'nowrap',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+      display: 'flex', alignItems: 'center', gap: '12px'
+    });
+    const cancel = document.createElement('span');
+    cancel.textContent = '✕';
+    cancel.style.cssText = 'cursor:pointer;font-size:16px;opacity:0.8;';
+    cancel.onclick = _clearSelection;
+    bar.appendChild(document.createTextNode(msg));
+    bar.appendChild(cancel);
+    document.body.appendChild(bar);
+  } else {
+    bar.style.display = 'flex';
+  }
+}
+
+function _hideGuide() {
+  const bar = document.getElementById('_tapGuide');
+  if (bar) bar.style.display = 'none';
 }
 
 function fitModals() {
@@ -1222,7 +1272,7 @@ window.addEventListener('resize', fitModals);
 const _origRender = render;
 window.render = function() {
   _origRender();
-  setTimeout(() => { _initSortable(); fitModals(); }, 150);
+  setTimeout(() => { _addTapToCards(); fitModals(); }, 150);
 };
 render();
 </script>
