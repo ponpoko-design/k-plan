@@ -31,19 +31,19 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 /* カレンダー */
 .cal-wrap{flex:1;background:var(--navy);border-radius:10px;margin:8px;overflow:hidden;display:flex;flex-direction:column;min-height:0;}
 .cal-head{display:grid;grid-template-columns:40px repeat(7,1fr);background:var(--navy);flex-shrink:0;}
-.cal-hcell{padding:5px 3px;text-align:center;color:white;font-size:15px;font-weight:700;border-right:3px solid var(--sep);border-bottom:3px solid var(--sep);}
+.cal-hcell{padding:5px 3px;text-align:center;color:white;font-size:15px;font-weight:700;border-right:3px solid var(--sep);border-bottom:3px solid var(--sep);font-family:"Inter",sans-serif;}
 .cal-hcell.today{background:#f5d020;color:var(--navy);border-radius:5px;margin:2px;}
 .cal-hcell:first-child{border-right:1px solid var(--navy3);}
 
 .cal-body{flex:1;display:grid;grid-template-rows:0.6fr 0.5fr 1fr 1fr 1fr;min-height:0;}
 .time-row{display:grid;grid-template-columns:40px repeat(7,1fr);border-bottom:3px solid var(--sep);min-height:0;}
 .time-lbl{background:var(--navy2);color:white;font-size:13px;writing-mode:vertical-rl;display:flex;align-items:center;justify-content:center;border-right:3px solid var(--sep);font-weight:700;letter-spacing:2px;width:40px;flex-shrink:0;}
-.day-cell{background:white;border-right:3px solid var(--sep);padding:3px 2px;display:flex;flex-direction:column;gap:2px;overflow:hidden;cursor:pointer;transition:background .1s;min-height:0;}
+.day-cell{background:white;border-right:3px solid var(--sep);padding:3px 2px;display:flex;flex-direction:column;gap:2px;overflow:hidden;cursor:pointer;transition:background .1s;min-height:0;-webkit-user-select:none;}
 .day-cell:hover{background:#f5f7ff;}
 .day-cell.drag-over{background:#ddeeff;outline:2px dashed #378add;}
 
 /* タスクカード */
-.card{border-radius:4px;padding:2px 5px;font-size:13px;font-weight:700;cursor:grab;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none;line-height:1.4;text-align:center;}
+.card{border-radius:4px;padding:2px 5px;font-size:13px;font-weight:700;cursor:grab;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;line-height:1.4;text-align:center;touch-action:none;}
 .card:active{cursor:grabbing;opacity:.7;}
 .card.dragging{opacity:.35;}
 .card.math{background:var(--c-math);color:var(--c-math-t);}
@@ -997,106 +997,114 @@ if (sessionStorage.getItem('auth') === '1') {
 </script>
 </body>
 </html>
-<!-- _260607.1020 --><script>
+<!-- _260607.1035 --><script>
 // ===== タッチ対応ドラッグ&ドロップ =====
-let _touchTask = null;
-let _touchCard = null;
-let _touchClone = null;
-let _touchMoved = false;
-let _touchTimer = null;
-let _currentDropCell = null;
+let _tTask = null;
+let _tCard = null;
+let _tClone = null;
+let _tActive = false;
+let _tTimer = null;
+let _tDropCell = null;
 
-function _addTouchToCards() {
+function _addTouch() {
   document.querySelectorAll('.card').forEach(card => {
-    card.removeEventListener('touchstart', _onTS);
-    card.addEventListener('touchstart', _onTS, {passive: false});
+    card.removeEventListener('touchstart', _tStart);
+    card.addEventListener('touchstart', _tStart, {passive: false});
   });
 }
 
-function _onTS(e) {
-  _touchMoved = false;
-  _currentDropCell = null;
-  const card = e.currentTarget;
-  _touchCard = card;
-  _touchTask = {
-    key: card.getAttribute('data-key'),
-    id: parseInt(card.getAttribute('data-id'))
+function _tStart(e) {
+  e.stopPropagation();
+  _tActive = false;
+  _tDropCell = null;
+  _tCard = e.currentTarget;
+  _tTask = {
+    key: _tCard.getAttribute('data-key'),
+    id: parseInt(_tCard.getAttribute('data-id'))
   };
 
-  _touchTimer = setTimeout(() => {
-    _touchMoved = true;
-    const rect = card.getBoundingClientRect();
-    _touchClone = document.createElement('div');
-    _touchClone.className = card.className;
-    _touchClone.textContent = card.textContent;
-    Object.assign(_touchClone.style, {
+  // 長押し500msでドラッグ開始
+  _tTimer = setTimeout(() => {
+    _tActive = true;
+    const rect = _tCard.getBoundingClientRect();
+    _tClone = document.createElement('div');
+    _tClone.className = _tCard.className;
+    _tClone.textContent = _tCard.textContent;
+    Object.assign(_tClone.style, {
       position: 'fixed',
       left: rect.left + 'px',
       top: rect.top + 'px',
       width: rect.width + 'px',
-      opacity: '0.85',
+      height: rect.height + 'px',
+      lineHeight: rect.height + 'px',
+      opacity: '0.9',
       pointerEvents: 'none',
       zIndex: '9999',
-      transform: 'scale(1.1)',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+      transform: 'scale(1.15)',
+      boxShadow: '0 6px 20px rgba(0,0,0,0.35)',
       whiteSpace: 'nowrap',
       borderRadius: '4px',
       padding: '2px 5px',
       fontSize: '13px',
-      fontWeight: '700'
+      fontWeight: '700',
+      textAlign: 'center',
+      webkitUserSelect: 'none',
+      webkitTouchCallout: 'none'
     });
-    document.body.appendChild(_touchClone);
-    card.style.opacity = '0.3';
-    if (navigator.vibrate) navigator.vibrate(30);
-  }, 280);
+    document.body.appendChild(_tClone);
+    _tCard.style.opacity = '0.25';
+    if (navigator.vibrate) navigator.vibrate(40);
+  }, 500);
 
-  document.addEventListener('touchmove', _onTM, {passive: false});
-  document.addEventListener('touchend', _onTE);
-  document.addEventListener('touchcancel', _onTE);
+  document.addEventListener('touchmove', _tMove, {passive: false});
+  document.addEventListener('touchend', _tEnd, {passive: false});
+  document.addEventListener('touchcancel', _tEnd, {passive: false});
 }
 
-function _onTM(e) {
+function _tMove(e) {
   e.preventDefault();
-  if (!_touchMoved || !_touchClone) return;
+  e.stopPropagation();
+  clearTimeout(_tTimer); // 動いたらタイマーリセット防止
 
-  const touch = e.touches[0];
-  const w = _touchClone.offsetWidth;
-  _touchClone.style.left = (touch.clientX - w/2) + 'px';
-  _touchClone.style.top = (touch.clientY - 14) + 'px';
+  if (!_tActive || !_tClone) return;
 
-  // クローンを隠してセルを探す
-  _touchClone.style.visibility = 'hidden';
-  const el = document.elementFromPoint(touch.clientX, touch.clientY);
-  _touchClone.style.visibility = 'visible';
+  const t = e.touches[0];
+  const w = _tClone.offsetWidth;
+  const h = _tClone.offsetHeight;
+  _tClone.style.left = (t.clientX - w/2) + 'px';
+  _tClone.style.top = (t.clientY - h/2) + 'px';
+
+  // クローンを隠してその下のセルを探す
+  _tClone.style.visibility = 'hidden';
+  const el = document.elementFromPoint(t.clientX, t.clientY);
+  _tClone.style.visibility = 'visible';
 
   document.querySelectorAll('.day-cell').forEach(c => c.classList.remove('drag-over'));
   const cell = el ? el.closest('.day-cell') : null;
-  _currentDropCell = cell;
-  if (cell) cell.classList.add('drag-over');
+  _tDropCell = cell || null;
+  if (_tDropCell) _tDropCell.classList.add('drag-over');
 }
 
-function _onTE(e) {
-  clearTimeout(_touchTimer);
-  document.removeEventListener('touchmove', _onTM);
-  document.removeEventListener('touchend', _onTE);
-  document.removeEventListener('touchcancel', _onTE);
+function _tEnd(e) {
+  e.preventDefault();
+  clearTimeout(_tTimer);
+  document.removeEventListener('touchmove', _tMove);
+  document.removeEventListener('touchend', _tEnd);
+  document.removeEventListener('touchcancel', _tEnd);
   document.querySelectorAll('.day-cell').forEach(c => c.classList.remove('drag-over'));
 
-  if (_touchClone) { _touchClone.remove(); _touchClone = null; }
-  if (_touchCard) { _touchCard.style.opacity = '1'; }
+  if (_tClone) { _tClone.remove(); _tClone = null; }
+  if (_tCard) { _tCard.style.opacity = '1'; }
 
-  if (_touchMoved && _touchTask && _currentDropCell) {
-    const m = _currentDropCell.id.match(/^c(\d+)-(\d+)$/);
+  if (_tActive && _tTask && _tDropCell) {
+    const m = _tDropCell.id.match(/^c(\d+)-(\d+)$/);
     if (m) {
-      dragInfo = _touchTask;
+      dragInfo = _tTask;
       dropTask(parseInt(m[1]), parseInt(m[2]));
     }
   }
 
-  _touchTask = null;
-  _touchCard = null;
-  _currentDropCell = null;
-  _touchMoved = false;
+  _tTask = null; _tCard = null; _tDropCell = null; _tActive = false;
 }
 
 function fitModals() {
@@ -1111,7 +1119,7 @@ window.addEventListener('resize', fitModals);
 const _origRender = render;
 window.render = function() {
   _origRender();
-  setTimeout(() => { _addTouchToCards(); fitModals(); }, 100);
+  setTimeout(() => { _addTouch(); fitModals(); }, 100);
 };
 render();
 </script>
