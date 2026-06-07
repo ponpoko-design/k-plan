@@ -65,10 +65,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 /* モーダル共通 */
 .modal-bg{display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center;}
 .modal-bg.open{display:flex;}
-.modal{background:white;border-radius:14px;width:400px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+.modal{background:white;border-radius:14px;width:400px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3);max-height:88vh;display:flex;flex-direction:column;}
 .modal-hdr{background:var(--navy);color:white;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;font-size:18px;font-weight:700;}
 .modal-close{background:none;border:none;color:white;font-size:22px;cursor:pointer;line-height:1;padding:0;}
-.modal-body{padding:16px 18px;}
+.modal-body{padding:16px 18px;overflow-y:auto;flex:1;}
 .subj-badge{border-radius:0;padding:14px 18px;font-size:16px;font-weight:700;margin:-16px -18px 14px -18px;display:flex;align-items:center;justify-content:space-between;}
 .subj-badge select{background:transparent;border:1px solid rgba(0,0,0,0.2);border-radius:8px;padding:4px 8px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;color:inherit;}
 .field{margin-bottom:10px;}
@@ -997,12 +997,14 @@ if (sessionStorage.getItem('auth') === '1') {
 </script>
 </body>
 </html>
-<!-- _260607.0950 --><script>
+<!-- _260607.1010 --><script>
 // ===== タッチ対応ドラッグ&ドロップ =====
 let _touchTask = null;
 let _touchCard = null;
 let _touchClone = null;
 let _touchMoved = false;
+let _touchTimer = null;
+let _lastCell = null;
 
 function _addTouchToCards() {
   document.querySelectorAll('.card').forEach(card => {
@@ -1013,6 +1015,7 @@ function _addTouchToCards() {
 
 function _onTS(e) {
   _touchMoved = false;
+  _lastCell = null;
   const card = e.currentTarget;
   _touchCard = card;
   _touchTask = {
@@ -1020,58 +1023,65 @@ function _onTS(e) {
     id: parseInt(card.getAttribute('data-id'))
   };
 
-  // 長押し判定（300ms後にドラッグ開始）
   _touchTimer = setTimeout(() => {
     _touchMoved = true;
-    // クローン作成
     const rect = card.getBoundingClientRect();
-    _touchClone = card.cloneNode(true);
-    _touchClone.style.cssText = `
-      position:fixed;left:${rect.left}px;top:${rect.top}px;
-      width:${rect.width}px;opacity:0.85;pointer-events:none;
-      z-index:9999;transform:scale(1.08);transition:none;
-      border-radius:4px;padding:2px 5px;font-size:13px;font-weight:700;
-    `;
-    // 元カードの色を引き継ぐ
-    const bg = window.getComputedStyle(card).backgroundColor;
-    const color = window.getComputedStyle(card).color;
-    _touchClone.style.background = bg;
-    _touchClone.style.color = color;
+    _touchClone = document.createElement('div');
+    _touchClone.className = card.className;
+    _touchClone.textContent = card.textContent;
+    _touchClone.style.cssText = [
+      'position:fixed',
+      'left:' + rect.left + 'px',
+      'top:' + rect.top + 'px',
+      'width:' + rect.width + 'px',
+      'opacity:0.85',
+      'pointer-events:none',
+      'z-index:9999',
+      'transform:scale(1.1)',
+      'box-shadow:0 4px 12px rgba(0,0,0,0.3)',
+      'white-space:nowrap',
+      'border-radius:4px',
+      'padding:2px 5px',
+      'font-size:13px',
+      'font-weight:700'
+    ].join(';');
     document.body.appendChild(_touchClone);
     card.style.opacity = '0.3';
-
-    // バイブレーション（対応デバイスのみ）
     if (navigator.vibrate) navigator.vibrate(30);
-  }, 300);
+  }, 280);
 
   document.addEventListener('touchmove', _onTM, {passive: false});
-  document.addEventListener('touchend', _onTE, {passive: false});
-  document.addEventListener('touchcancel', _onTE, {passive: false});
+  document.addEventListener('touchend', _onTE);
+  document.addEventListener('touchcancel', _onTE);
 }
 
-let _touchTimer = null;
+function _getCellFromPoint(x, y) {
+  // クローンを一時非表示にしてその下の要素を取得
+  if (_touchClone) _touchClone.style.display = 'none';
+  const el = document.elementFromPoint(x, y);
+  if (_touchClone) _touchClone.style.display = '';
+  if (!el) return null;
+  return el.closest('.day-cell');
+}
 
 function _onTM(e) {
   e.preventDefault();
-  if (!_touchMoved) {
-    // 少し動いたらタイマーキャンセル
-    clearTimeout(_touchTimer);
-    if (!_touchClone) return;
-  }
-  if (!_touchClone) return;
+  if (!_touchMoved || !_touchClone) return;
 
   const touch = e.touches[0];
-  const rect = _touchClone.getBoundingClientRect();
-  _touchClone.style.left = (touch.clientX - rect.width/2) + 'px';
-  _touchClone.style.top = (touch.clientY - 10) + 'px';
+  const w = _touchClone.offsetWidth;
+  _touchClone.style.left = (touch.clientX - w/2) + 'px';
+  _touchClone.style.top = (touch.clientY - 14) + 'px';
 
   // ドロップ先ハイライト
-  _touchClone.style.display = 'none';
-  const el = document.elementFromPoint(touch.clientX, touch.clientY);
-  _touchClone.style.display = '';
   document.querySelectorAll('.day-cell').forEach(c => c.classList.remove('drag-over'));
-  const cell = el ? el.closest('.day-cell') : null;
-  if (cell) cell.classList.add('drag-over');
+  const cell = _getCellFromPoint(touch.clientX, touch.clientY);
+  if (cell) {
+    cell.classList.add('drag-over');
+    _lastCell = cell;
+  } else {
+    _lastCell = null;
+  }
 }
 
 function _onTE(e) {
@@ -1085,13 +1095,13 @@ function _onTE(e) {
   document.querySelectorAll('.day-cell').forEach(c => c.classList.remove('drag-over'));
 
   if (!_touchMoved || !_touchTask) {
-    _touchTask = null; _touchCard = null;
+    _touchTask = null; _touchCard = null; _lastCell = null;
     return;
   }
 
+  // _lastCellまたはchangedTouchesから再取得
   const touch = e.changedTouches[0];
-  const el = document.elementFromPoint(touch.clientX, touch.clientY);
-  const cell = el ? el.closest('.day-cell') : null;
+  const cell = _lastCell || _getCellFromPoint(touch.clientX, touch.clientY);
 
   if (cell) {
     const m = cell.id.match(/^c(\d+)-(\d+)$/);
@@ -1101,15 +1111,28 @@ function _onTE(e) {
     }
   }
 
-  _touchTask = null;
-  _touchCard = null;
+  _touchTask = null; _touchCard = null; _lastCell = null;
 }
 
-// render後にタッチイベントを付与
+// 2. モーダルを画面サイズに合わせる
+function fitModals() {
+  const vh = window.innerHeight;
+  const maxH = Math.floor(vh * 0.88);
+  document.querySelectorAll('.modal-bg .modal').forEach(m => {
+    m.style.maxHeight = maxH + 'px';
+    m.style.overflowY = 'auto';
+  });
+  // modal-bodyも調整
+  document.querySelectorAll('.modal-bg .modal .modal-body, .modal-bg .modal > div[style*="padding"]').forEach(b => {
+    b.style.overflowY = 'auto';
+  });
+}
+window.addEventListener('resize', fitModals);
+
 const _origRender = render;
 window.render = function() {
   _origRender();
-  setTimeout(_addTouchToCards, 100);
+  setTimeout(() => { _addTouchToCards(); fitModals(); }, 100);
 };
 render();
 </script>
