@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1024, initial-scale=1.0">
+<title>航大 家庭学習スケジュール</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&family=Inter:wght@700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Zen Maru Gothic','Hiragino Sans','Yu Gothic UI',sans-serif;}
+:root{
+  --navy:#1a2744;--navy2:#243159;--navy3:#2d3f6a;--sep:#1a2744;--sep-w:3px;
+  --c-math:#C1E8FB;--c-math-t:#1a2744;
+  --c-jp:#F2B9E4;--c-jp-t:#1a2744;
+  --c-sci:#B6EBB0;--c-sci-t:#1a2744;
+  --c-soc:#F9DB82;--c-soc-t:#1a2744;
+  --c-hw:#D3D3D3;--c-hw-t:#1a2744;
+  --c-lesson:#D6C3AA;--c-lesson-t:#1a2744;
+  --c-plan:#F5F4E4;--c-plan-t:#1a2744;
+  --c-test:#F104BA;--c-test-t:#fff;
+  --c-holiday:#AB0000;--c-holiday-t:#fff;
+}
+html,body{width:1024px;height:768px;overflow:hidden;background:#dde0ea;}
+#app{width:1024px;height:768px;display:flex;flex-direction:column;position:relative;}
+
+/* ヘッダー */
+.hdr{background:white;padding:10px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ccc;flex-shrink:0;height:52px;}
+.hdr-title{font-size:22px;font-weight:700;color:var(--navy);}
+.nav-btn{background:white;border:2px solid var(--navy);color:var(--navy);border-radius:20px;padding:6px 16px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;}
+.nav-btn:hover{background:#f0f2f8;}
+
+/* カレンダー */
+.cal-wrap{flex:1;background:var(--navy);border-radius:10px;margin:8px;overflow:hidden;display:flex;flex-direction:column;min-height:0;}
+.cal-head{display:grid;grid-template-columns:40px repeat(7,1fr);background:var(--navy);flex-shrink:0;}
+.cal-hcell{padding:5px 3px;text-align:center;color:white;font-size:15px;font-weight:700;border-right:3px solid var(--sep);border-bottom:3px solid var(--sep);}
+.cal-hcell.today{background:#f5d020;color:var(--navy);border-radius:5px;margin:2px;}
+.cal-hcell:first-child{border-right:1px solid var(--navy3);}
+
+.cal-body{flex:1;display:grid;grid-template-rows:0.6fr 0.5fr 1fr 1fr 1fr;min-height:0;}
+.time-row{display:grid;grid-template-columns:40px repeat(7,1fr);border-bottom:3px solid var(--sep);min-height:0;}
+.time-lbl{background:var(--navy2);color:white;font-size:13px;writing-mode:vertical-rl;display:flex;align-items:center;justify-content:center;border-right:3px solid var(--sep);font-weight:700;letter-spacing:2px;width:40px;flex-shrink:0;}
+.day-cell{background:white;border-right:3px solid var(--sep);padding:3px 2px;display:flex;flex-direction:column;gap:2px;overflow:hidden;cursor:pointer;transition:background .1s;min-height:0;}
+.day-cell:hover{background:#f5f7ff;}
+.day-cell.drag-over{background:#ddeeff;outline:2px dashed #378add;}
+
+/* タスクカード */
+.card{border-radius:4px;padding:2px 5px;font-size:13px;font-weight:700;cursor:grab;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none;line-height:1.4;text-align:center;}
+.card:active{cursor:grabbing;opacity:.7;}
+.card.dragging{opacity:.35;}
+.card.math{background:var(--c-math);color:var(--c-math-t);}
+.card.jp{background:var(--c-jp);color:var(--c-jp-t);}
+.card.sci{background:var(--c-sci);color:var(--c-sci-t);}
+.card.soc{background:var(--c-soc);color:var(--c-soc-t);}
+.card.hw{background:var(--c-hw);color:var(--c-hw-t);}
+.card.lesson{background:var(--c-lesson);color:var(--c-lesson-t);}
+.card.plan{background:var(--c-plan);color:var(--c-plan-t);}
+.card.test{background:var(--c-test);color:var(--c-test-t);}
+.card.holiday{background:var(--c-holiday);color:var(--c-holiday-t);}
+
+/* ボトムナビ */
+.bnav{background:white;border-top:1px solid #ddd;display:flex;justify-content:space-around;padding:8px 0;flex-shrink:0;height:56px;}
+.bnav-btn{display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--navy);font-size:13px;cursor:pointer;padding:3px 24px;border:none;background:none;border-radius:8px;}
+.bnav-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;}
+.bnav-btn.active{color:#378add;}
+
+/* モーダル共通 */
+.modal-bg{display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal{background:white;border-radius:14px;width:400px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+.modal-hdr{background:var(--navy);color:white;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;font-size:18px;font-weight:700;}
+.modal-close{background:none;border:none;color:white;font-size:22px;cursor:pointer;line-height:1;padding:0;}
+.modal-body{padding:16px 18px;}
+.subj-badge{border-radius:0;padding:14px 18px;font-size:16px;font-weight:700;margin:-16px -18px 14px -18px;display:flex;align-items:center;justify-content:space-between;}
+.subj-badge select{background:transparent;border:1px solid rgba(0,0,0,0.2);border-radius:8px;padding:4px 8px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;color:inherit;}
+.field{margin-bottom:10px;}
+.field label{font-size:14px;color:#888;margin-bottom:3px;display:block;}
+.field input,.field textarea,.field select{width:100%;border:1px solid #ddd;border-radius:7px;padding:9px 12px;font-size:16px;font-family:inherit;outline:none;}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:#378add;}
+.field textarea{height:60px;resize:none;}
+.modal-actions{display:flex;gap:7px;margin-top:14px;}
+.btn-del{flex:1;background:white;border:2px solid #e24b4a;color:#e24b4a;border-radius:20px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;}
+.btn-sub{flex:1;background:white;border:2px solid var(--navy);color:var(--navy);border-radius:20px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;}
+.btn-save{flex:1;background:white;border:2px solid var(--navy);color:var(--navy);border-radius:20px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;}
+.modal-repeat{text-align:center;margin-top:12px;color:var(--navy);font-size:13px;text-decoration:underline;cursor:pointer;}
+</style>
+</head>
+<body>
+<div id="pwScreen" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#1a2744;display:flex;align-items:center;justify-content:center;z-index:9999;">
+  <div style="background:white;border-radius:16px;padding:40px 36px;width:320px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4);">
+    <div style="font-size:22px;font-weight:700;color:#1a2744;margin-bottom:6px;font-family:'Zen Maru Gothic',sans-serif;">航大 家庭学習</div>
+    <div style="font-size:13px;color:#888;margin-bottom:24px;">パスワードを入力してください</div>
+    <input id="pwInput" type="password" placeholder="パスワード"
+      style="width:100%;border:2px solid #ddd;border-radius:10px;padding:12px 14px;font-size:16px;font-family:'Zen Maru Gothic',sans-serif;outline:none;margin-bottom:10px;text-align:center;"
+      onkeydown="if(event.key==='Enter')checkPw()">
+    <div id="pwError" style="color:#e24b4a;font-size:12px;height:18px;margin-bottom:8px;"></div>
+    <button onclick="checkPw()" style="width:100%;background:#1a2744;color:white;border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;">入る</button>
+  </div>
+</div>
+
+<div id="app" style="display:none;">
+  <div class="hdr">
+    <button class="nav-btn" onclick="changeWeek(-1)">◀ 前の週</button>
+    <div class="hdr-title">航大 家庭学習スケジュール</div>
+    <button class="nav-btn" onclick="changeWeek(1)">次の週 ▶</button>
+  </div>
+
+  <div class="cal-wrap">
+    <div class="cal-head" id="calHead">
+      <div class="cal-hcell"></div>
+      <div class="cal-hcell" id="hd0"></div><div class="cal-hcell" id="hd1"></div>
+      <div class="cal-hcell" id="hd2"></div><div class="cal-hcell" id="hd3"></div>
+      <div class="cal-hcell" id="hd4"></div><div class="cal-hcell" id="hd5"></div>
+      <div class="cal-hcell" id="hd6"></div>
+    </div>
+    <div class="cal-body" id="calBody">
+      <div class="time-row"><div class="time-lbl">予定</div><div id="c0-0" class="day-cell"></div><div id="c1-0" class="day-cell"></div><div id="c2-0" class="day-cell"></div><div id="c3-0" class="day-cell"></div><div id="c4-0" class="day-cell"></div><div id="c5-0" class="day-cell"></div><div id="c6-0" class="day-cell"></div></div>
+      <div class="time-row"><div class="time-lbl">朝</div><div id="c0-1" class="day-cell"></div><div id="c1-1" class="day-cell"></div><div id="c2-1" class="day-cell"></div><div id="c3-1" class="day-cell"></div><div id="c4-1" class="day-cell"></div><div id="c5-1" class="day-cell"></div><div id="c6-1" class="day-cell"></div></div>
+      <div class="time-row"><div class="time-lbl">午前</div><div id="c0-2" class="day-cell"></div><div id="c1-2" class="day-cell"></div><div id="c2-2" class="day-cell"></div><div id="c3-2" class="day-cell"></div><div id="c4-2" class="day-cell"></div><div id="c5-2" class="day-cell"></div><div id="c6-2" class="day-cell"></div></div>
+      <div class="time-row"><div class="time-lbl">午後</div><div id="c0-3" class="day-cell"></div><div id="c1-3" class="day-cell"></div><div id="c2-3" class="day-cell"></div><div id="c3-3" class="day-cell"></div><div id="c4-3" class="day-cell"></div><div id="c5-3" class="day-cell"></div><div id="c6-3" class="day-cell"></div></div>
+      <div class="time-row"><div class="time-lbl">夜</div><div id="c0-4" class="day-cell"></div><div id="c1-4" class="day-cell"></div><div id="c2-4" class="day-cell"></div><div id="c3-4" class="day-cell"></div><div id="c4-4" class="day-cell"></div><div id="c5-4" class="day-cell"></div><div id="c6-4" class="day-cell"></div></div>
+    </div>
+  </div>
+
+  <div class="bnav">
+    <button class="bnav-btn active" onclick="showView('cal')">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>ホーム
+    </button>
+    <button class="bnav-btn" onclick="openAddModal()">
+      <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>追加
+    </button>
+    <button class="bnav-btn" onclick="showStats()">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>集計
+    </button>
+    <button class="bnav-btn">
+      <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>メニュー
+    </button>
+  </div>
+
+  <!-- 詳細モーダル -->
+  <div class="modal-bg" id="detailModal">
+    <div class="modal">
+      <div class="modal-hdr" id="detailHdr">
+        <span id="detailModeLabel">「今回だけ」の予定</span>
+      </div>
+      <div class="modal-body">
+        <div class="subj-badge" id="detailBadge">
+          <select id="dSubject" onchange="updateDetailColor()" style="font-weight:700;font-size:15px;font-family:inherit;background:transparent;border:1px solid rgba(0,0,0,0.2);border-radius:8px;padding:4px 10px;cursor:pointer;"></select>
+          <button class="modal-close" onclick="closeDetail()" style="color:inherit;font-size:24px;">×</button>
+        </div>
+        <div class="field"><label>単元名</label><input id="dUnit" type="text"></div>
+        <div class="field"><label># 単元番号（任意）</label><input id="dHash" type="text" placeholder="入れなくてもOK"></div>
+        <div class="field"><label>メモ</label><textarea id="dMemo"></textarea></div>
+        <div class="field"><label>学習時間（分）</label><input id="dTime" type="text" inputmode="numeric" oninput="this.value=this.value.replace(/[０-９]/g,s=>String.fromCharCode(s.charCodeAt(0)-65248)).replace(/[^0-9]/g,'')"></div>
+        <div class="modal-actions">
+          <button class="btn-del" onclick="deleteTask()">予定を削除する</button>
+          <button class="btn-sub" onclick="copyTask()">予定をコピー</button>
+          <button class="btn-save" onclick="saveTask()" style="background:white;border:2px solid var(--navy);color:var(--navy);border-radius:20px;">変更を保存する</button>
+        </div>
+        <div class="modal-repeat" id="detailRepeatBtn" onclick="toggleRepeat()"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 追加モーダル -->
+  <div class="modal-bg" id="addModal">
+    <div class="modal">
+      <div class="modal-hdr">
+        <span>新しい予定を登録する</span>
+        <button class="modal-close" onclick="closeAdd()">×</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex;gap:16px;margin-bottom:10px;">
+          <label style="font-size:16px;cursor:pointer;"><input type="radio" name="addType" value="one_time" checked onchange="toggleAddDate()"> 今週だけの予定</label>
+          <label style="font-size:16px;cursor:pointer;"><input type="radio" name="addType" value="weekly" onchange="toggleAddDate()"> 毎週くりかえす予定</label>
+        </div>
+        <div id="addDateRow" style="background:#f0f4ff;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:16px;font-weight:700;color:#1a2744;"></div>
+        <div class="field"><label>曜日</label>
+          <select id="aWeekday">
+            <option value="0">月</option><option value="1">火</option><option value="2">水</option>
+            <option value="3">木</option><option value="4">金</option><option value="5">土</option><option value="6">日</option>
+          </select>
+        </div>
+        <div class="field"><label>時間帯</label>
+          <select id="aSlot">
+            <option value="plan">予定</option><option value="morning">朝</option>
+            <option value="am">午前</option><option value="pm">午後</option><option value="night">夜</option>
+          </select>
+        </div>
+        <div class="field"><label>教科</label>
+          <select id="aSubject" onchange="updateSubjectColor()" style="font-weight:700;transition:background .2s,color .2s;">
+            <option value="算数">算数</option><option value="国語">国語</option>
+            <option value="理科">理科</option><option value="社会">社会</option>
+            <option value="学校の宿題">学校の宿題</option><option value="習い事">習い事</option>
+            <option value="予定">予定</option><option value="テスト">テスト</option>
+          </select>
+        </div>
+        <div class="field"><label>学習内容（表示名・7文字まで）</label><input id="aUnit" type="text" maxlength="7" placeholder="例：基礎力テスト" oninput="if(this.value.length>7)this.value=this.value.slice(0,7)"></div>
+        <div class="field"><label># 単元番号（任意）</label><input id="aHash" type="text" placeholder="入れなくてもOK"></div>
+        <div class="field"><label>学習時間（分）</label><input id="aTime" type="text" inputmode="numeric" placeholder="30" oninput="this.value=this.value.replace(/[０-９]/g,s=>String.fromCharCode(s.charCodeAt(0)-65248)).replace(/[^0-9]/g,'')"></div>
+        <div class="field"><label>メモ（任意）</label><textarea id="aMemo" placeholder="メモがあれば"></textarea></div>
+        <div class="modal-actions">
+          <button class="btn-del" onclick="closeAdd()">やめる</button>
+          <button style="flex:2;background:var(--navy);border:none;color:white;border-radius:20px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;" onclick="confirmAdd()">予定を追加する</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- コピーモーダル -->
+  <div class="modal-bg" id="copyModal">
+    <div class="modal" style="width:420px;">
+      <div class="modal-hdr">
+        <span>予定をコピーする</span>
+        <button class="modal-close" onclick="closeCopyModal()">×</button>
+      </div>
+      <div class="modal-body" style="padding:18px 20px;">
+        <div style="font-size:12px;color:#888;text-align:center;margin-bottom:6px;">元の予定</div>
+        <div style="display:flex;border:1px solid #ddd;border-radius:8px;overflow:hidden;margin-bottom:12px;">
+          <div id="copySourceDate" style="flex:1;padding:10px 12px;font-size:13px;font-weight:700;color:#1a2744;border-right:1px solid #ddd;"></div>
+          <div id="copySourceType" style="padding:10px 12px;font-size:12px;color:#888;white-space:nowrap;"></div>
+        </div>
+        <div style="text-align:center;font-size:20px;color:#888;margin-bottom:10px;">↓</div>
+        <div style="background:#e8f4ff;border-radius:10px;padding:14px;margin-bottom:14px;">
+          <div style="font-size:13px;font-weight:700;color:#1a2744;text-align:center;margin-bottom:10px;">コピーする先</div>
+          <div style="display:flex;gap:8px;margin-bottom:8px;">
+            <div id="copyDateDisplay" onclick="showCopyCalendar()" style="flex:1;background:white;border:1.5px solid #ccc;border-radius:20px;padding:8px 14px;font-size:13px;cursor:pointer;color:#aaa;text-align:center;">タップで日付選択</div>
+            <select id="copySlot" style="background:white;border:1.5px solid #ccc;border-radius:20px;padding:8px 12px;font-size:13px;font-family:inherit;">
+              <option value="plan">予定</option><option value="morning">朝</option>
+              <option value="am">午前</option><option value="pm">午後</option><option value="night">夜</option>
+            </select>
+          </div>
+          <div id="copyCalWrap" style="display:none;background:white;border-radius:10px;padding:12px;margin-bottom:8px;box-shadow:0 2px 12px rgba(0,0,0,.1);">
+            <div id="copyCalGrid"></div>
+            <div style="display:flex;justify-content:space-around;margin-top:8px;border-top:1px solid #eee;padding-top:8px;">
+              <span onclick="selectCopyDateToday()" style="font-size:12px;color:#378add;cursor:pointer;">▶ Today</span>
+              <span onclick="document.getElementById('copyTargetDate').setAttribute('data-selected','');document.getElementById('copyDateDisplay').textContent='タップで日付選択';document.getElementById('copyDateDisplay').style.color='#aaa';" style="font-size:12px;color:#e24b4a;cursor:pointer;">— Clear</span>
+              <span onclick="hideCopyCalendar()" style="font-size:12px;color:#888;cursor:pointer;">× Close</span>
+            </div>
+          </div>
+          <select id="copyRepeat" style="width:100%;background:white;border:1.5px solid #ccc;border-radius:20px;padding:8px 14px;font-size:13px;font-family:inherit;">
+            <option value="one_time">今回だけの予定</option>
+            <option value="weekly">毎週くりかえす予定</option>
+          </select>
+          <input type="hidden" id="copyTargetDate">
+        </div>
+        <div style="text-align:center;font-size:16px;font-weight:700;color:#1a2744;margin-bottom:14px;">これでコピーしますか？</div>
+        <div style="display:flex;gap:10px;">
+          <button onclick="closeCopyModal()" style="flex:1;background:white;border:2px solid #888;color:#888;border-radius:20px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;">やめる</button>
+          <button onclick="confirmCopy()" style="flex:1;background:white;border:2px solid var(--navy);color:var(--navy);border-radius:20px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;">コピーする</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 集計モーダル -->
+  <div class="modal-bg" id="statsModal">
+    <div class="modal" style="width:960px;max-height:700px;overflow-y:auto;">
+      <div class="modal-hdr">
+        <span>学習時間の集計</span>
+        <button class="modal-close" onclick="closeStats()">×</button>
+      </div>
+      <div class="modal-body" style="padding:0;">
+  <div style="display:grid;grid-template-columns:1fr 1fr;min-height:0;">
+    <div id="statsWeek" style="padding:16px 18px;border-right:1px solid #eee;overflow-y:auto;max-height:640px;"></div>
+    <div id="statsMonth" style="padding:16px 18px;overflow-y:auto;max-height:640px;"></div>
+  </div>
+</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== データ定義 =====
+const SLOTS = ['plan','morning','am','pm','night'];
+const SLOT_IDX = {plan:0,morning:1,am:2,pm:3,night:4};
+const DAYS_JP = ['月','火','水','木','金','土','日'];
+const SUBJ_CLASS = {
+  '算数':'math','国語':'jp','理科':'sci','社会':'soc',
+  '学校の宿題':'hw','習い事':'lesson','予定':'plan','テスト':'test','祝日':'holiday'
+};
+const SUBJ_COLOR = {
+  '算数':['#C1E8FB','#1a2744'],'国語':['#F2B9E4','#1a2744'],
+  '理科':['#B6EBB0','#1a2744'],'社会':['#F9DB82','#1a2744'],
+  '学校の宿題':['#D3D3D3','#1a2744'],'習い事':['#D6C3AA','#1a2744'],
+  '予定':['#F5F4E4','#1a2744'],'テスト':['#F104BA','#fff'],'祝日':['#AB0000','#fff']
+};
+
+// 全CSVデータ
+const RAW_DATA = [{"color": "#C1E8FB", "date": "Apr 21, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "火", "weekday_index": 1, "slot": "morning", "subject": "算数", "unit_name": "基礎力テスト", "note": NaN, "study_time": 15, "display_type": "weekly", "repeat_key": "1776767807310x438244857080447000", "is_hidden": "no", "order": 1, "uid": "1776767807310x438244857080447000"}, {"color": "#B6EBB0", "date": "Apr 21, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "火", "weekday_index": 1, "slot": "pm", "subject": "理科", "unit_name": "確認問題", "note": NaN, "study_time": 20, "display_type": "weekly", "repeat_key": "1776767848617x212175906302590980", "is_hidden": "no", "order": 1, "uid": "1776767848617x212175906302590980"}, {"color": "#B6EBB0", "date": "Apr 21, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "火", "weekday_index": 1, "slot": "pm", "subject": "理科", "unit_name": "基本のまとめ", "note": NaN, "study_time": 20, "display_type": "weekly", "repeat_key": "1776767873941x104472930903130110", "is_hidden": "no", "order": 1, "uid": "1776767873941x104472930903130110"}, {"color": "#D3D3D3", "date": "Apr 21, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "火", "weekday_index": 1, "slot": "pm", "subject": "学校の宿題", "unit_name": "学校の宿題", "note": NaN, "study_time": 20, "display_type": "weekly", "repeat_key": "1776768083887x568311426440757250", "is_hidden": "no", "order": 1, "uid": "1776768083887x568311426440757250"}, {"color": "#F2B9E4", "date": "Apr 21, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "火", "weekday_index": 1, "slot": "night", "subject": "国語", "unit_name": "単元音読", "note": NaN, "study_time": 15, "display_type": "weekly", "repeat_key": "1776768163468x404908686146797600", "is_hidden": "no", "order": 1, "uid": "1776768163468x404908686146797600"}, {"color": "#F2B9E4", "date": "Apr 21, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "火", "weekday_index": 1, "slot": "night", "subject": "国語", "unit_name": "意味調べ", "note": NaN, "study_time": 20, "display_type": "weekly", "repeat_key": "1776768188487x176440884950466560", "is_hidden": "no", "order": 1, "uid": "1776768188487x176440884950466560"}, {"color": "#D6C3AA", "date": "Apr 20, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "月", "weekday_index": 0, "slot": "night", "subject": "習い事", "unit_name": "塾（国･社）", "note": NaN, "study_time": null, "display_type": "weekly", "repeat_key": "1776768575490x927077985719418900", "is_hidden": "no", "order": 1, "uid": "1776768575490x927077985719418900"}, {"color": "#D3D3D3", "date": "Apr 20, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "月", "weekday_index": 0, "slot": "night", "subject": "学校の宿題", "unit_name": "学校の宿題", "note": NaN, "study_time": 15, "display_type": "weekly", "repeat_key": "1776768686894x154686899321569280", "is_hidden": "no", "order": 1, "uid": "1776768686894x154686899321569280"}, {"color": "#C1E8FB", "date": "Apr 22, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "水", "weekday_index": 2, "slot": "pm", "subject": "算数", "unit_name": "T確認テスト", "note": NaN, "study_time": 28, "display_type": "weekly", "repeat_key": "1776770186914x893213617872175100", "is_hidden": "no", "order": 1, "uid": "1776770186914x893213617872175100"}, {"color": "#D3D3D3", "date": "Apr 22, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "水", "weekday_index": 2, "slot": "pm", "subject": "学校の宿題", "unit_name": "学校の宿題", "note": NaN, "study_time": 20, "display_type": "weekly", "repeat_key": "1776770213469x588979432130871300", "is_hidden": "no", "order": 1, "uid": "1776770213469x588979432130871300"}, {"color": "#D6C3AA", "date": "Apr 22, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "水", "weekday_index": 2, "slot": "night", "subject": "習い事", "unit_name": "塾（算･理）", "note": NaN, "study_time": null, "display_type": "weekly", "repeat_key": "1776770251875x812675015927922700", "is_hidden": "no", "order": 1, "uid": "1776770251875x812675015927922700"}, {"color": "#C1E8FB", "date": "Apr 23, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "木", "weekday_index": 3, "slot": "morning", "subject": "算数", "unit_name": "基礎力テスト", "note": NaN, "study_time": 15, "display_type": "weekly", "repeat_key": "1776770301316x865506439511146500", "is_hidden": "no", "order": 1, "uid": "1776770301316x865506439511146500"}, {"color": "#F2B9E4", "date": "Apr 23, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "木", "weekday_index": 3, "slot": "morning", "subject": "国語", "unit_name": "漢字", "note": NaN, "study_time": 15, "display_type": "weekly", "repeat_key": "1776770317711x319270146472149000", "is_hidden": "no", "order": 1, "uid": "1776770317711x319270146472149000"}, {"color": "#D6C3AA", "date": "Apr 23, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "木", "weekday_index": 3, "slot": "pm", "subject": "習い事", "unit_name": "プロタゴ", "note": NaN, "study_time": null, "display_type": "weekly", "repeat_key": "1776770419440x792952607462129700", "is_hidden": "no", "order": 1, "uid": "1776770419440x792952607462129700"}, {"color": "#C1E8FB", "date": "Apr 23, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "木", "weekday_index": 3, "slot": "night", "subject": "算数", "unit_name": "Nテキスト", "note": NaN, "study_time": 30, "display_type": "weekly", "repeat_key": "1776770449613x836169057629896700", "is_hidden": "no", "order": 1, "uid": "1776770449613x836169057629896700"}, {"color": "#B6EBB0", "date": "Apr 23, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "木", "weekday_index": 3, "slot": "night", "subject": "理科", "unit_name": "テスト振り返り", "note": NaN, "study_time": 15, "display_type": "weekly", "repeat_key": "1776770472928x114674616500224000", "is_hidden": "no", "order": 1, "uid": "1776770472928x114674616500224000"}, {"color": "#B6EBB0", "date": "Apr 23, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "木", "weekday_index": 3, "slot": "night", "subject": "理科", "unit_name": "基礎力テスト", "note": NaN, "study_time": 15, "display_type": "weekly", "repeat_key": "1776770495930x708581841391321100", "is_hidden": "no", "order": 1, "uid": "1776770495930x708581841391321100"}, {"color": "#D3D3D3", "date": "Apr 23, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "木", "weekday_index": 3, "slot": "night", "subject": "学校の宿題", "unit_name": "学校の宿題", "note": NaN, "study_time": 15, "display_type": "weekly", "repeat_key": "1776770512172x719368722401984500", "is_hidden": "no", "order": 1, "uid": "1776770512172x719368722401984500"}, {"color": "#C1E8FB", "date": "Apr 24, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "金", "weekday_index": 4, "slot": "morning", "subject": "算数", "unit_name": "基礎力テスト", "note": NaN, "study_time": 15, "display_type": "weekly", "repeat_key": "1776770537501x334202459366621200", "is_hidden": "no", "order": 1, "uid": "1776770537501x334202459366621200"}, {"color": "#F2B9E4", "date": "Apr 24, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "金", "weekday_index": 4, "slot": "morning", "subject": "国語", "unit_name": "漢字", "note": NaN, "study_time": 15, "display_type": "weekly", "repeat_key": "1776770552648x111530228134445060", "is_hidden": "no", "order": 1, "uid": "1776770552648x111530228134445060"}, {"color": "#B6EBB0", "date": "Apr 24, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "金", "weekday_index": 4, "slot": "pm", "subject": "理科", "unit_name": "グノチェック", "note": NaN, "study_time": 30, "display_type": "weekly", "repeat_key": "1776770597045x321663870557224960", "is_hidden": "no", "order": 1, "uid": "1776770597045x321663870557224960"}, {"color": "#F9DB82", "date": "Apr 24, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "金", "weekday_index": 4, "slot": "pm", "subject": "社会", "unit_name": "用語/基礎力確認", "note": NaN, "study_time": 30, "display_type": "weekly", "repeat_key": "1776770628197x780323518796005400", "is_hidden": "no", "order": 1, "uid": "1776770628197x780323518796005400"}, {"color": "#C1E8FB", "date": "Apr 24, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "金", "weekday_index": 4, "slot": "night", "subject": "算数", "unit_name": "Nテキスト", "note": NaN, "study_time": 30, "display_type": "weekly", "repeat_key": "1776770651825x533682335435980800", "is_hidden": "no", "order": 1, "uid": "1776770651825x533682335435980800"}, {"color": "#C1E8FB", "date": "Apr 24, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "金", "weekday_index": 4, "slot": "night", "subject": "算数", "unit_name": "N家庭学習", "note": NaN, "study_time": 30, "display_type": "weekly", "repeat_key": "1776770673371x402189644290850800", "is_hidden": "no", "order": 1, "uid": "1776770673371x402189644290850800"}, {"color": "#C1E8FB", "date": "Apr 25, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "土", "weekday_index": 5, "slot": "morning", "subject": "算数", "unit_name": "基礎力テスト", "note": NaN, "study_time": 15, "display_type": "weekly", "repeat_key": "1776770724985x527300510406672400", "is_hidden": "no", "order": 1, "uid": "1776770724985x527300510406672400"}, {"color": "#F2B9E4", "date": "Apr 25, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "土", "weekday_index": 5, "slot": "morning", "subject": "国語", "unit_name": "漢字", "note": NaN, "study_time": 15, "display_type": "weekly", "repeat_key": "1776770740995x716400351442108400", "is_hidden": "no", "order": 1, "uid": "1776770740995x716400351442108400"}, {"color": "#D6C3AA", "date": "Apr 25, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "土", "weekday_index": 5, "slot": "am", "subject": "習い事", "unit_name": "サッカー", "note": NaN, "study_time": null, "display_type": "weekly", "repeat_key": "1776770767101x499367492177625100", "is_hidden": "no", "order": 1, "uid": "1776770767101x499367492177625100"}, {"color": "#C1E8FB", "date": "Apr 25, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "土", "weekday_index": 5, "slot": "am", "subject": "算数", "unit_name": "計算マスタ", "note": NaN, "study_time": 20, "display_type": "weekly", "repeat_key": "1776771177475x217265176897388540", "is_hidden": "no", "order": 1, "uid": "1776771177475x217265176897388540"}, {"color": "#C1E8FB", "date": "Apr 26, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "morning", "subject": "算数", "unit_name": "基礎力テスト", "note": NaN, "study_time": 15, "display_type": "weekly", "repeat_key": "1776771269619x944200220748021800", "is_hidden": "no", "order": 1, "uid": "1776771269619x944200220748021800"}, {"color": "#F2B9E4", "date": "Apr 26, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "morning", "subject": "国語", "unit_name": "漢字", "note": NaN, "study_time": 15, "display_type": "weekly", "repeat_key": "1776771286701x289584616769847300", "is_hidden": "no", "order": 1, "uid": "1776771286701x289584616769847300"}, {"color": "#C1E8FB", "date": "Apr 26, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "am", "subject": "算数", "unit_name": "N間違った所", "note": NaN, "study_time": 30, "display_type": "weekly", "repeat_key": "1776771351936x540345359838478340", "is_hidden": "no", "order": 1, "uid": "1776771351936x540345359838478340"}, {"color": "#F9DB82", "date": "Apr 26, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "am", "subject": "社会", "unit_name": "基礎問題", "note": NaN, "study_time": 30, "display_type": "weekly", "repeat_key": "1776771376592x446209087748702200", "is_hidden": "no", "order": 1, "uid": "1776771376592x446209087748702200"}, {"color": "#D6C3AA", "date": "Apr 26, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "pm", "subject": "習い事", "unit_name": "サッカー", "note": NaN, "study_time": null, "display_type": "weekly", "repeat_key": "1776771416740x523506248921120800", "is_hidden": "no", "order": 1, "uid": "1776771416740x523506248921120800"}, {"color": "#C1E8FB", "date": "Apr 26, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "night", "subject": "算数", "unit_name": "計算マスタ", "note": NaN, "study_time": 20, "display_type": "weekly", "repeat_key": "1776771433757x532320600724602900", "is_hidden": "no", "order": 1, "uid": "1776771433757x532320600724602900"}, {"color": "#B6EBB0", "date": "Apr 26, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "night", "subject": "理科", "unit_name": "基礎力テスト", "note": NaN, "study_time": 15, "display_type": "weekly", "repeat_key": "1776771465926x130012450835660800", "is_hidden": "no", "order": 1, "uid": "1776771465926x130012450835660800"}, {"color": "#D3D3D3", "date": "Apr 26, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "night", "subject": "学校の宿題", "unit_name": "学校の宿題", "note": NaN, "study_time": 30, "display_type": "weekly", "repeat_key": "1776771485517x485434623118016500", "is_hidden": "no", "order": 1, "uid": "1776771485517x485434623118016500"}, {"color": "#B6EBB0", "date": "Apr 25, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "土", "weekday_index": 5, "slot": "am", "subject": "理科", "unit_name": "基礎力テスト", "note": NaN, "study_time": 15, "display_type": "weekly", "repeat_key": "1776860112269x722698629023006700", "is_hidden": "no", "order": 1, "uid": "1776860112269x722698629023006700"}, {"color": "#F5F4E4", "date": "Apr 23, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "木", "weekday_index": 3, "slot": "plan", "subject": "予定", "unit_name": "母出社", "note": NaN, "study_time": null, "display_type": "weekly", "repeat_key": "1776862259250x836321091474686000", "is_hidden": "no", "order": 1, "uid": "1776862259250x836321091474686000"}, {"color": "#D3D3D3", "date": "Apr 25, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "土", "weekday_index": 5, "slot": "night", "subject": "学校の宿題", "unit_name": "学校の宿題", "note": NaN, "study_time": 20, "display_type": "weekly", "repeat_key": "1777114971763x897487593790242800", "is_hidden": "no", "order": 1, "uid": "1777114971763x897487593790242800"}, {"color": "#C1E8FB", "date": "Apr 27, 2026 12:00 am", "week_start": "Apr 27, 2026 12:00 am", "weekday": "月", "weekday_index": 0, "slot": "morning", "subject": "算数", "unit_name": "基礎力テスト", "note": NaN, "study_time": 15, "display_type": "weekly", "repeat_key": "1777789464918x796593809805279200", "is_hidden": "no", "order": null, "uid": "1777789464918x796593809805279200"}, {"color": "#C1E8FB", "date": "Apr 29, 2026 12:00 am", "week_start": "Apr 27, 2026 12:00 am", "weekday": "水", "weekday_index": 2, "slot": "morning", "subject": "算数", "unit_name": "基礎力テスト", "note": NaN, "study_time": 15, "display_type": "weekly", "repeat_key": "1777789564328x159327750912213000", "is_hidden": "no", "order": null, "uid": "1777789564328x159327750912213000"}, {"color": "#F2B9E4", "date": "Apr 27, 2026 12:00 am", "week_start": "Apr 27, 2026 12:00 am", "weekday": "月", "weekday_index": 0, "slot": "morning", "subject": "国語", "unit_name": "漢字", "note": NaN, "study_time": 15, "display_type": "weekly", "repeat_key": "1777789584126x214503201291108350", "is_hidden": "no", "order": null, "uid": "1777789584126x214503201291108350"}, {"color": "#F2B9E4", "date": "Apr 28, 2026 12:00 am", "week_start": "Apr 27, 2026 12:00 am", "weekday": "火", "weekday_index": 1, "slot": "morning", "subject": "国語", "unit_name": "漢字", "note": NaN, "study_time": 15, "display_type": "weekly", "repeat_key": "1777789799884x414427650807824400", "is_hidden": "no", "order": null, "uid": "1777789799884x414427650807824400"}, {"color": "#F2B9E4", "date": "Apr 29, 2026 12:00 am", "week_start": "Apr 27, 2026 12:00 am", "weekday": "水", "weekday_index": 2, "slot": "morning", "subject": "国語", "unit_name": "漢字", "note": NaN, "study_time": 15, "display_type": "weekly", "repeat_key": "1777789807010x892024873885106200", "is_hidden": "no", "order": null, "uid": "1777789807010x892024873885106200"}, {"color": "#F9DB82", "date": "May 5, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "火", "weekday_index": 1, "slot": "night", "subject": "社会", "unit_name": "単元音読", "note": NaN, "study_time": 10, "display_type": "weekly", "repeat_key": "1777789921799x231813915176861700", "is_hidden": "no", "order": 1, "uid": "1777789921799x231813915176861700"}, {"color": "#C1E8FB", "date": "May 9, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "土", "weekday_index": 5, "slot": "night", "subject": "算数", "unit_name": "N家庭学習", "note": NaN, "study_time": 30, "display_type": "weekly", "repeat_key": "1777796524275x247347447885201400", "is_hidden": "no", "order": 1, "uid": "1777796524275x247347447885201400"}, {"color": "#F5F4E4", "date": "May 15, 2026 12:00 am", "week_start": "May 11, 2026 12:00 am", "weekday": "金", "weekday_index": 4, "slot": "plan", "subject": "予定", "unit_name": "母出社", "note": NaN, "study_time": null, "display_type": "weekly", "repeat_key": "1778330037789x242965011862913020", "is_hidden": "no", "order": null, "uid": "1778330037789x242965011862913020"}, {"color": "#C1E8FB", "date": "May 31, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "night", "subject": "算数", "unit_name": "計算ルール", "note": NaN, "study_time": 15, "display_type": "weekly", "repeat_key": "1779751115225x601698202322731000", "is_hidden": "no", "order": 1, "uid": "1779751115225x601698202322731000"}];
+const EXCEPTION_DATA = [{"color": "#D6C3AA", "date": "Apr 25, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "土", "weekday_index": 5, "slot": "pm", "subject": "習い事", "unit_name": "サッカー", "note": NaN, "study_time": null, "display_type": "weekly_exception", "repeat_key": "1776770767101x499367492177625100", "is_hidden": "no", "order": 1, "uid": "1776899393289x693446687106007000"}, {"color": "#C1E8FB", "date": "Apr 26, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "pm", "subject": "算数", "unit_name": "N間違った所", "note": NaN, "study_time": 30, "display_type": "weekly_exception", "repeat_key": "1776771351936x540345359838478340", "is_hidden": "no", "order": 1, "uid": "1777106433734x507073148315238400"}, {"color": "#D6C3AA", "date": "May 4, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "月", "weekday_index": 0, "slot": "night", "subject": "習い事", "unit_name": "塾（国･社）", "note": NaN, "study_time": null, "display_type": "weekly_exception", "repeat_key": "1776768575490x927077985719418900", "is_hidden": "yes", "order": 1, "uid": "1777777397120x716557562007519200"}, {"color": "#D6C3AA", "date": "May 6, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "水", "weekday_index": 2, "slot": "night", "subject": "習い事", "unit_name": "塾（算･理）", "note": NaN, "study_time": null, "display_type": "weekly_exception", "repeat_key": "1776770251875x812675015927922700", "is_hidden": "yes", "order": 1, "uid": "1777783948670x146479187492864000"}, {"color": "#F2B9E4", "date": "May 5, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "火", "weekday_index": 1, "slot": "night", "subject": "国語", "unit_name": "意味調べ", "note": NaN, "study_time": 20, "display_type": "weekly_exception", "repeat_key": "1776768188487x176440884950466560", "is_hidden": "yes", "order": 1, "uid": "1777784045360x626357501877813200"}, {"color": "#F2B9E4", "date": "May 5, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "火", "weekday_index": 1, "slot": "night", "subject": "国語", "unit_name": "単元音読", "note": NaN, "study_time": 15, "display_type": "weekly_exception", "repeat_key": "1776768163468x404908686146797600", "is_hidden": "yes", "order": 1, "uid": "1777784048048x711442390899490800"}, {"color": "#F9DB82", "date": "May 6, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "水", "weekday_index": 2, "slot": "night", "subject": "社会", "unit_name": "単元音読", "note": NaN, "study_time": 10, "display_type": "weekly_exception", "repeat_key": "1777789921799x231813915176861700", "is_hidden": "yes", "order": 1, "uid": "1777789979187x230647630947418100"}, {"color": "#C1E8FB", "date": "May 3, 2026 12:00 am", "week_start": "Apr 27, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "am", "subject": "算数", "unit_name": "N間違った所", "note": NaN, "study_time": 30, "display_type": "weekly_exception", "repeat_key": "1776771351936x540345359838478340", "is_hidden": "yes", "order": 1, "uid": "1777790498921x679269979067514900"}, {"color": "#F9DB82", "date": "May 3, 2026 12:00 am", "week_start": "Apr 27, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "am", "subject": "社会", "unit_name": "基礎問題", "note": NaN, "study_time": 30, "display_type": "weekly_exception", "repeat_key": "1776771376592x446209087748702200", "is_hidden": "yes", "order": 1, "uid": "1777790513361x436021154086912000"}, {"color": "#B6EBB0", "date": "May 7, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "木", "weekday_index": 3, "slot": "night", "subject": "理科", "unit_name": "テスト振り返り", "note": NaN, "study_time": 15, "display_type": "weekly_exception", "repeat_key": "1776770472928x114674616500224000", "is_hidden": "yes", "order": 1, "uid": "1777792571058x964535735872651300"}, {"color": "#D3D3D3", "date": "May 5, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "火", "weekday_index": 1, "slot": "pm", "subject": "学校の宿題", "unit_name": "学校の宿題", "note": NaN, "study_time": 20, "display_type": "weekly_exception", "repeat_key": "1776768083887x568311426440757250", "is_hidden": "yes", "order": 1, "uid": "1777792678031x606665741064732700"}, {"color": "#B6EBB0", "date": "May 5, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "火", "weekday_index": 1, "slot": "pm", "subject": "理科", "unit_name": "基本のまとめ", "note": NaN, "study_time": 20, "display_type": "weekly_exception", "repeat_key": "1776767873941x104472930903130110", "is_hidden": "yes", "order": 1, "uid": "1777792685486x514948323184738300"}, {"color": "#B6EBB0", "date": "May 5, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "火", "weekday_index": 1, "slot": "pm", "subject": "理科", "unit_name": "確認問題", "note": NaN, "study_time": 20, "display_type": "weekly_exception", "repeat_key": "1776767848617x212175906302590980", "is_hidden": "yes", "order": 1, "uid": "1777792688216x979474697458810900"}, {"color": "#C1E8FB", "date": "May 6, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "水", "weekday_index": 2, "slot": "pm", "subject": "算数", "unit_name": "T確認テスト", "note": NaN, "study_time": 40, "display_type": "weekly_exception", "repeat_key": "1776770186914x893213617872175100", "is_hidden": "yes", "order": 1, "uid": "1777792705623x309511949090816000"}, {"color": "#B6EBB0", "date": "May 8, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "金", "weekday_index": 4, "slot": "pm", "subject": "理科", "unit_name": "グノチェック", "note": NaN, "study_time": 30, "display_type": "weekly_exception", "repeat_key": "1776770597045x321663870557224960", "is_hidden": "yes", "order": 1, "uid": "1777793081289x840252970604691500"}, {"color": "#D3D3D3", "date": "May 3, 2026 12:00 am", "week_start": "Apr 27, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "night", "subject": "学校の宿題", "unit_name": "学校の宿題", "note": NaN, "study_time": 20, "display_type": "weekly_exception", "repeat_key": "1776771485517x485434623118016500", "is_hidden": "yes", "order": 1, "uid": "1777795669062x972819736415699000"}, {"color": "#C1E8FB", "date": "May 7, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "木", "weekday_index": 3, "slot": "night", "subject": "算数", "unit_name": "Nテキスト", "note": NaN, "study_time": 30, "display_type": "weekly_exception", "repeat_key": "1776770449613x836169057629896700", "is_hidden": "yes", "order": 1, "uid": "1777795732589x251309437243883520"}, {"color": "#C1E8FB", "date": "May 8, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "金", "weekday_index": 4, "slot": "night", "subject": "算数", "unit_name": "Nテキスト", "note": NaN, "study_time": 30, "display_type": "weekly_exception", "repeat_key": "1776770651825x533682335435980800", "is_hidden": "yes", "order": 1, "uid": "1777795807550x315175101425254400"}, {"color": "#C1E8FB", "date": "May 8, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "金", "weekday_index": 4, "slot": "night", "subject": "算数", "unit_name": "N家庭学習", "note": NaN, "study_time": 30, "display_type": "weekly_exception", "repeat_key": "1776770673371x402189644290850800", "is_hidden": "yes", "order": 1, "uid": "1777795819762x669718866777866200"}, {"color": "#C1E8FB", "date": "May 9, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "土", "weekday_index": 5, "slot": "night", "subject": "算数", "unit_name": "N家庭学習", "note": NaN, "study_time": 30, "display_type": "weekly_exception", "repeat_key": "1777796524275x247347447885201400", "is_hidden": "yes", "order": 1, "uid": "1777796602805x844719198301061100"}, {"color": "#F2B9E4", "date": "May 3, 2026 12:00 am", "week_start": "Apr 27, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "pm", "subject": "国語", "unit_name": "漢字", "note": NaN, "study_time": 15, "display_type": "weekly_exception", "repeat_key": "1776771286701x289584616769847300", "is_hidden": "yes", "order": 1, "uid": "1777797109150x382908004023402500"}, {"color": "#C1E8FB", "date": "May 3, 2026 12:00 am", "week_start": "Apr 27, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "pm", "subject": "算数", "unit_name": "基礎力テスト", "note": NaN, "study_time": 15, "display_type": "weekly_exception", "repeat_key": "1776771269619x944200220748021800", "is_hidden": "no", "order": 1, "uid": "1777797111656x718118340922179600"}, {"color": "#C1E8FB", "date": "May 6, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "水", "weekday_index": 2, "slot": "pm", "subject": "算数", "unit_name": "基礎力テスト", "note": NaN, "study_time": 15, "display_type": "weekly_exception", "repeat_key": "1776767807310x438244857080447000", "is_hidden": "no", "order": 1, "uid": "1777968259346x128031320772968450"}, {"color": "#F2B9E4", "date": "May 6, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "水", "weekday_index": 2, "slot": "pm", "subject": "国語", "unit_name": "漢字", "note": NaN, "study_time": 15, "display_type": "weekly_exception", "repeat_key": "1777789799884x414427650807824400", "is_hidden": "no", "order": null, "uid": "1777968262500x217118491150909440"}, {"color": "#F2B9E4", "date": "May 6, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "水", "weekday_index": 2, "slot": "pm", "subject": "国語", "unit_name": "漢字", "note": NaN, "study_time": 15, "display_type": "weekly_exception", "repeat_key": "1777789807010x892024873885106200", "is_hidden": "no", "order": null, "uid": "1778040161930x580591041234600000"}, {"color": "#C1E8FB", "date": "May 6, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "水", "weekday_index": 2, "slot": "pm", "subject": "算数", "unit_name": "基礎力テスト", "note": NaN, "study_time": 15, "display_type": "weekly_exception", "repeat_key": "1777789564328x159327750912213000", "is_hidden": "no", "order": null, "uid": "1778040165158x494351073163870200"}, {"color": "#D6C3AA", "date": "May 7, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "木", "weekday_index": 3, "slot": "pm", "subject": "習い事", "unit_name": "プロタゴ", "note": NaN, "study_time": null, "display_type": "weekly_exception", "repeat_key": "1776770419440x792952607462129700", "is_hidden": "no", "order": 1, "uid": "1778041150605x764040921480429600"}, {"color": "#F104BA", "date": "May 5, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "火", "weekday_index": 1, "slot": "night", "subject": "テスト", "unit_name": "てすと", "note": NaN, "study_time": null, "display_type": "weekly_exception", "repeat_key": "1778064153903x742316192697679900", "is_hidden": "yes", "order": 1, "uid": "1778064161894x786161170812239900"}, {"color": "#F9DB82", "date": "May 8, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "金", "weekday_index": 4, "slot": "pm", "subject": "社会", "unit_name": "用語/基礎力確認", "note": NaN, "study_time": 30, "display_type": "weekly_exception", "repeat_key": "1776770628197x780323518796005400", "is_hidden": "yes", "order": 1, "uid": "1778231576049x501715280641654800"}, {"color": "#D3D3D3", "date": "May 9, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "土", "weekday_index": 5, "slot": "pm", "subject": "学校の宿題", "unit_name": "学校の宿題", "note": NaN, "study_time": 20, "display_type": "weekly_exception", "repeat_key": "1777114971763x897487593790242800", "is_hidden": "no", "order": 1, "uid": "1778242434932x707503307713675300"}, {"color": "#F2B9E4", "date": "May 9, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "土", "weekday_index": 5, "slot": "pm", "subject": "国語", "unit_name": "漢字", "note": NaN, "study_time": 15, "display_type": "weekly_exception", "repeat_key": "1776770740995x716400351442108400", "is_hidden": "no", "order": 1, "uid": "1778278551636x812922520758386700"}, {"color": "#C1E8FB", "date": "May 9, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "土", "weekday_index": 5, "slot": "pm", "subject": "算数", "unit_name": "基礎力テスト", "note": NaN, "study_time": 15, "display_type": "weekly_exception", "repeat_key": "1776770724985x527300510406672400", "is_hidden": "no", "order": 1, "uid": "1778278557046x874316011794071600"}, {"color": "#D6C3AA", "date": "May 10, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "am", "subject": "習い事", "unit_name": "サッカー", "note": NaN, "study_time": null, "display_type": "weekly_exception", "repeat_key": "1776771416740x523506248921120800", "is_hidden": "no", "order": 1, "uid": "1778285496454x161054185910435840"}, {"color": "#F9DB82", "date": "May 10, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "night", "subject": "社会", "unit_name": "基礎問題", "note": NaN, "study_time": 30, "display_type": "weekly_exception", "repeat_key": "1776771376592x446209087748702200", "is_hidden": "no", "order": 1, "uid": "1778285500758x640229155041443800"}, {"color": "#C1E8FB", "date": "May 10, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "pm", "subject": "算数", "unit_name": "N間違った所", "note": NaN, "study_time": 30, "display_type": "weekly_exception", "repeat_key": "1776771351936x540345359838478340", "is_hidden": "yes", "order": 1, "uid": "1778285505007x410478167906582500"}, {"color": "#C1E8FB", "date": "May 9, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "土", "weekday_index": 5, "slot": "pm", "subject": "算数", "unit_name": "計算マスタ", "note": NaN, "study_time": 20, "display_type": "weekly_exception", "repeat_key": "1776771177475x217265176897388540", "is_hidden": "yes", "order": 1, "uid": "1778329808592x100015798681075710"}, {"color": "#C1E8FB", "date": "May 10, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "night", "subject": "算数", "unit_name": "計算マスタ", "note": NaN, "study_time": 20, "display_type": "weekly_exception", "repeat_key": "1776771433757x532320600724602900", "is_hidden": "yes", "order": 1, "uid": "1778329827838x422433814526820350"}, {"color": "#F5F4E4", "date": "May 8, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "金", "weekday_index": 4, "slot": "plan", "subject": "予定", "unit_name": "母出社", "note": NaN, "study_time": null, "display_type": "weekly_exception", "repeat_key": "1778330037789x242965011862913020", "is_hidden": "yes", "order": null, "uid": "1778330053330x967855209848504300"}, {"color": "#D3D3D3", "date": "May 16, 2026 12:00 am", "week_start": "May 11, 2026 12:00 am", "weekday": "土", "weekday_index": 5, "slot": "night", "subject": "学校の宿題", "unit_name": "学校の宿題", "note": NaN, "study_time": 20, "display_type": "weekly_exception", "repeat_key": "1777114971763x897487593790242800", "is_hidden": "yes", "order": 1, "uid": "1778330240140x201440133377163260"}, {"color": "#B6EBB0", "date": "May 16, 2026 12:00 am", "week_start": "May 11, 2026 12:00 am", "weekday": "土", "weekday_index": 5, "slot": "pm", "subject": "理科", "unit_name": "基礎力テスト", "note": NaN, "study_time": 15, "display_type": "weekly_exception", "repeat_key": "1776860112269x722698629023006700", "is_hidden": "no", "order": 1, "uid": "1778330246050x981669637073666000"}, {"color": "#C1E8FB", "date": "May 16, 2026 12:00 am", "week_start": "May 11, 2026 12:00 am", "weekday": "土", "weekday_index": 5, "slot": "pm", "subject": "算数", "unit_name": "計算マスタ", "note": NaN, "study_time": 20, "display_type": "weekly_exception", "repeat_key": "1776771177475x217265176897388540", "is_hidden": "no", "order": 1, "uid": "1778330249514x197217370761068540"}, {"color": "#B6EBB0", "date": "May 10, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "night", "subject": "理科", "unit_name": "基礎力テスト", "note": NaN, "study_time": 15, "display_type": "weekly_exception", "repeat_key": "1776771465926x130012450835660800", "is_hidden": "yes", "order": 1, "uid": "1778408309351x945190331271872500"}, {"color": "#F2B9E4", "date": "May 10, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "night", "subject": "国語", "unit_name": "漢字", "note": NaN, "study_time": 15, "display_type": "weekly_exception", "repeat_key": "1776771286701x289584616769847300", "is_hidden": "no", "order": 1, "uid": "1778408334614x764532600952848400"}, {"color": "#C1E8FB", "date": "May 10, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "night", "subject": "算数", "unit_name": "基礎力テスト", "note": NaN, "study_time": 15, "display_type": "weekly_exception", "repeat_key": "1776771269619x944200220748021800", "is_hidden": "no", "order": 1, "uid": "1778408338865x363064202553983000"}, {"color": "#D3D3D3", "date": "May 11, 2026 12:00 am", "week_start": "May 11, 2026 12:00 am", "weekday": "月", "weekday_index": 0, "slot": "night", "subject": "学校の宿題", "unit_name": "学校の宿題", "note": NaN, "study_time": 15, "display_type": "weekly_exception", "repeat_key": "1776768686894x154686899321569280", "is_hidden": "yes", "order": 1, "uid": "1778507062402x687190617122930700"}, {"color": "#D3D3D3", "date": "May 12, 2026 12:00 am", "week_start": "May 11, 2026 12:00 am", "weekday": "火", "weekday_index": 1, "slot": "pm", "subject": "学校の宿題", "unit_name": "学校の宿題", "note": NaN, "study_time": 20, "display_type": "weekly_exception", "repeat_key": "1776768083887x568311426440757250", "is_hidden": "yes", "order": 1, "uid": "1778587453092x269219302049316860"}, {"color": "#D3D3D3", "date": "May 13, 2026 12:00 am", "week_start": "May 11, 2026 12:00 am", "weekday": "水", "weekday_index": 2, "slot": "pm", "subject": "学校の宿題", "unit_name": "学校の宿題", "note": NaN, "study_time": 20, "display_type": "weekly_exception", "repeat_key": "1776770213469x588979432130871300", "is_hidden": "yes", "order": 1, "uid": "1778655544181x543190931136839700"}, {"color": "#F5F4E4", "date": "May 14, 2026 12:00 am", "week_start": "May 11, 2026 12:00 am", "weekday": "木", "weekday_index": 3, "slot": "plan", "subject": "予定", "unit_name": "母出社", "note": NaN, "study_time": null, "display_type": "weekly_exception", "repeat_key": "1776862259250x836321091474686000", "is_hidden": "yes", "order": 1, "uid": "1778714216216x196168300806012930"}, {"color": "#F5F4E4", "date": "May 15, 2026 12:00 am", "week_start": "May 11, 2026 12:00 am", "weekday": "金", "weekday_index": 4, "slot": "plan", "subject": "予定", "unit_name": "母出社", "note": NaN, "study_time": null, "display_type": "weekly_exception", "repeat_key": "1778330037789x242965011862913020", "is_hidden": "yes", "order": null, "uid": "1778714220695x845313783528947700"}, {"color": "#D3D3D3", "date": "May 17, 2026 12:00 am", "week_start": "May 11, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "night", "subject": "学校の宿題", "unit_name": "学校の宿題", "note": NaN, "study_time": 20, "display_type": "weekly_exception", "repeat_key": "1776771485517x485434623118016500", "is_hidden": "yes", "order": 1, "uid": "1778939206717x149160890626736130"}, {"color": "#F5F4E4", "date": "May 21, 2026 12:00 am", "week_start": "May 18, 2026 12:00 am", "weekday": "木", "weekday_index": 3, "slot": "plan", "subject": "予定", "unit_name": "母出社", "note": NaN, "study_time": null, "display_type": "weekly_exception", "repeat_key": "1776862259250x836321091474686000", "is_hidden": "yes", "order": 1, "uid": "1779021722905x438081262234894340"}, {"color": "#F5F4E4", "date": "May 22, 2026 12:00 am", "week_start": "May 18, 2026 12:00 am", "weekday": "金", "weekday_index": 4, "slot": "plan", "subject": "予定", "unit_name": "母出社", "note": NaN, "study_time": null, "display_type": "weekly_exception", "repeat_key": "1778330037789x242965011862913020", "is_hidden": "yes", "order": null, "uid": "1779021726889x429966078601330700"}, {"color": "#B6EBB0", "date": "May 24, 2026 12:00 am", "week_start": "May 18, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "am", "subject": "理科", "unit_name": "基礎力テスト", "note": NaN, "study_time": 15, "display_type": "weekly_exception", "repeat_key": "1776771465926x130012450835660800", "is_hidden": "no", "order": 1, "uid": "1779021926925x415960420329193500"}, {"color": "#B6EBB0", "date": "May 21, 2026 12:00 am", "week_start": "May 18, 2026 12:00 am", "weekday": "木", "weekday_index": 3, "slot": "night", "subject": "理科", "unit_name": "基礎力テスト", "note": NaN, "study_time": 15, "display_type": "weekly_exception", "repeat_key": "1776770495930x708581841391321100", "is_hidden": "yes", "order": 1, "uid": "1779365916051x134967325483597820"}, {"color": "#D3D3D3", "date": "May 18, 2026 12:00 am", "week_start": "May 18, 2026 12:00 am", "weekday": "月", "weekday_index": 0, "slot": "night", "subject": "学校の宿題", "unit_name": "学校の宿題", "note": NaN, "study_time": 15, "display_type": "weekly_exception", "repeat_key": "1776768686894x154686899321569280", "is_hidden": "yes", "order": 1, "uid": "1779366003505x929458635962843100"}, {"color": "#D3D3D3", "date": "May 19, 2026 12:00 am", "week_start": "May 18, 2026 12:00 am", "weekday": "火", "weekday_index": 1, "slot": "pm", "subject": "学校の宿題", "unit_name": "学校の宿題", "note": NaN, "study_time": 20, "display_type": "weekly_exception", "repeat_key": "1776768083887x568311426440757250", "is_hidden": "yes", "order": 1, "uid": "1779366008697x543003660223250400"}, {"color": "#C1E8FB", "date": "May 20, 2026 12:00 am", "week_start": "May 18, 2026 12:00 am", "weekday": "水", "weekday_index": 2, "slot": "pm", "subject": "算数", "unit_name": "T確認テスト", "note": NaN, "study_time": 28, "display_type": "weekly_exception", "repeat_key": "1776770186914x893213617872175100", "is_hidden": "yes", "order": 1, "uid": "1779366114030x716642907782905900"}, {"color": "#D3D3D3", "date": "May 23, 2026 12:00 am", "week_start": "May 18, 2026 12:00 am", "weekday": "土", "weekday_index": 5, "slot": "night", "subject": "学校の宿題", "unit_name": "学校の宿題", "note": NaN, "study_time": 20, "display_type": "weekly_exception", "repeat_key": "1777114971763x897487593790242800", "is_hidden": "yes", "order": 1, "uid": "1779625371072x362187635003752450"}, {"color": "#D6C3AA", "date": "May 30, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "土", "weekday_index": 5, "slot": "am", "subject": "習い事", "unit_name": "サッカー", "note": NaN, "study_time": null, "display_type": "weekly_exception", "repeat_key": "1776770767101x499367492177625100", "is_hidden": "yes", "order": 1, "uid": "1779626129946x214415017267953660"}, {"color": "#D3D3D3", "date": "May 30, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "土", "weekday_index": 5, "slot": "night", "subject": "学校の宿題", "unit_name": "学校の宿題", "note": NaN, "study_time": 20, "display_type": "weekly_exception", "repeat_key": "1777114971763x897487593790242800", "is_hidden": "yes", "order": 1, "uid": "1779626136437x554045717930049540"}, {"color": "#B6EBB0", "date": "May 30, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "土", "weekday_index": 5, "slot": "night", "subject": "理科", "unit_name": "基礎力テスト", "note": NaN, "study_time": 15, "display_type": "weekly_exception", "repeat_key": "1776860112269x722698629023006700", "is_hidden": "yes", "order": 1, "uid": "1779626140598x444424536775720960"}, {"color": "#C1E8FB", "date": "May 30, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "土", "weekday_index": 5, "slot": "night", "subject": "算数", "unit_name": "計算マスタ", "note": NaN, "study_time": 20, "display_type": "weekly_exception", "repeat_key": "1776771177475x217265176897388540", "is_hidden": "yes", "order": 1, "uid": "1779626144103x648791512310874100"}, {"color": "#F9DB82", "date": "May 26, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "火", "weekday_index": 1, "slot": "night", "subject": "社会", "unit_name": "単元音読", "note": NaN, "study_time": 10, "display_type": "weekly_exception", "repeat_key": "1777789921799x231813915176861700", "is_hidden": "yes", "order": 1, "uid": "1779749245677x960742209458798600"}, {"color": "#F2B9E4", "date": "May 26, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "火", "weekday_index": 1, "slot": "night", "subject": "国語", "unit_name": "単元音読", "note": NaN, "study_time": 15, "display_type": "weekly_exception", "repeat_key": "1776768163468x404908686146797600", "is_hidden": "yes", "order": 1, "uid": "1779749326844x231117701385027600"}, {"color": "#F2B9E4", "date": "May 26, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "火", "weekday_index": 1, "slot": "night", "subject": "国語", "unit_name": "意味調べ", "note": NaN, "study_time": 20, "display_type": "weekly_exception", "repeat_key": "1776768188487x176440884950466560", "is_hidden": "yes", "order": 1, "uid": "1779749331622x536303797446115300"}, {"color": "#F9DB82", "date": "May 29, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "金", "weekday_index": 4, "slot": "pm", "subject": "社会", "unit_name": "用語/基礎力確認", "note": NaN, "study_time": 30, "display_type": "weekly_exception", "repeat_key": "1776770628197x780323518796005400", "is_hidden": "yes", "order": 1, "uid": "1779749469310x671289438176804900"}, {"color": "#B6EBB0", "date": "May 28, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "木", "weekday_index": 3, "slot": "night", "subject": "理科", "unit_name": "基礎力テスト", "note": NaN, "study_time": 15, "display_type": "weekly_exception", "repeat_key": "1776770495930x708581841391321100", "is_hidden": "yes", "order": 1, "uid": "1779749584788x783407927639932900"}, {"color": "#B6EBB0", "date": "May 28, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "木", "weekday_index": 3, "slot": "night", "subject": "理科", "unit_name": "テスト振り返り", "note": NaN, "study_time": 15, "display_type": "weekly_exception", "repeat_key": "1776770472928x114674616500224000", "is_hidden": "yes", "order": 1, "uid": "1779749587778x790311751168294900"}, {"color": "#C1E8FB", "date": "May 29, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "金", "weekday_index": 4, "slot": "night", "subject": "算数", "unit_name": "N家庭学習", "note": NaN, "study_time": 30, "display_type": "weekly_exception", "repeat_key": "1776770673371x402189644290850800", "is_hidden": "yes", "order": 1, "uid": "1779749641459x636696027472330800"}, {"color": "#C1E8FB", "date": "May 29, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "金", "weekday_index": 4, "slot": "night", "subject": "算数", "unit_name": "Nテキスト", "note": NaN, "study_time": 30, "display_type": "weekly_exception", "repeat_key": "1776770651825x533682335435980800", "is_hidden": "yes", "order": 1, "uid": "1779749644717x397637759615107100"}, {"color": "#C1E8FB", "date": "May 30, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "土", "weekday_index": 5, "slot": "night", "subject": "算数", "unit_name": "N家庭学習", "note": NaN, "study_time": 30, "display_type": "weekly_exception", "repeat_key": "1777796524275x247347447885201400", "is_hidden": "yes", "order": 1, "uid": "1779749861172x977359991967055900"}, {"color": "#F9DB82", "date": "May 31, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "am", "subject": "社会", "unit_name": "基礎問題", "note": NaN, "study_time": 30, "display_type": "weekly_exception", "repeat_key": "1776771376592x446209087748702200", "is_hidden": "yes", "order": 1, "uid": "1779749931777x683523748061249500"}, {"color": "#B6EBB0", "date": "May 31, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "night", "subject": "理科", "unit_name": "基礎力テスト", "note": NaN, "study_time": 15, "display_type": "weekly_exception", "repeat_key": "1776771465926x130012450835660800", "is_hidden": "yes", "order": 1, "uid": "1779751048463x781602243648946200"}, {"color": "#F2B9E4", "date": "May 27, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "水", "weekday_index": 2, "slot": "morning", "subject": "国語", "unit_name": "漢字", "note": NaN, "study_time": 15, "display_type": "weekly_exception", "repeat_key": "1777789807010x892024873885106200", "is_hidden": "yes", "order": null, "uid": "1779751188663x526248372196081660"}, {"color": "#F2B9E4", "date": "May 28, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "木", "weekday_index": 3, "slot": "morning", "subject": "国語", "unit_name": "漢字", "note": NaN, "study_time": 15, "display_type": "weekly_exception", "repeat_key": "1776770317711x319270146472149000", "is_hidden": "yes", "order": 1, "uid": "1779751191891x383347925909241860"}, {"color": "#F2B9E4", "date": "May 29, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "金", "weekday_index": 4, "slot": "morning", "subject": "国語", "unit_name": "漢字", "note": NaN, "study_time": 15, "display_type": "weekly_exception", "repeat_key": "1776770552648x111530228134445060", "is_hidden": "yes", "order": 1, "uid": "1779751194298x431339861741666300"}, {"color": "#F2B9E4", "date": "May 30, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "土", "weekday_index": 5, "slot": "morning", "subject": "国語", "unit_name": "漢字", "note": NaN, "study_time": 15, "display_type": "weekly_exception", "repeat_key": "1776770740995x716400351442108400", "is_hidden": "yes", "order": 1, "uid": "1779751196699x880438976948207600"}, {"color": "#F2B9E4", "date": "May 31, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "morning", "subject": "国語", "unit_name": "漢字", "note": NaN, "study_time": 15, "display_type": "weekly_exception", "repeat_key": "1776771286701x289584616769847300", "is_hidden": "yes", "order": 1, "uid": "1779751199150x274422600255406080"}, {"color": "#D3D3D3", "date": "May 31, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "night", "subject": "学校の宿題", "unit_name": "学校の宿題", "note": NaN, "study_time": 30, "display_type": "weekly_exception", "repeat_key": "1776771485517x485434623118016500", "is_hidden": "yes", "order": 1, "uid": "1780143141730x993477844560773100"}, {"color": "#C1E8FB", "date": "May 31, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "am", "subject": "算数", "unit_name": "N間違った所", "note": NaN, "study_time": 30, "display_type": "weekly_exception", "repeat_key": "1776771351936x540345359838478340", "is_hidden": "yes", "order": 1, "uid": "1780186039709x917424444543598600"}, {"color": "#C1E8FB", "date": "May 31, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "am", "subject": "算数", "unit_name": "計算マスタ", "note": NaN, "study_time": 20, "display_type": "weekly_exception", "repeat_key": "1776771433757x532320600724602900", "is_hidden": "no", "order": 1, "uid": "1780186072087x977616533881356300"}, {"color": "#D6C3AA", "date": "Jun 1, 2026 12:00 am", "week_start": "Jun 1, 2026 12:00 am", "weekday": "月", "weekday_index": 0, "slot": "night", "subject": "習い事", "unit_name": "塾（国･社）", "note": NaN, "study_time": null, "display_type": "weekly_exception", "repeat_key": "1776768575490x927077985719418900", "is_hidden": "yes", "order": 1, "uid": "1780393351399x604021407052988400"}];
+const OVERRIDE_DATA = [{"color": "#AB0000", "date": "Apr 29, 2026 12:00 am", "week_start": "Apr 27, 2026 12:00 am", "weekday": "水", "weekday_index": 2, "slot": "plan", "subject": "祝日", "unit_name": "祝日", "note": NaN, "study_time": null, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": 1, "uid": "1776899371099x339700481763573760"}, {"color": "#F5F4E4", "date": "May 3, 2026 12:00 am", "week_start": "Apr 27, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "plan", "subject": "予定", "unit_name": "GW講習", "note": NaN, "study_time": null, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": 1, "uid": "1776946961928x601933358652457000"}, {"color": "#F5F4E4", "date": "May 1, 2026 12:00 am", "week_start": "Apr 26, 2026 12:00 am", "weekday": "木", "weekday_index": 4, "slot": "plan", "subject": "予定", "unit_name": "母出社", "note": NaN, "study_time": null, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": null, "uid": "1777035329119x105036144464363520"}, {"color": "#D6C3AA", "date": "Apr 26, 2026 12:00 am", "week_start": "Apr 20, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "am", "subject": "習い事", "unit_name": "サッカー", "note": NaN, "study_time": null, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": null, "uid": "1777107854309x994898045109010400"}, {"color": "#F5F4E4", "date": "May 8, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "金", "weekday_index": 4, "slot": "plan", "subject": "予定", "unit_name": "母出社", "note": NaN, "study_time": null, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": null, "uid": "1777108168458x314301304230903800"}, {"color": "#F104BA", "date": "Apr 13, 2026 12:00 am", "week_start": "Apr 13, 2026 12:00 am", "weekday": "月", "weekday_index": 0, "slot": "plan", "subject": "テスト", "unit_name": "グノレブ", "note": NaN, "study_time": null, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": 1, "uid": "1777108206875x541081486180483100"}, {"color": "#F104BA", "date": "Jun 1, 2026 12:00 am", "week_start": "Jun 1, 2026 12:00 am", "weekday": "月", "weekday_index": 0, "slot": "plan", "subject": "テスト", "unit_name": "グノレブ", "note": "No7−11、基礎力4月号", "study_time": null, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": 1, "uid": "1777108262089x401959274282745860"}, {"color": "#F5F4E4", "date": "May 4, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "月", "weekday_index": 0, "slot": "plan", "subject": "予定", "unit_name": "GW講習", "note": NaN, "study_time": null, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": 1, "uid": "1777108749885x916351981714669600"}, {"color": "#F5F4E4", "date": "May 5, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "火", "weekday_index": 1, "slot": "plan", "subject": "予定", "unit_name": "GW講習", "note": NaN, "study_time": null, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": null, "uid": "1777112292000x142088063033016320"}, {"color": "#AB0000", "date": "May 4, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "月", "weekday_index": 0, "slot": "plan", "subject": "祝日", "unit_name": "祝日", "note": NaN, "study_time": null, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": null, "uid": "1777112316774x830098598920192000"}, {"color": "#AB0000", "date": "May 5, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "火", "weekday_index": 1, "slot": "plan", "subject": "祝日", "unit_name": "祝日", "note": NaN, "study_time": null, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": null, "uid": "1777112461924x272494355947978750"}, {"color": "#AB0000", "date": "May 6, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "水", "weekday_index": 2, "slot": "plan", "subject": "祝日", "unit_name": "祝日", "note": NaN, "study_time": null, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": null, "uid": "1777112477847x771052073060401200"}, {"color": "#D6C3AA", "date": "May 3, 2026 12:00 am", "week_start": "Apr 27, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "am", "subject": "習い事", "unit_name": "GW講習", "note": NaN, "study_time": null, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": 1, "uid": "1777721802151x672678007412097000"}, {"color": "#D6C3AA", "date": "May 4, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "月", "weekday_index": 0, "slot": "am", "subject": "習い事", "unit_name": "GW講習", "note": NaN, "study_time": null, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": null, "uid": "1777721840323x853299328850329600"}, {"color": "#D6C3AA", "date": "May 5, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "火", "weekday_index": 1, "slot": "am", "subject": "習い事", "unit_name": "GW講習", "note": NaN, "study_time": null, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": null, "uid": "1777721851072x766884992746782700"}, {"color": "#C1E8FB", "date": "May 4, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "月", "weekday_index": 0, "slot": "night", "subject": "算数", "unit_name": "速さの復習", "note": NaN, "study_time": 30, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": 1, "uid": "1777790602172x807884243448627200"}, {"color": "#D6C3AA", "date": "May 4, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "月", "weekday_index": 0, "slot": "pm", "subject": "習い事", "unit_name": "サッカー", "note": NaN, "study_time": null, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": null, "uid": "1777790636920x128584660982956030"}, {"color": "#F5F4E4", "date": "May 5, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "火", "weekday_index": 1, "slot": "pm", "subject": "予定", "unit_name": "食事", "note": NaN, "study_time": null, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": 1, "uid": "1777792461872x956166329469239300"}, {"color": "#D6C3AA", "date": "May 6, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "水", "weekday_index": 2, "slot": "am", "subject": "習い事", "unit_name": "サッカー", "note": NaN, "study_time": null, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": null, "uid": "1777792496373x358233710357643260"}, {"color": "#C1E8FB", "date": "May 6, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "水", "weekday_index": 2, "slot": "night", "subject": "算数", "unit_name": "速さの復習", "note": NaN, "study_time": 30, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": null, "uid": "1777792716720x817840234113007600"}, {"color": "#C1E8FB", "date": "May 3, 2026 12:00 am", "week_start": "Apr 27, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "night", "subject": "算数", "unit_name": "GW間違った所", "note": NaN, "study_time": 30, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": 1, "uid": "1777792792405x447315243103682600"}, {"color": "#C1E8FB", "date": "May 7, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "木", "weekday_index": 3, "slot": "night", "subject": "算数", "unit_name": "GW間違った所", "note": NaN, "study_time": 30, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": null, "uid": "1777792831804x868089041371791400"}, {"color": "#C1E8FB", "date": "May 6, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "水", "weekday_index": 2, "slot": "night", "subject": "算数", "unit_name": "GW間違った所", "note": NaN, "study_time": 30, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": null, "uid": "1777792842455x241317150353522700"}, {"color": "#B6EBB0", "date": "May 8, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "金", "weekday_index": 4, "slot": "pm", "subject": "理科", "unit_name": "基礎力テスト", "note": NaN, "study_time": 15, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": null, "uid": "1777793094405x210596006912589820"}, {"color": "#C1E8FB", "date": "May 8, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "金", "weekday_index": 4, "slot": "night", "subject": "算数", "unit_name": "速さの復習", "note": NaN, "study_time": 30, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": null, "uid": "1777795839794x409624528544071700"}, {"color": "#C1E8FB", "date": "May 8, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "金", "weekday_index": 4, "slot": "night", "subject": "算数", "unit_name": "基礎力4月復習", "note": NaN, "study_time": 30, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": 1, "uid": "1777795999063x268704896763035650"}, {"color": "#C1E8FB", "date": "May 9, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "土", "weekday_index": 5, "slot": "night", "subject": "算数", "unit_name": "速さの復習", "note": NaN, "study_time": 30, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": null, "uid": "1777796620483x199162690453635070"}, {"color": "#F5F4E4", "date": "May 9, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "土", "weekday_index": 5, "slot": "plan", "subject": "予定", "unit_name": "カラオケ無料", "note": NaN, "study_time": null, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": 1, "uid": "1777796787538x537216132146528260"}, {"color": "#C1E8FB", "date": "May 9, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "土", "weekday_index": 5, "slot": "night", "subject": "算数", "unit_name": "基礎力4月復習", "note": NaN, "study_time": 30, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": null, "uid": "1778242308504x581781819290288100"}, {"color": "#C1E8FB", "date": "May 10, 2026 12:00 am", "week_start": "May 4, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "night", "subject": "算数", "unit_name": "計算ルール", "note": "見開き4ページ位でレッスンページ", "study_time": 15, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": 1, "uid": "1778329866491x550414881747632100"}, {"color": "#F5F4E4", "date": "May 16, 2026 12:00 am", "week_start": "May 11, 2026 12:00 am", "weekday": "土", "weekday_index": 5, "slot": "plan", "subject": "予定", "unit_name": "駒東体育祭", "note": NaN, "study_time": null, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": 1, "uid": "1778330148857x719964722188517400"}, {"color": "#F5F4E4", "date": "May 17, 2026 12:00 am", "week_start": "May 11, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "plan", "subject": "予定", "unit_name": "サモエドカフェ", "note": NaN, "study_time": null, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": 1, "uid": "1778330191097x415319192156766200"}, {"color": "#C1E8FB", "date": "May 16, 2026 12:00 am", "week_start": "May 11, 2026 12:00 am", "weekday": "土", "weekday_index": 5, "slot": "am", "subject": "算数", "unit_name": "計算ルール", "note": "見開き4ページ位でレッスンページ", "study_time": 10, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": null, "uid": "1778417252927x242800853242085380"}, {"color": "#C1E8FB", "date": "May 17, 2026 12:00 am", "week_start": "May 11, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "night", "subject": "算数", "unit_name": "計算ルール", "note": "見開き4ページ位でレッスンページ", "study_time": 15, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": null, "uid": "1778417320872x854488443071758300"}, {"color": "#C1E8FB", "date": "May 24, 2026 12:00 am", "week_start": "May 18, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "night", "subject": "算数", "unit_name": "計算ルール", "note": "見開き4ページ位でレッスンページ", "study_time": 20, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": null, "uid": "1779022186445x695936495125790700"}, {"color": "#C1E8FB", "date": "May 24, 2026 12:00 am", "week_start": "May 18, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "am", "subject": "算数", "unit_name": "N家庭学習", "note": NaN, "study_time": 30, "display_type": "one_time", "repeat_key": "1779537112629x470763387750711300", "is_hidden": "no", "order": null, "uid": "1779537112629x470763387750711300"}, {"color": "#F5F4E4", "date": "May 30, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "土", "weekday_index": 5, "slot": "plan", "subject": "予定", "unit_name": "運動会", "note": NaN, "study_time": null, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": 1, "uid": "1779626108312x194194242981593100"}, {"color": "#F9DB82", "date": "May 26, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "火", "weekday_index": 1, "slot": "night", "subject": "社会", "unit_name": "復習７−8", "note": "７−8", "study_time": 30, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": 1, "uid": "1779749292544x620613468582051800"}, {"color": "#F2B9E4", "date": "May 26, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "火", "weekday_index": 1, "slot": "night", "subject": "国語", "unit_name": "言葉 ７−8", "note": NaN, "study_time": 30, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": 1, "uid": "1779749372157x681245801758588900"}, {"color": "#F9DB82", "date": "May 29, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "金", "weekday_index": 4, "slot": "pm", "subject": "社会", "unit_name": "復習9−10", "note": NaN, "study_time": 30, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": 1, "uid": "1779749563663x902327703359979500"}, {"color": "#C1E8FB", "date": "May 29, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "金", "weekday_index": 4, "slot": "night", "subject": "算数", "unit_name": "復習", "note": NaN, "study_time": 40, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": 1, "uid": "1779749736036x508747438136492000"}, {"color": "#B6EBB0", "date": "May 29, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "金", "weekday_index": 4, "slot": "night", "subject": "理科", "unit_name": "復習", "note": NaN, "study_time": 30, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": 1, "uid": "1779749816212x105056676277387260"}, {"color": "#C1E8FB", "date": "May 30, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "土", "weekday_index": 5, "slot": "night", "subject": "算数", "unit_name": "復習", "note": NaN, "study_time": 40, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": null, "uid": "1779749884700x244415680015499260"}, {"color": "#C1E8FB", "date": "May 30, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "土", "weekday_index": 5, "slot": "night", "subject": "算数", "unit_name": "基礎力復習", "note": NaN, "study_time": 20, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": null, "uid": "1779749905849x368401810025873400"}, {"color": "#B6EBB0", "date": "May 31, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "am", "subject": "理科", "unit_name": "復習", "note": NaN, "study_time": 30, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": null, "uid": "1779750300533x879205271706796000"}, {"color": "#C1E8FB", "date": "May 31, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "am", "subject": "算数", "unit_name": "復習", "note": NaN, "study_time": 30, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": 1, "uid": "1779750495647x558255263964987400"}, {"color": "#C1E8FB", "date": "May 31, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "night", "subject": "算数", "unit_name": "復習", "note": NaN, "study_time": 30, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": null, "uid": "1779751074336x503774216356364300"}, {"color": "#F2B9E4", "date": "May 27, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "水", "weekday_index": 2, "slot": "morning", "subject": "国語", "unit_name": "漢字7 間違い復習", "note": "基礎応用 どちらも間違い箇所のみ", "study_time": 15, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": 1, "uid": "1779751246177x535571073172504600"}, {"color": "#F2B9E4", "date": "May 28, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "木", "weekday_index": 3, "slot": "morning", "subject": "国語", "unit_name": "漢字8 間違い復習", "note": "基礎応用 どちらも間違い箇所のみ", "study_time": 15, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": null, "uid": "1779751351682x575045406473060350"}, {"color": "#F2B9E4", "date": "May 29, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "金", "weekday_index": 4, "slot": "morning", "subject": "国語", "unit_name": "漢字9 間違い復習", "note": "基礎応用 どちらも間違い箇所のみ", "study_time": 15, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": null, "uid": "1779751378314x937637824451838000"}, {"color": "#F2B9E4", "date": "May 30, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "土", "weekday_index": 5, "slot": "morning", "subject": "国語", "unit_name": "漢字10間違い復習", "note": "基礎応用 どちらも間違い箇所のみ", "study_time": 15, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": null, "uid": "1779751401476x277170799892234240"}, {"color": "#F2B9E4", "date": "May 31, 2026 12:00 am", "week_start": "May 25, 2026 12:00 am", "weekday": "日", "weekday_index": 6, "slot": "morning", "subject": "国語", "unit_name": "漢字11間違い復習", "note": "基礎応用 どちらも間違い箇所のみ", "study_time": 15, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": null, "uid": "1779751458191x119217672649703420"}, {"color": "#F9DB82", "date": "Jun 1, 2026 12:00 am", "week_start": "Jun 1, 2026 12:00 am", "weekday": "月", "weekday_index": 0, "slot": "pm", "subject": "社会", "unit_name": "復習", "note": "歴史漢字かく", "study_time": 30, "display_type": "one_time", "repeat_key": NaN, "is_hidden": "no", "order": 1, "uid": "1780358483809x514374585099485200"}, {"color": "#C1E8FB", "date": "Jun 6, 2026 12:00 am", "week_start": "Jun 1, 2026 12:00 am", "weekday": "土", "weekday_index": 5, "slot": "night", "subject": "算数", "unit_name": "計算ルール", "note": NaN, "study_time": 15, "display_type": "one_time", "repeat_key": "1780393553046x682325098318266400", "is_hidden": "no", "order": null, "uid": "1780393553046x682325098318266400"}];
+
+// ===== State =====
+let currentMonday = getMonday(new Date());
+let localOverrides = JSON.parse(localStorage.getItem('schedule_overrides') || '{}');
+// {weekKey: {added:[...], hidden:{uid:true}}}
+let dragInfo = null;
+let editUID = null;
+let nextUID = Date.now();
+
+// ===== Utils =====
+function getMonday(d) {
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  const m = new Date(d); m.setDate(diff); m.setHours(0,0,0,0); return m;
+}
+function dateKey(d) { return d.toISOString().slice(0,10); }
+function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate()+n); return r; }
+function parseDate(s) { return s ? new Date(s) : null; }
+function sameDateStr(a, b) {
+  if (!a || !b) return false;
+  const da = new Date(a), db = new Date(b);
+  return da.getFullYear()===db.getFullYear() && da.getMonth()===db.getMonth() && da.getDate()===db.getDate();
+}
+function getWeekDates() {
+  return Array.from({length:7}, (_,i) => addDays(currentMonday, i));
+}
+function saveLocal() { localStorage.setItem('schedule_overrides', JSON.stringify(localOverrides)); }
+function getWeekKey() { return dateKey(currentMonday); }
+
+// ===== Compute tasks for current week =====
+function getTasksForWeek() {
+  const dates = getWeekDates();
+  const wk = getWeekKey();
+  const local = localOverrides[wk] || {added:[], hidden:{}};
+
+  // 曜日→日付マップ
+  const dayToDate = {};
+  dates.forEach((d,i) => dayToDate[i] = d);
+
+  // 1. weeklyベース
+  const hiddenByRepeatKey = {}; // {repeatKey_dayIdx: true}
+  // weekly_exceptionの処理（データから）
+  const allExceptions = [...EXCEPTION_DATA];
+  allExceptions.forEach(e => {
+    const eDate = new Date(e.date);
+    const dayIdx = dates.findIndex(d => sameDateStr(d, eDate));
+    if (dayIdx < 0) return;
+    if (e.is_hidden === 'yes' && e.repeat_key) {
+      hiddenByRepeatKey[e.repeat_key + '_' + dayIdx] = true;
+    }
+  });
+
+  // ローカルhidden
+  const allHidden = {...local.hidden};
+
+  // weeklyタスクをこの週の各曜日に展開
+  const result = []; // {task, dayIdx, slotIdx}
+  RAW_DATA.forEach(t => {
+    if (t.display_type !== 'weekly') return;
+    const wi = t.weekday_index;
+    const key = (t.repeat_key || t.uid) + '_' + wi;
+    if (hiddenByRepeatKey[key]) return;
+    if (allHidden[t.uid + '_' + wi]) return;
+    result.push({...t, _dayIdx: wi, _slotIdx: SLOT_IDX[t.slot] ?? 0});
+  });
+
+  // 2. weekly_exception（is_hidden=no → 表示追加）
+  allExceptions.forEach(e => {
+    if (e.is_hidden !== 'no') return;
+    const eDate = new Date(e.date);
+    const dayIdx = dates.findIndex(d => sameDateStr(d, eDate));
+    if (dayIdx < 0) return;
+    result.push({...e, _dayIdx: dayIdx, _slotIdx: SLOT_IDX[e.slot] ?? 0});
+  });
+
+  // 3. one_time（この週の日付のもの）
+  OVERRIDE_DATA.forEach(t => {
+    if (t.is_hidden !== 'no') return;
+    const tDate = new Date(t.date);
+    const dayIdx = dates.findIndex(d => sameDateStr(d, tDate));
+    if (dayIdx < 0) return;
+    if (allHidden[t.uid]) return;
+    result.push({...t, _dayIdx: dayIdx, _slotIdx: SLOT_IDX[t.slot] ?? 0});
+  });
+
+  // 4. ローカル追加
+  (local.added || []).forEach(t => {
+    result.push({...t, _dayIdx: t._dayIdx, _slotIdx: SLOT_IDX[t.slot] ?? 0});
+  });
+
+  return result;
+}
+
+// ===== Render =====
+function render() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const dates = getWeekDates();
+
+  // ヘッダー
+  for (let i = 0; i < 7; i++) {
+    const cell = document.getElementById('hd'+i);
+    const d = dates[i];
+    const m = d.getMonth()+1, da = d.getDate();
+    cell.textContent = m+'/'+da+'('+DAYS_JP[i]+')';
+    const isToday = d.getTime() === today.getTime();
+    cell.className = 'cal-hcell' + (isToday ? ' today' : '');
+  }
+
+  // セルクリア
+  for (let d = 0; d < 7; d++) for (let s = 0; s < 5; s++) {
+    const cell = document.getElementById('c'+d+'-'+s);
+    cell.innerHTML = '';
+    cell.onclick = (e) => { if(e.target===cell) openAdd(d, s); };
+    cell.ondragover = ev => { ev.preventDefault(); cell.classList.add('drag-over'); };
+    cell.ondragleave = () => cell.classList.remove('drag-over');
+    cell.ondrop = ev => { ev.preventDefault(); cell.classList.remove('drag-over'); dropTask(d, s); };
+  }
+
+  // タスク描画
+  const tasks = getTasksForWeek();
+  // orderでソート
+  tasks.sort((a,b) => (a.order||99) - (b.order||99));
+
+  tasks.forEach(t => {
+    const cell = document.getElementById('c'+t._dayIdx+'-'+t._slotIdx);
+    if (!cell) return;
+    const card = document.createElement('div');
+    const cls = SUBJ_CLASS[t.subject] || 'plan';
+    card.className = 'card ' + cls;
+    const name = t.unit_name || '';
+    card.textContent = name.length > 8 ? name.slice(0,8) : name;
+    card.title = name + (t.study_time ? ' ('+t.study_time+'分)' : '');
+    card.draggable = true;
+    card.addEventListener('dragstart', e => {
+      dragInfo = {t, fromDay: t._dayIdx, fromSlot: t._slotIdx};
+      card.classList.add('dragging');
+      e.stopPropagation();
+    });
+    card.addEventListener('dragend', () => card.classList.remove('dragging'));
+    card.addEventListener('click', e => { e.stopPropagation(); openDetail(t); });
+    cell.appendChild(card);
+  });
+}
+
+// ===== D&D =====
+function dropTask(toDay, toSlot) {
+  if (!dragInfo) return;
+  const {t} = dragInfo;
+  const wk = getWeekKey();
+  if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
+  const lo = localOverrides[wk];
+
+  // ローカル追加タスクなら移動
+  const idx = (lo.added||[]).findIndex(a => a.uid === t.uid);
+  if (idx >= 0) {
+    lo.added[idx]._dayIdx = toDay;
+    lo.added[idx].slot = SLOTS[toSlot];
+  } else {
+    // 元タスクを非表示にして新しい位置に追加
+    lo.hidden = lo.hidden || {};
+    const hkey = t.display_type === 'weekly' ? t.uid+'_'+t._dayIdx : t.uid;
+    lo.hidden[hkey] = true;
+    if (!lo.added) lo.added = [];
+    lo.added.push({...t, _dayIdx: toDay, slot: SLOTS[toSlot], _slotIdx: toSlot, uid: t.uid+'_moved_'+Date.now()});
+  }
+  saveLocal();
+  dragInfo = null;
+  render();
+}
+
+// ===== Detail modal =====
+function updateDetailColor() {
+  const sel = document.getElementById('dSubject');
+  const subj = sel.value;
+  const colors = SUBJ_COLOR[subj] || ['#eee','#333'];
+  const badge = document.getElementById('detailBadge');
+  badge.style.background = colors[0];
+  badge.style.color = colors[1];
+  sel.style.color = colors[1];
+}
+function openDetail(t) {
+  editUID = t.uid;
+  // 教科セレクト生成
+  const sel = document.getElementById('dSubject');
+  sel.innerHTML = Object.keys(SUBJ_COLOR).map(s =>
+    `<option value="${s}" ${s===t.subject?'selected':''}>${s}</option>`
+  ).join('');
+  updateDetailColor();
+  document.getElementById('dUnit').value = t.unit_name || '';
+  document.getElementById('dHash').value = t.hash || '';
+  document.getElementById('dMemo').value = t.note || '';
+  document.getElementById('dTime').value = t.study_time || '';
+  document.getElementById('detailModeLabel').textContent = t.display_type === 'weekly' ? '「毎週くりかえす」予定' : '「今回だけ」の予定';
+  document.getElementById('detailRepeatBtn').textContent = t.display_type === 'weekly' ? '今回だけの予定に変更' : '毎週くりかえす予定に変更';
+  document.getElementById('detailModal')._task = t;
+  document.getElementById('detailModal').classList.add('open');
+}
+function closeDetail() { document.getElementById('detailModal').classList.remove('open'); }
+
+function saveTask() {
+  const t = document.getElementById('detailModal')._task;
+  if (!t) return;
+  const wk = getWeekKey();
+  if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
+  const lo = localOverrides[wk];
+  const idx = (lo.added||[]).findIndex(a => a.uid === t.uid);
+  const newSubject = document.getElementById('dSubject').value;
+  const newUnit = document.getElementById('dUnit').value;
+  const newHash = document.getElementById('dHash').value;
+  const newMemo = document.getElementById('dMemo').value;
+  const newTime = parseInt(document.getElementById('dTime').value)||null;
+  const newColors = SUBJ_COLOR[newSubject] || ['#eee','#333'];
+  if (idx >= 0) {
+    lo.added[idx].subject = newSubject;
+    lo.added[idx].unit_name = newUnit;
+    lo.added[idx].hash = newHash;
+    lo.added[idx].note = newMemo;
+    lo.added[idx].study_time = newTime;
+    lo.added[idx].color = newColors[0];
+  } else {
+    const hkey = t.display_type === 'weekly' ? t.uid+'_'+t._dayIdx : t.uid;
+    lo.hidden[hkey] = true;
+    if (!lo.added) lo.added = [];
+    lo.added.push({...t, subject: newSubject, unit_name: newUnit, hash: newHash, note: newMemo, study_time: newTime, color: newColors[0], uid: t.uid+'_edit_'+Date.now()});
+  }
+  saveLocal(); closeDetail(); render();
+}
+
+function deleteTask() {
+  const t = document.getElementById('detailModal')._task;
+  if (!t) return;
+  const wk = getWeekKey();
+  if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
+  const lo = localOverrides[wk];
+  lo.hidden = lo.hidden || {};
+  const hkey = t.display_type === 'weekly' ? t.uid+'_'+t._dayIdx : t.uid;
+  lo.hidden[hkey] = true;
+  const idx = (lo.added||[]).findIndex(a => a.uid === t.uid);
+  if (idx >= 0) lo.added.splice(idx, 1);
+  saveLocal(); closeDetail(); render();
+}
+
+function copyTask() {
+  const t = document.getElementById('detailModal')._task;
+  if (!t) return;
+  // コピーモーダルを開く
+  const srcDate = addDays(currentMonday, t._dayIdx);
+  const m = srcDate.getMonth()+1, d = srcDate.getDate();
+  const slotLabel = {plan:'予定',morning:'朝',am:'午前',pm:'午後',night:'夜'}[t.slot]||'夜';
+  const typeLabel = t.display_type==='weekly'?'毎週くりかえす予定':'今回だけの予定';
+  document.getElementById('copySourceDate').textContent = srcDate.getFullYear()+'年'+String(m).padStart(2,'0')+'月'+String(d).padStart(2,'0')+'日（'+DAYS_JP[t._dayIdx]+'）：'+slotLabel;
+  document.getElementById('copySourceType').textContent = typeLabel;
+  document.getElementById('copyTargetDate').value = '';
+  document.getElementById('copyTargetDate').setAttribute('data-selected','');
+  document.getElementById('copyDateDisplay').textContent = 'タップで日付選択';
+  document.getElementById('copyDateDisplay').style.color = '#aaa';
+  document.getElementById('copySlot').value = t.slot;
+  document.getElementById('copyRepeat').value = 'one_time';
+  document.getElementById('copyModal')._task = t;
+  hideCopyCalendar();
+  document.getElementById('copyModal').classList.add('open');
+}
+function hideCopyCalendar() {
+  document.getElementById('copyCalWrap').style.display='none';
+}
+let copyCalYear, copyCalMonth;
+function showCopyCalendar() {
+  const now = new Date();
+  copyCalYear = now.getFullYear();
+  copyCalMonth = now.getMonth();
+  renderCopyCal();
+  document.getElementById('copyCalWrap').style.display='block';
+}
+function renderCopyCal() {
+  const y=copyCalYear, mo=copyCalMonth;
+  const firstDay = new Date(y,mo,1).getDay(); // 0=Sun
+  const daysInMonth = new Date(y,mo+1,0).getDate();
+  const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  // 月曜始まりに変換
+  const startOffset = (firstDay+6)%7;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const selectedStr = document.getElementById('copyTargetDate').getAttribute('data-selected')||'';
+  let grid = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;">';
+  ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(d=>{
+    grid+=`<div style="font-size:11px;color:#888;padding:4px 0;">${d}</div>`;
+  });
+  for(let i=0;i<startOffset;i++) grid+='<div></div>';
+  for(let d=1;d<=daysInMonth;d++){
+    const dt=new Date(y,mo,d); dt.setHours(0,0,0,0);
+    const dtStr=y+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const isToday=dt.getTime()===today.getTime();
+    const isSel=dtStr===selectedStr;
+    const isPast=dt<today;
+    let style='font-size:13px;padding:5px 2px;border-radius:50%;cursor:pointer;';
+    if(isSel) style+='background:#1a2744;color:white;';
+    else if(isToday) style+='border:2px solid #1a2744;color:#1a2744;font-weight:700;';
+    else if(isPast) style+='color:#ccc;cursor:default;';
+    grid+=`<div style="${style}" onclick="selectCopyDate('${dtStr}',${d},${mo+1},${y})">${d}</div>`;
+  }
+  grid+='</div>';
+  document.getElementById('copyCalGrid').innerHTML=
+    `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <button onclick="copyCalYear-=(copyCalMonth===0?1:0);copyCalMonth=(copyCalMonth+11)%12;renderCopyCal();" style="background:none;border:none;font-size:18px;cursor:pointer;">◀</button>
+      <span style="font-weight:700;font-size:14px;">${monthNames[mo]} <span style="color:#888;font-size:12px;">${y}</span></span>
+      <button onclick="copyCalYear+=(copyCalMonth===11?1:0);copyCalMonth=(copyCalMonth+1)%12;renderCopyCal();" style="background:none;border:none;font-size:18px;cursor:pointer;">▶</button>
+    </div>`+grid;
+}
+function selectCopyDate(str,d,m,y){
+  const dt=new Date(y,m-1,d); if(dt<new Date().setHours(0,0,0,0)) return;
+  document.getElementById('copyTargetDate').setAttribute('data-selected',str);
+  document.getElementById('copyDateDisplay').textContent=m+'/'+d+'（'+DAYS_JP[(dt.getDay()+6)%7]+'）';
+  document.getElementById('copyDateDisplay').style.color='#1a2744';
+  hideCopyCalendar();
+}
+function confirmCopy(){
+  const t = document.getElementById('copyModal')._task;
+  if(!t) return;
+  const selectedStr = document.getElementById('copyTargetDate').getAttribute('data-selected');
+  if(!selectedStr){alert('日付を選んでください');return;}
+  const [y,mo,d]=selectedStr.split('-').map(Number);
+  const targetDate=new Date(y,mo-1,d);
+  const targetMonday=getMonday(targetDate);
+  const targetDayIdx=(targetDate.getDay()+6)%7;
+  const targetSlot=document.getElementById('copySlot').value;
+  const targetRepeat=document.getElementById('copyRepeat').value;
+  const wk=dateKey(targetMonday);
+  if(!localOverrides[wk]) localOverrides[wk]={added:[],hidden:{}};
+  if(!localOverrides[wk].added) localOverrides[wk].added=[];
+  localOverrides[wk].added.push({
+    ...t, uid:'copy_'+Date.now(),
+    display_type:targetRepeat, repeat_key:targetRepeat==='weekly'?'local_'+Date.now():null,
+    _dayIdx:targetDayIdx, slot:targetSlot, _slotIdx:SLOT_IDX[targetSlot]||0,
+    is_hidden:'no'
+  });
+  saveLocal();
+  document.getElementById('copyModal').classList.remove('open');
+  closeDetail();
+  render();
+}
+function closeCopyModal(){
+  document.getElementById('copyModal').classList.remove('open');
+}
+
+function toggleRepeat() { alert('この機能は今後実装予定です'); }
+
+// ===== Add modal =====
+function openAdd(dayIdx, slotIdx) {
+  document.getElementById('aWeekday').value = dayIdx;
+  document.getElementById('aSlot').value = SLOTS[slotIdx] || 'night';
+  // 日付表示
+  const d = addDays(currentMonday, dayIdx);
+  const m = d.getMonth()+1, da = d.getDate();
+  const slotLabel = {plan:'予定',morning:'朝',am:'午前',pm:'午後',night:'夜'}[SLOTS[slotIdx]||'night'];
+  document.getElementById('addDateRow').textContent = m+'/'+da+'（'+DAYS_JP[dayIdx]+'）' + '　' + slotLabel;
+  document.getElementById('addDateRow').style.display = 'block';
+  // ラジオを今週だけにリセット
+  document.querySelector('input[name="addType"][value="one_time"]').checked = true;
+  // 教科の初期色をリセット
+  const sel = document.getElementById('aSubject');
+  sel.value = '算数';
+  updateSubjectColor();
+  document.getElementById('addModal').classList.add('open');
+}
+function openAddModal() {
+  const now = new Date();
+  const dayIdx = (now.getDay() + 6) % 7;
+  const h = now.getHours();
+  let slotIdx;
+  if (h >= 6 && h < 9)   slotIdx = 1; // 朝
+  else if (h >= 9 && h < 12)  slotIdx = 2; // 午前
+  else if (h >= 12 && h < 18) slotIdx = 3; // 午後
+  else if (h >= 18 && h < 23) slotIdx = 4; // 夜
+  else slotIdx = 0; // 予定（深夜・早朝）
+  openAdd(dayIdx, slotIdx);
+}
+function toggleAddDate() {
+  const isWeekly = document.querySelector('input[name="addType"]:checked').value === 'weekly';
+  document.getElementById('addDateRow').style.display = isWeekly ? 'none' : 'block';
+}
+function updateSubjectColor() {
+  const sel = document.getElementById('aSubject');
+  const subj = sel.value;
+  const colors = SUBJ_COLOR[subj] || ['#ffffff','#333333'];
+  sel.style.background = colors[0];
+  sel.style.color = colors[1];
+  sel.style.borderColor = colors[1] + '55';
+}
+function closeAdd() { document.getElementById('addModal').classList.remove('open'); }
+function confirmAdd() {
+  const type = document.querySelector('input[name="addType"]:checked').value;
+  const wi = parseInt(document.getElementById('aWeekday').value);
+  const slot = document.getElementById('aSlot').value;
+  const subj = document.getElementById('aSubject').value;
+  const unit = document.getElementById('aUnit').value || '新しい予定';
+  const hash = document.getElementById('aHash').value;
+  const memo = document.getElementById('aMemo').value;
+  const st = parseInt(document.getElementById('aTime').value)||null;
+  const colors = SUBJ_COLOR[subj] || ['#eee','#333'];
+  const newTask = {
+    color: colors[0], weekday: DAYS_JP[wi], weekday_index: wi,
+    slot, subject: subj, unit_name: unit, note: memo, study_time: st,
+    display_type: type, repeat_key: type==='weekly'?'local_'+Date.now():null,
+    hash, is_hidden:'no', order:99, uid:'new_'+Date.now(),
+    _dayIdx: wi, _slotIdx: SLOT_IDX[slot]||0
+  };
+  const wk = getWeekKey();
+  if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
+  if (!localOverrides[wk].added) localOverrides[wk].added = [];
+  localOverrides[wk].added.push(newTask);
+  saveLocal(); closeAdd(); render();
+  document.getElementById('aUnit').value='';
+  document.getElementById('aHash').value='';
+  document.getElementById('aTime').value='';
+  document.getElementById('aMemo').value='';
+}
+
+// ===== Stats modal =====
+function getCompletedSlots() {
+  // 朝:6-9, AM:9-12, PM:12-18, 夜:18-23
+  // 「その時間帯に入ったら完了とみなす」
+  const h = new Date().getHours() + new Date().getMinutes()/60;
+  const done = [];
+  if (h >= 6)  done.push('morning');
+  if (h >= 9)  done.push('am');
+  if (h >= 12) done.push('pm');
+  if (h >= 18) done.push('night');
+  return done;
+}
+
+function calcWeekTotal(mondayDate) {
+  // その週の月曜日を基準にデータを取得
+  const savedMonday = currentMonday;
+  currentMonday = mondayDate;
+  const tasks = getTasksForWeek();
+  currentMonday = savedMonday;
+
+  const now = new Date();
+  const todayIdx = (now.getDay() + 6) % 7;
+  const completedSlots = getCompletedSlots();
+  const bySubj = {};
+  tasks.forEach(t => {
+    if (!t.study_time) return;
+    if (t.subject === '予定' || t.subject === '祝日' || t.subject === '習い事') return;
+    // 今週の場合は時間帯フィルタ
+    const isCurrentWeek = mondayDate.getTime() === getMonday(new Date()).getTime();
+    if (isCurrentWeek) {
+      const dIdx = t._dayIdx;
+      if (dIdx > todayIdx) return; // 未来の日
+      if (dIdx === todayIdx && !completedSlots.includes(t.slot)) return; // 今日の未来スロット
+    }
+    bySubj[t.subject] = (bySubj[t.subject]||0) + t.study_time;
+  });
+  return bySubj;
+}
+
+function fmtTime(mins) {
+  if (!mins) return '0分';
+  const h = Math.floor(mins/60), m = mins%60;
+  return (h ? h+'時間' : '') + (m ? m+'分' : '');
+}
+
+function calcMonthTotal(year, month) {
+  const bySubj = {};
+  const today = new Date(); today.setHours(0,0,0,0);
+  const completedSlots = getCompletedSlots();
+  const todayDayIdx = (today.getDay() + 6) % 7;
+  const SKIP_SUBJ = new Set(['予定','祝日','習い事']);
+
+  // その月に含まれる全週のmondayを列挙
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const mondaySet = new Map(); // mondayKey -> mondayDate
+  for (let day = 1; day <= daysInMonth; day++) {
+    const d = new Date(year, month-1, day);
+    d.setHours(0,0,0,0);
+    if (d > today) break;
+    const mon = getMonday(new Date(d));
+    mondaySet.set(dateKey(mon), mon);
+  }
+
+  mondaySet.forEach((mondayDate, mondayKey) => {
+    // getTasksForWeekと同じロジックで週タスクを取得
+    const savedMonday = currentMonday;
+    currentMonday = new Date(mondayDate);
+    const tasks = getTasksForWeek();
+    currentMonday = savedMonday;
+
+    tasks.forEach(t => {
+      if (!t.study_time) return;
+      if (SKIP_SUBJ.has(t.subject)) return;
+
+      // タスクの実際の日付を計算
+      const taskDate = new Date(mondayDate);
+      taskDate.setDate(taskDate.getDate() + t._dayIdx);
+      taskDate.setHours(0,0,0,0);
+
+      // その月に属するか
+      if (taskDate.getFullYear() !== year || taskDate.getMonth()+1 !== month) return;
+      // 未来はスキップ
+      if (taskDate > today) return;
+
+      const isToday = taskDate.getTime() === today.getTime();
+      if (isToday && !completedSlots.includes(t.slot)) return;
+
+      bySubj[t.subject] = (bySubj[t.subject]||0) + t.study_time;
+    });
+  });
+  return bySubj;
+}
+
+function renderBarChart(container, data, maxVal) {
+  const ORDER = ['算数','国語','理科','社会','学校の宿題'];
+  const sorted = Object.entries(data).sort((a,b) => {
+    const ai = ORDER.indexOf(a[0]), bi = ORDER.indexOf(b[0]);
+    if (ai >= 0 && bi >= 0) return ai - bi;
+    if (ai >= 0) return -1;
+    if (bi >= 0) return 1;
+    return b[1] - a[1];
+  });
+  const maxMin = maxVal || (sorted[0]?.[1] || 1);
+  let html = '';
+  sorted.forEach(([subj, mins]) => {
+    const colors = SUBJ_COLOR[subj] || ['#eee','#333'];
+    const pct = Math.round(mins/maxMin*100);
+    html += `<div style="margin-bottom:7px;display:flex;align-items:center;gap:8px;">
+      <div style="width:90px;text-align:center;font-size:13px;font-weight:700;background:${colors[0]};color:${colors[1]};padding:2px 6px;border-radius:4px;flex-shrink:0;white-space:nowrap;">${subj}</div>
+      <div style="width:160px;flex-shrink:0;background:#eee;border-radius:4px;height:12px;">
+        <div style="background:${colors[0]};border:1px solid ${colors[1]}44;height:12px;border-radius:4px;width:${pct}%;"></div>
+      </div>
+      <div style="font-size:16px;font-weight:700;color:#1a2744;white-space:nowrap;font-family:'Inter',sans-serif;min-width:90px;padding-left:10px;">${fmtTime(mins)}</div>
+    </div>`;
+  });
+  return html;
+}
+
+function renderPieChart(canvasId, legendId, data) {
+  const total = Object.values(data).reduce((a,b)=>a+b,0);
+  if (!total) return;
+  const ORDER = ['算数','国語','理科','社会','学校の宿題'];
+  const sorted = Object.entries(data).sort((a,b) => {
+    const ai = ORDER.indexOf(a[0]), bi = ORDER.indexOf(b[0]);
+    if (ai >= 0 && bi >= 0) return ai - bi;
+    if (ai >= 0) return -1;
+    if (bi >= 0) return 1;
+    return b[1] - a[1];
+  });
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  let startAngle = -Math.PI/2;
+  const cx=80, cy=80, r=70;
+  sorted.forEach(([subj, mins]) => {
+    const colors = SUBJ_COLOR[subj] || ['#eee','#333'];
+    const slice = (mins/total)*2*Math.PI;
+    ctx.beginPath(); ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,startAngle,startAngle+slice);
+    ctx.closePath();
+    ctx.fillStyle=colors[0]; ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke();
+    const pct=Math.round(mins/total*100);
+    if(pct>=5){
+      const mid=startAngle+slice/2;
+      const lx=cx+r*0.65*Math.cos(mid), ly=cy+r*0.65*Math.sin(mid);
+      ctx.fillStyle=colors[1]==='#fff'?'#fff':'#1a2744';
+      ctx.font='bold 12px Inter,sans-serif';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(pct+'%',lx,ly);
+    }
+    startAngle+=slice;
+  });
+  let legend='';
+  sorted.forEach(([subj,mins])=>{
+    const colors=SUBJ_COLOR[subj]||['#eee','#333'];
+    const pct=Math.round(mins/total*100);
+    legend+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+      <div style="width:12px;height:12px;border-radius:3px;background:${colors[0]};border:1px solid ${colors[1]}44;flex-shrink:0;"></div>
+      <span style="font-size:13px;font-weight:700;background:${colors[0]};color:${colors[1]};padding:1px 8px;border-radius:4px;width:90px;display:inline-block;text-align:center;white-space:nowrap;">${subj}</span>
+      <span style="font-size:16px;font-weight:700;color:#1a2744;font-family:'Inter',sans-serif;width:52px;text-align:left;padding-left:10px;">${pct}%</span>
+    </div>`;
+  });
+  document.getElementById(legendId).innerHTML=legend;
+}
+
+function showStats() {
+  const now = new Date();
+  const thisMonday = getMonday(now);
+  const lastMonday = addDays(thisMonday, -7);
+  const thisYear = now.getFullYear(), thisMonth = now.getMonth()+1;
+  const lastMonth = thisMonth===1 ? 12 : thisMonth-1;
+  const lastMonthYear = thisMonth===1 ? thisYear-1 : thisYear;
+  const monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+  const thisWeek = calcWeekTotal(thisMonday);
+  const lastWeek = calcWeekTotal(lastMonday);
+  const thisWeekTotal = Object.values(thisWeek).reduce((a,b)=>a+b,0);
+  const lastWeekTotal = Object.values(lastWeek).reduce((a,b)=>a+b,0);
+  const weekDiff = thisWeekTotal - lastWeekTotal;
+  const weekDiffStr = (weekDiff>=0?'+':'-')+fmtTime(Math.abs(weekDiff));
+  const weekDiffColor = weekDiff>=0?'#2a7a2a':'#c0392b';
+
+  const thisMonthData = calcMonthTotal(thisYear, thisMonth);
+  const lastMonthData = calcMonthTotal(lastMonthYear, lastMonth);
+  const thisMonthTotal = Object.values(thisMonthData).reduce((a,b)=>a+b,0);
+  const lastMonthTotal = Object.values(lastMonthData).reduce((a,b)=>a+b,0);
+  const monthDiff = thisMonthTotal - lastMonthTotal;
+  const monthDiffStr = (monthDiff>=0?'+':'-')+fmtTime(Math.abs(monthDiff));
+  const monthDiffColor = monthDiff>=0?'#2a7a2a':'#c0392b';
+
+  // 今週データ（棒グラフと同じ）
+  const allSubj = thisWeek;
+
+  // ===== 左カラム：週集計 =====
+  let weekHtml = `<div style="font-size:15px;font-weight:700;color:#1a2744;margin-bottom:10px;">今週の集計</div>`;
+  weekHtml += `<div style="display:flex;gap:6px;align-items:center;margin-bottom:12px;background:#f4f6fb;border-radius:8px;padding:8px 12px;">
+    <div style="display:flex;align-items:baseline;gap:4px;">
+      <span style="font-size:11px;color:#888;">今週</span>
+      <span style="font-size:16px;font-weight:700;color:#1a2744;font-family:'Inter',sans-serif;">${fmtTime(thisWeekTotal)}</span>
+    </div>
+    <span style="color:#ccc;">／</span>
+    <div style="display:flex;align-items:baseline;gap:4px;">
+      <span style="font-size:11px;color:#888;">先週</span>
+      <span style="font-size:16px;font-weight:700;color:#888;font-family:'Inter',sans-serif;">${fmtTime(lastWeekTotal)}</span>
+    </div>
+    <span style="color:#ccc;">／</span>
+    <div style="display:flex;align-items:baseline;gap:4px;">
+      <span style="font-size:11px;color:#888;">差</span>
+      <span style="font-size:16px;font-weight:700;color:${weekDiffColor};font-family:'Inter',sans-serif;">${weekDiffStr}</span>
+    </div>
+  </div>`;
+  weekHtml += `<div style="font-size:13px;color:#888;margin-bottom:8px;font-weight:500;">今週の学習時間</div>`;
+  weekHtml += renderBarChart(null, thisWeek, null);
+  weekHtml += `<div style="font-size:13px;color:#888;margin:14px 0 8px;font-weight:500;">今週の各教科の割合</div>
+  <div style="display:flex;align-items:center;gap:14px;">
+    <canvas id="pieChart" width="160" height="160"></canvas>
+    <div id="pieLegend" style="flex:1;"></div>
+  </div>`;
+
+  // ===== 右カラム：月集計 =====
+  let monthHtml = `<div style="font-size:15px;font-weight:700;color:#1a2744;margin-bottom:10px;">${monthNames[thisMonth-1]}の集計</div>`;
+  monthHtml += `<div style="display:flex;gap:6px;align-items:center;margin-bottom:12px;background:#f4f6fb;border-radius:8px;padding:8px 12px;">
+    <div style="display:flex;align-items:baseline;gap:4px;">
+      <span style="font-size:11px;color:#888;">今月</span>
+      <span style="font-size:16px;font-weight:700;color:#1a2744;font-family:'Inter',sans-serif;">${fmtTime(thisMonthTotal)}</span>
+    </div>
+    <span style="color:#ccc;">／</span>
+    <div style="display:flex;align-items:baseline;gap:4px;">
+      <span style="font-size:11px;color:#888;">先月</span>
+      <span style="font-size:16px;font-weight:700;color:#888;font-family:'Inter',sans-serif;">${fmtTime(lastMonthTotal)}</span>
+    </div>
+    <span style="color:#ccc;">／</span>
+    <div style="display:flex;align-items:baseline;gap:4px;">
+      <span style="font-size:11px;color:#888;">差</span>
+      <span style="font-size:16px;font-weight:700;color:${monthDiffColor};font-family:'Inter',sans-serif;">${monthDiffStr}</span>
+    </div>
+  </div>`;
+  monthHtml += `<div style="font-size:13px;color:#888;margin-bottom:8px;font-weight:500;">${monthNames[thisMonth-1]}の学習時間</div>`;
+  monthHtml += renderBarChart(null, thisMonthData, null);
+  monthHtml += `<div style="font-size:13px;color:#888;margin:14px 0 8px;font-weight:500;">今月の各教科の割合</div>
+  <div style="display:flex;align-items:center;gap:14px;">
+    <canvas id="pieChartMonth" width="160" height="160"></canvas>
+    <div id="pieLegendMonth" style="flex:1;"></div>
+  </div>`;
+
+  document.getElementById('statsWeek').innerHTML = weekHtml;
+  document.getElementById('statsMonth').innerHTML = monthHtml;
+
+  renderPieChart('pieChart', 'pieLegend', allSubj);
+  renderPieChart('pieChartMonth', 'pieLegendMonth', thisMonthData);
+
+  document.getElementById('statsModal').classList.add('open');
+}
+function closeStats() { document.getElementById('statsModal').classList.remove('open'); }
+
+function changeWeek(dir) {
+  currentMonday = addDays(currentMonday, dir*7);
+  render();
+}
+
+function showView(v) {}
+
+function selectCopyDateToday(){
+  const now=new Date();
+  const y=now.getFullYear(),mo=now.getMonth()+1,d=now.getDate();
+  const str=y+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+  selectCopyDate(str,d,mo,y);
+}
+render();
+</script>
+</div><!-- #app -->
+
+<script>
+function checkPw() {
+  const input = document.getElementById('pwInput').value;
+  if (input === 'Buchan_tensai1223') {
+    document.getElementById('pwScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    sessionStorage.setItem('auth', '1');
+  } else {
+    document.getElementById('pwError').textContent = 'パスワードが違います';
+    document.getElementById('pwInput').value = '';
+    document.getElementById('pwInput').focus();
+  }
+}
+// セッション中は再入力不要
+if (sessionStorage.getItem('auth') === '1') {
+  document.getElementById('pwScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+}
+</script>
+</body>
+</html>
+<!-- _260606.2235 -->
