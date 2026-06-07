@@ -1118,7 +1118,8 @@ function openMoveModal(task, toDay, toSlot) {
   const slotNames = {0:'予定',1:'朝',2:'午前',3:'午後',4:'夜'};
   document.getElementById('moveModalTitle').textContent =
     DAYS_JP2[toDay] + '曜日の' + (slotNames[toSlot]||'') + 'に移動しますか？';
-  document.getElementById('moveWeeklyLabel').textContent = DAYS_JP2[toDay] + '曜日';
+  const slotNames2 = {0:'予定',1:'朝',2:'午前',3:'午後',4:'夜'};
+  document.getElementById('moveWeeklyLabel').textContent = DAYS_JP2[toDay] + '曜日の' + (slotNames2[toSlot]||'');
   document.querySelector('input[name="moveType"][value="once"]').checked = true;
   document.getElementById('moveModal').classList.add('open');
 }
@@ -1135,22 +1136,26 @@ function confirmMove() {
   const wk = getWeekKey();
   if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
   const lo = localOverrides[wk];
+  if (!lo.hidden) lo.hidden = {};
+  if (!lo.added) lo.added = [];
 
-  // 元タスクを非表示
-  const hkey = task.key + '_hide_' + task.id;
-  lo.hidden = lo.hidden || {};
-  const fromParts = task.key.split('-');
-  if (fromParts.length === 2) {
-    lo.hidden[task.id + '_' + fromParts[0]] = true;
-  }
-
-  // 移動先に追加
-  const tasks = getTasksForWeek();
-  const orig = tasks.find(t => t.id === task.id);
+  // 元タスクを取得
+  const allTasks = getTasksForWeek();
+  const orig = allTasks.find(t => t.id === task.id);
   if (!orig) { closeMoveModal(); return; }
 
+  // 元タスクを非表示（display_typeに応じてkeyを決定）
+  if (orig.display_type === 'weekly') {
+    lo.hidden[orig.uid + '_' + orig._dayIdx] = true;
+  } else {
+    lo.hidden[orig.uid] = true;
+  }
+  // ローカル追加タスクなら削除
+  const addIdx = lo.added.findIndex(a => a.uid === orig.uid);
+  if (addIdx >= 0) lo.added.splice(addIdx, 1);
+
+  // 移動先に追加
   const SLOTS2 = ['plan','morning','am','pm','night'];
-  if (!lo.added) lo.added = [];
   lo.added.push({
     ...orig,
     uid: 'moved_' + Date.now(),
@@ -1159,6 +1164,7 @@ function confirmMove() {
     slot: SLOTS2[toSlot] || 'night',
     _slotIdx: toSlot,
     weekday_index: toDay,
+    order: 99,
     repeat_key: type === 'weekly' ? 'local_' + Date.now() : null
   });
 
