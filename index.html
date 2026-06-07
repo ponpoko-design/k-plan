@@ -997,14 +997,14 @@ if (sessionStorage.getItem('auth') === '1') {
 </script>
 </body>
 </html>
-<!-- _260607.1010 --><script>
+<!-- _260607.1020 --><script>
 // ===== タッチ対応ドラッグ&ドロップ =====
 let _touchTask = null;
 let _touchCard = null;
 let _touchClone = null;
 let _touchMoved = false;
 let _touchTimer = null;
-let _lastCell = null;
+let _currentDropCell = null;
 
 function _addTouchToCards() {
   document.querySelectorAll('.card').forEach(card => {
@@ -1015,7 +1015,7 @@ function _addTouchToCards() {
 
 function _onTS(e) {
   _touchMoved = false;
-  _lastCell = null;
+  _currentDropCell = null;
   const card = e.currentTarget;
   _touchCard = card;
   _touchTask = {
@@ -1029,22 +1029,22 @@ function _onTS(e) {
     _touchClone = document.createElement('div');
     _touchClone.className = card.className;
     _touchClone.textContent = card.textContent;
-    _touchClone.style.cssText = [
-      'position:fixed',
-      'left:' + rect.left + 'px',
-      'top:' + rect.top + 'px',
-      'width:' + rect.width + 'px',
-      'opacity:0.85',
-      'pointer-events:none',
-      'z-index:9999',
-      'transform:scale(1.1)',
-      'box-shadow:0 4px 12px rgba(0,0,0,0.3)',
-      'white-space:nowrap',
-      'border-radius:4px',
-      'padding:2px 5px',
-      'font-size:13px',
-      'font-weight:700'
-    ].join(';');
+    Object.assign(_touchClone.style, {
+      position: 'fixed',
+      left: rect.left + 'px',
+      top: rect.top + 'px',
+      width: rect.width + 'px',
+      opacity: '0.85',
+      pointerEvents: 'none',
+      zIndex: '9999',
+      transform: 'scale(1.1)',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+      whiteSpace: 'nowrap',
+      borderRadius: '4px',
+      padding: '2px 5px',
+      fontSize: '13px',
+      fontWeight: '700'
+    });
     document.body.appendChild(_touchClone);
     card.style.opacity = '0.3';
     if (navigator.vibrate) navigator.vibrate(30);
@@ -1053,15 +1053,6 @@ function _onTS(e) {
   document.addEventListener('touchmove', _onTM, {passive: false});
   document.addEventListener('touchend', _onTE);
   document.addEventListener('touchcancel', _onTE);
-}
-
-function _getCellFromPoint(x, y) {
-  // クローンを一時非表示にしてその下の要素を取得
-  if (_touchClone) _touchClone.style.display = 'none';
-  const el = document.elementFromPoint(x, y);
-  if (_touchClone) _touchClone.style.display = '';
-  if (!el) return null;
-  return el.closest('.day-cell');
 }
 
 function _onTM(e) {
@@ -1073,15 +1064,15 @@ function _onTM(e) {
   _touchClone.style.left = (touch.clientX - w/2) + 'px';
   _touchClone.style.top = (touch.clientY - 14) + 'px';
 
-  // ドロップ先ハイライト
+  // クローンを隠してセルを探す
+  _touchClone.style.visibility = 'hidden';
+  const el = document.elementFromPoint(touch.clientX, touch.clientY);
+  _touchClone.style.visibility = 'visible';
+
   document.querySelectorAll('.day-cell').forEach(c => c.classList.remove('drag-over'));
-  const cell = _getCellFromPoint(touch.clientX, touch.clientY);
-  if (cell) {
-    cell.classList.add('drag-over');
-    _lastCell = cell;
-  } else {
-    _lastCell = null;
-  }
+  const cell = el ? el.closest('.day-cell') : null;
+  _currentDropCell = cell;
+  if (cell) cell.classList.add('drag-over');
 }
 
 function _onTE(e) {
@@ -1089,42 +1080,30 @@ function _onTE(e) {
   document.removeEventListener('touchmove', _onTM);
   document.removeEventListener('touchend', _onTE);
   document.removeEventListener('touchcancel', _onTE);
+  document.querySelectorAll('.day-cell').forEach(c => c.classList.remove('drag-over'));
 
   if (_touchClone) { _touchClone.remove(); _touchClone = null; }
   if (_touchCard) { _touchCard.style.opacity = '1'; }
-  document.querySelectorAll('.day-cell').forEach(c => c.classList.remove('drag-over'));
 
-  if (!_touchMoved || !_touchTask) {
-    _touchTask = null; _touchCard = null; _lastCell = null;
-    return;
-  }
-
-  // _lastCellまたはchangedTouchesから再取得
-  const touch = e.changedTouches[0];
-  const cell = _lastCell || _getCellFromPoint(touch.clientX, touch.clientY);
-
-  if (cell) {
-    const m = cell.id.match(/^c(\d+)-(\d+)$/);
+  if (_touchMoved && _touchTask && _currentDropCell) {
+    const m = _currentDropCell.id.match(/^c(\d+)-(\d+)$/);
     if (m) {
       dragInfo = _touchTask;
       dropTask(parseInt(m[1]), parseInt(m[2]));
     }
   }
 
-  _touchTask = null; _touchCard = null; _lastCell = null;
+  _touchTask = null;
+  _touchCard = null;
+  _currentDropCell = null;
+  _touchMoved = false;
 }
 
-// 2. モーダルを画面サイズに合わせる
 function fitModals() {
-  const vh = window.innerHeight;
-  const maxH = Math.floor(vh * 0.88);
+  const maxH = Math.floor(window.innerHeight * 0.88);
   document.querySelectorAll('.modal-bg .modal').forEach(m => {
     m.style.maxHeight = maxH + 'px';
     m.style.overflowY = 'auto';
-  });
-  // modal-bodyも調整
-  document.querySelectorAll('.modal-bg .modal .modal-body, .modal-bg .modal > div[style*="padding"]').forEach(b => {
-    b.style.overflowY = 'auto';
   });
 }
 window.addEventListener('resize', fitModals);
