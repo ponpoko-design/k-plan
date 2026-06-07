@@ -1000,7 +1000,7 @@ if (sessionStorage.getItem('auth') === '1') {
 </script>
 </body>
 </html>
-<!-- _260607.1140 --><script>
+<!-- _260607.1150 --><script>
 // ===== タッチD&D (Safari iOS対応版) =====
 let _tTask = null;
 let _tCard = null;
@@ -1162,102 +1162,171 @@ window.render = function() {
 render();
 </script>
 </body<script>
-// ===== タップ方式 移動 =====
-let _selectedTask = null;
-let _selectedCard = null;
+// ===== タッチD&D デバッグ版 =====
+let _tTask = null;
+let _tCard = null;
+let _tClone = null;
+let _tActive = false;
+let _tTimer = null;
+let _tDropCell = null;
+let _cellRects = [];
 
-function _addTapToCards() {
+function _cacheCells() {
+  _cellRects = [];
+  document.querySelectorAll('.day-cell').forEach(cell => {
+    const r = cell.getBoundingClientRect();
+    _cellRects.push({
+      el: cell,
+      left: r.left, right: r.right,
+      top: r.top, bottom: r.bottom,
+      id: cell.id
+    });
+  });
+}
+
+function _findCell(x, y) {
+  for (const c of _cellRects) {
+    if (x >= c.left && x <= c.right && y >= c.top && y <= c.bottom) {
+      return c.el;
+    }
+  }
+  return null;
+}
+
+function _addTouch() {
   document.querySelectorAll('.card').forEach(card => {
-    // 既存のclickイベントを上書き
+    card.removeEventListener('touchstart', _tStart);
+    card.addEventListener('touchstart', _tStart, {passive: false});
+    // タップ（短押し）で詳細表示
     card.onclick = function(e) {
       e.stopPropagation();
+      if (_tActive) return; // ドラッグ中は無視
       const key = card.getAttribute('data-key');
       const id = parseInt(card.getAttribute('data-id'));
-
-      if (_selectedTask && _selectedTask.key === key && _selectedTask.id === id) {
-        // 同じカードを再タップ → 選択解除
-        _clearSelection();
-        return;
-      }
-
-      if (_selectedTask) {
-        // 別のカードをタップ → そちらを選択に切り替え
-        _clearSelection();
-      }
-
-      // 選択状態にする
-      _selectedTask = {key, id};
-      _selectedCard = card;
-      card.style.outline = '3px solid #1a2744';
-      card.style.outlineOffset = '1px';
-      card.style.transform = 'scale(1.08)';
-      card.style.zIndex = '10';
-      card.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
-
-      // ガイドメッセージ表示
-      _showGuide('移動先のマスをタップしてください　✕でキャンセル');
-    };
-  });
-
-  // セルのタップ→ドロップ
-  document.querySelectorAll('.day-cell').forEach(cell => {
-    cell.onclick = function(e) {
-      if (!_selectedTask) return;
-      if (e.target.classList.contains('card')) return;
-      const m = cell.id.match(/^c(\d+)-(\d+)$/);
-      if (!m) return;
-      dragInfo = _selectedTask;
-      dropTask(parseInt(m[1]), parseInt(m[2]));
-      _clearSelection();
-      _hideGuide();
+      const wk = loadTasks();
+      const task = (wk[key]||[]).find(t => t.id === id);
+      if (task) openDetail(task);
     };
   });
 }
 
-function _clearSelection() {
-  if (_selectedCard) {
-    _selectedCard.style.outline = '';
-    _selectedCard.style.outlineOffset = '';
-    _selectedCard.style.transform = '';
-    _selectedCard.style.zIndex = '';
-    _selectedCard.style.boxShadow = '';
+function _tStart(e) {
+  _tActive = false;
+  _tDropCell = null;
+  _tCard = e.currentTarget;
+  _tTask = {
+    key: _tCard.getAttribute('data-key'),
+    id: parseInt(_tCard.getAttribute('data-id'))
+  };
+
+  _tTimer = setTimeout(() => {
+    _tActive = true;
+    _cacheCells(); // ドラッグ開始時にセル座標をキャッシュ
+
+    const rect = _tCard.getBoundingClientRect();
+    _tClone = document.createElement('div');
+    _tClone.className = _tCard.className;
+    _tClone.textContent = _tCard.textContent;
+    Object.assign(_tClone.style, {
+      position: 'fixed',
+      left: rect.left + 'px',
+      top: rect.top + 'px',
+      width: rect.width + 'px',
+      opacity: '0.9',
+      pointerEvents: 'none',
+      zIndex: '9999',
+      transform: 'scale(1.15)',
+      boxShadow: '0 6px 20px rgba(0,0,0,0.4)',
+      whiteSpace: 'nowrap',
+      borderRadius: '4px',
+      padding: '2px 5px',
+      fontSize: '13px',
+      fontWeight: '700',
+      textAlign: 'center'
+    });
+    document.body.appendChild(_tClone);
+    _tCard.style.opacity = '0.25';
+    if (navigator.vibrate) navigator.vibrate(40);
+
+    // デバッグ表示
+    _showDebug('ドラッグ開始！セル数:' + _cellRects.length);
+  }, 400);
+
+  document.addEventListener('touchmove', _tMove, {passive: false});
+  document.addEventListener('touchend', _tEnd, {passive: false});
+  document.addEventListener('touchcancel', _tCancel, {passive: false});
+}
+
+function _tMove(e) {
+  e.preventDefault();
+  if (!_tActive || !_tClone) return;
+  const t = e.touches[0];
+  const w = _tClone.offsetWidth;
+  const h = _tClone.offsetHeight;
+  _tClone.style.left = (t.clientX - w/2) + 'px';
+  _tClone.style.top = (t.clientY - h/2) + 'px';
+
+  document.querySelectorAll('.day-cell').forEach(c => c.classList.remove('drag-over'));
+  const cell = _findCell(t.clientX, t.clientY);
+  _tDropCell = cell || null;
+  if (_tDropCell) {
+    _tDropCell.classList.add('drag-over');
+    _showDebug('ドロップ先: ' + _tDropCell.id);
+  } else {
+    _showDebug('セル外: ' + Math.round(t.clientX) + ',' + Math.round(t.clientY));
   }
-  _selectedTask = null;
-  _selectedCard = null;
-  _hideGuide();
 }
 
-// ガイドバー
-function _showGuide(msg) {
-  let bar = document.getElementById('_tapGuide');
+function _tEnd(e) {
+  e.preventDefault();
+  clearTimeout(_tTimer);
+  document.removeEventListener('touchmove', _tMove);
+  document.removeEventListener('touchend', _tEnd);
+  document.removeEventListener('touchcancel', _tCancel);
+  document.querySelectorAll('.day-cell').forEach(c => c.classList.remove('drag-over'));
+  if (_tClone) { _tClone.remove(); _tClone = null; }
+  if (_tCard) { _tCard.style.opacity = '1'; }
+
+  _showDebug('ドロップ！cell=' + (_tDropCell ? _tDropCell.id : 'なし'));
+
+  if (_tActive && _tTask && _tDropCell) {
+    const m = _tDropCell.id.match(/^c(\d+)-(\d+)$/);
+    if (m) {
+      dragInfo = _tTask;
+      dropTask(parseInt(m[1]), parseInt(m[2]));
+      _showDebug('移動完了！→' + _tDropCell.id);
+    }
+  }
+  _tTask = null; _tCard = null; _tDropCell = null; _tActive = false;
+}
+
+function _tCancel(e) {
+  clearTimeout(_tTimer);
+  document.removeEventListener('touchmove', _tMove);
+  document.removeEventListener('touchend', _tEnd);
+  document.removeEventListener('touchcancel', _tCancel);
+  if (_tClone) { _tClone.remove(); _tClone = null; }
+  if (_tCard) { _tCard.style.opacity = '1'; }
+  _tTask = null; _tCard = null; _tDropCell = null; _tActive = false;
+}
+
+// デバッグバー
+function _showDebug(msg) {
+  let bar = document.getElementById('_dbg');
   if (!bar) {
     bar = document.createElement('div');
-    bar.id = '_tapGuide';
+    bar.id = '_dbg';
     Object.assign(bar.style, {
-      position: 'fixed', bottom: '60px', left: '50%',
-      transform: 'translateX(-50%)',
-      background: '#1a2744', color: 'white',
-      padding: '10px 20px', borderRadius: '20px',
-      fontSize: '13px', fontWeight: '700',
-      zIndex: '9998', whiteSpace: 'nowrap',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-      display: 'flex', alignItems: 'center', gap: '12px'
+      position:'fixed', bottom:'60px', left:'10px', right:'10px',
+      background:'rgba(0,0,0,0.75)', color:'#0f0',
+      padding:'6px 12px', borderRadius:'8px',
+      fontSize:'12px', fontFamily:'monospace',
+      zIndex:'9998', pointerEvents:'none'
     });
-    const cancel = document.createElement('span');
-    cancel.textContent = '✕';
-    cancel.style.cssText = 'cursor:pointer;font-size:16px;opacity:0.8;';
-    cancel.onclick = _clearSelection;
-    bar.appendChild(document.createTextNode(msg));
-    bar.appendChild(cancel);
     document.body.appendChild(bar);
-  } else {
-    bar.style.display = 'flex';
   }
-}
-
-function _hideGuide() {
-  const bar = document.getElementById('_tapGuide');
-  if (bar) bar.style.display = 'none';
+  bar.textContent = msg;
+  bar.style.display = 'block';
 }
 
 function fitModals() {
@@ -1272,7 +1341,7 @@ window.addEventListener('resize', fitModals);
 const _origRender = render;
 window.render = function() {
   _origRender();
-  setTimeout(() => { _addTapToCards(); fitModals(); }, 150);
+  setTimeout(() => { _addTouch(); fitModals(); }, 150);
 };
 render();
 </script>
