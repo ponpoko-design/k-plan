@@ -610,9 +610,15 @@ function openDetail(t) {
   document.getElementById('detailRepeatBtn').textContent = repeatBtnLabel;
   document.getElementById('detailModal')._task = t;
   document.getElementById('detailModal').classList.add('open');
+  document.getElementById('detailModal')._openedAt = Date.now();
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
 }
-function closeDetail() { document.getElementById('detailModal').classList.remove('open'); }
+function closeDetail() {
+  const modal = document.getElementById('detailModal');
+  // モーダルが開いてから350ms以内の呼び出しは無視（iOSゴーストクリック対策）
+  if (modal._openedAt && Date.now() - modal._openedAt < 350) return;
+  modal.classList.remove('open');
+}
 
 function saveTask() {
   const t = document.getElementById('detailModal')._task;
@@ -651,6 +657,9 @@ function showToast(msg, duration) {
   el._timer = setTimeout(() => el.classList.remove('show'), duration || 2500);
 }
 
+// 削除対象タスクをグローバルに保持（モーダル間でデータを受け渡す）
+let _deleteTarget = null;
+
 function deleteTask() {
   const t = document.getElementById('detailModal')._task;
   if (!t) return;
@@ -666,30 +675,33 @@ function deleteTask() {
     saveLocal(); closeDetail(); render();
     return;
   }
-  // 毎週くりかえす予定 → detailを閉じてから選択モーダルを開く
+  // 毎週くりかえす予定 → グローバル変数に退避してからdetailを閉じ、削除選択モーダルを開く
+  _deleteTarget = t;
   closeDetail();
   document.getElementById('deleteConfirmName').textContent = `「${t.unit_name || '予定'}」をどのように削除しますか？`;
-  document.getElementById('deleteConfirmModal')._task = t;
   document.getElementById('deleteConfirmModal').classList.add('open');
 }
 
 function closeDeleteConfirm() {
   document.getElementById('deleteConfirmModal').classList.remove('open');
+  _deleteTarget = null;
 }
 
 function confirmDeleteOnce() {
-  const t = document.getElementById('deleteConfirmModal')._task;
+  const t = _deleteTarget;
   if (!t) return;
   const wk = getWeekKey();
   if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
   const lo = localOverrides[wk];
   lo.hidden = lo.hidden || {};
   lo.hidden[t.uid + '_' + t._dayIdx] = true;
-  saveLocal(); closeDeleteConfirm(); closeDetail(); render();
+  const idx = (lo.added||[]).findIndex(a => a.uid === t.uid);
+  if (idx >= 0) lo.added.splice(idx, 1);
+  saveLocal(); closeDeleteConfirm(); render();
 }
 
 function confirmDeleteAll() {
-  const t = document.getElementById('deleteConfirmModal')._task;
+  const t = _deleteTarget;
   if (!t) return;
   if (t._isWeeklyMoved) {
     if (localOverrides.weeklyMoves) {
@@ -705,7 +717,7 @@ function confirmDeleteAll() {
       localOverrides.weeklyAdded = localOverrides.weeklyAdded.filter(a => a.uid !== t.uid);
     }
   }
-  saveLocal(); closeDeleteConfirm(); closeDetail(); render();
+  saveLocal(); closeDeleteConfirm(); render();
 }
 
 function copyTask() {
@@ -1593,5 +1605,5 @@ window.addEventListener('DOMContentLoaded', function() {
   }
 });
 </script>
-<!-- _260609.1030 --></body>
+</body>
 </html>
