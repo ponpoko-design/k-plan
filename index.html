@@ -343,6 +343,15 @@ function getTasksForWeek() {
     }
   });
 
+  // ===== weeklyMoves: 毎週移動の適用 =====
+  // グローバルなweeklyMoves配列を参照し、元の曜日を非表示・移動先を追加として扱う
+  const weeklyMoves = localOverrides._weeklyMoves || [];
+  // 元の位置を非表示にするためのセット {uid_dayIdx}
+  const weeklyMovedHidden = new Set();
+  weeklyMoves.forEach(mv => {
+    weeklyMovedHidden.add(mv.origUid + '_' + mv.origDayIdx);
+  });
+
   // ローカルhidden
   const allHidden = {...local.hidden};
 
@@ -354,7 +363,31 @@ function getTasksForWeek() {
     const key = (t.repeat_key || t.uid) + '_' + wi;
     if (hiddenByRepeatKey[key]) return;
     if (allHidden[t.uid + '_' + wi]) return;
+    if (weeklyMovedHidden.has(t.uid + '_' + wi)) return; // 毎週移動で非表示
     result.push({...t, _dayIdx: wi, _slotIdx: SLOT_IDX[t.slot] ?? 0});
+  });
+
+  // weeklyMoves の移動先タスクをこの週に追加
+  weeklyMoves.forEach(mv => {
+    // 元タスクを探す（RAW_DATA or local.added）
+    const origTask = RAW_DATA.find(t => t.uid === mv.origUid)
+      || (localOverrides._weeklyMoves_tasks || []).find(t => t.uid === mv.origUid);
+    if (!origTask) return;
+    // 元タスクが週に1回存在するかチェック（同じweeklyMovesで二重追加しない）
+    const alreadyHidden = allHidden[mv.moveUid + '_' + mv.toDay];
+    if (alreadyHidden) return;
+    result.push({
+      ...origTask,
+      uid: mv.moveUid,
+      _dayIdx: mv.toDay,
+      slot: mv.toSlot,
+      _slotIdx: SLOT_IDX[mv.toSlot] ?? 0,
+      weekday_index: mv.toDay,
+      display_type: 'weekly',
+      repeat_key: mv.moveUid,
+      order: origTask.order || 99,
+      _isWeeklyMoved: true
+    });
   });
 
   // 2. weekly_exception（is_hidden=no → 表示追加）
@@ -376,8 +409,9 @@ function getTasksForWeek() {
     result.push({...t, _dayIdx: dayIdx, _slotIdx: SLOT_IDX[t.slot] ?? 0});
   });
 
-  // 4. ローカル追加
+  // 4. ローカル追加（今週限りの追加 + 週ごとのhiddenを考慮）
   (local.added || []).forEach(t => {
+    // weeklyMoveで非表示になったmoveUidのものはスキップしない（移動先は別uidで管理）
     result.push({...t, _dayIdx: t._dayIdx, _slotIdx: SLOT_IDX[t.slot] ?? 0});
   });
 
@@ -494,8 +528,20 @@ function openDetail(t) {
   document.getElementById('dHash').value = t.hash || '';
   document.getElementById('dMemo').value = t.note || '';
   document.getElementById('dTime').value = t.study_time || '';
-  document.getElementById('detailModeLabel').textContent = t.display_type === 'weekly' ? '「毎週くりかえす」予定' : '「今回だけ」の予定';
-  document.getElementById('detailRepeatBtn').textContent = t.display_type === 'weekly' ? '今回だけの予定に変更' : '毎週くりかえす予定に変更';
+
+  let modeLabel, repeatBtnLabel;
+  if (t._isWeeklyMoved) {
+    modeLabel = '「毎週くりかえす」予定（移動済み）';
+    repeatBtnLabel = '元の曜日に戻す（毎週）';
+  } else if (t.display_type === 'weekly') {
+    modeLabel = '「毎週くりかえす」予定';
+    repeatBtnLabel = '今回だけの予定に変更';
+  } else {
+    modeLabel = '「今回だけ」の予定';
+    repeatBtnLabel = '毎週くりかえす予定に変更';
+  }
+  document.getElementById('detailModeLabel').textContent = modeLabel;
+  document.getElementById('detailRepeatBtn').textContent = repeatBtnLabel;
   document.getElementById('detailModal')._task = t;
   document.getElementById('detailModal').classList.add('open');
 }
@@ -533,6 +579,16 @@ function saveTask() {
 function deleteTask() {
   const t = document.getElementById('detailModal')._task;
   if (!t) return;
+
+  // weeklyMoveされたタスクの削除：_weeklyMovesからエントリを削除し元に戻す
+  if (t._isWeeklyMoved) {
+    if (localOverrides._weeklyMoves) {
+      localOverrides._weeklyMoves = localOverrides._weeklyMoves.filter(mv => mv.moveUid !== t.uid);
+    }
+    saveLocal(); closeDetail(); render();
+    return;
+  }
+
   const wk = getWeekKey();
   if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
   const lo = localOverrides[wk];
@@ -645,7 +701,22 @@ function closeCopyModal(){
   document.getElementById('copyModal').classList.remove('open');
 }
 
-function toggleRepeat() { alert('この機能は今後実装予定です'); }
+function toggleRepeat() {
+  const t = document.getElementById('detailModal')._task;
+  if (!t) return;
+
+  // 毎週移動済みタスク → 元に戻す
+  if (t._isWeeklyMoved) {
+    if (localOverrides._weeklyMoves) {
+      localOverrides._weeklyMoves = localOverrides._weeklyMoves.filter(mv => mv.moveUid !== t.uid);
+    }
+    saveLocal(); closeDetail(); render();
+    return;
+  }
+
+  // それ以外は「今後実装」のままにする
+  alert('この機能は今後実装予定です');
+}
 
 // ===== Add modal =====
 function openAdd(dayIdx, slotIdx) {
@@ -1009,7 +1080,7 @@ render();
     <h3 id="moveModalTitle">移動しますか？</h3>
     <div class="move-radio">
       <label><input type="radio" name="moveType" value="once" checked> 今週だけ移動</label>
-      <label><input type="radio" name="moveType" value="weekly"> 毎週 <span id="moveWeeklyLabel">〇曜日</span> に変更</label>
+      <label><input type="radio" name="moveType" value="weekly"> 毎週 <span id="moveWeeklyLabel">〇曜日</span> に変更<br><span style="font-size:11px;color:#888;margin-left:22px;">（全ての週に反映されます）</span></label>
     </div>
     <div class="move-btns">
       <button id="moveCancelBtn" onclick="closeMoveModal()">やめる</button>
@@ -1136,47 +1207,96 @@ function confirmMove() {
   if (!_pendingMove) return;
   const {task, toDay, toSlot} = _pendingMove;
   const type = document.querySelector('input[name="moveType"]:checked').value;
-  const wk = getWeekKey();
-  if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
-  const lo = localOverrides[wk];
-  if (!lo.hidden) lo.hidden = {};
-  if (!lo.added) lo.added = [];
+  const SLOTS2 = ['plan','morning','am','pm','night'];
 
-  // 元タスクを取得（keyでdayIdxとslotIdxも照合）
+  // 元タスクを取得
   const allTasks = getTasksForWeek();
   const keyParts = task.key ? task.key.split('-') : [];
   const fromDayIdx = keyParts.length >= 1 ? parseInt(keyParts[0]) : -1;
   const fromSlotIdx = keyParts.length >= 2 ? parseInt(keyParts[1]) : -1;
-  const orig = allTasks.find(t => 
-    (t.uid === task.uid || t.id === task.id) && 
-    t._dayIdx === fromDayIdx && 
-    t._slotIdx === fromSlotIdx
+  const orig = allTasks.find(t =>
+    (t.uid === task.uid || t.id === task.id) &&
+    t._dayIdx === fromDayIdx && t._slotIdx === fromSlotIdx
   ) || allTasks.find(t => t.uid === task.uid || t.id === task.id);
   if (!orig) { closeMoveModal(); return; }
 
-  // 元タスクを非表示（display_typeに応じてkeyを決定）
-  if (orig.display_type === 'weekly') {
-    lo.hidden[orig.uid + '_' + orig._dayIdx] = true;
-  } else {
-    lo.hidden[orig.uid] = true;
-  }
-  // ローカル追加タスクなら削除
-  const addIdx = lo.added.findIndex(a => a.uid === orig.uid);
-  if (addIdx >= 0) lo.added.splice(addIdx, 1);
+  if (type === 'weekly') {
+    // ===== 毎週移動：_weeklyMovesに保存（全週に反映） =====
+    if (!localOverrides._weeklyMoves) localOverrides._weeklyMoves = [];
+    if (!localOverrides._weeklyMoves_tasks) localOverrides._weeklyMoves_tasks = [];
 
-  // 移動先に追加
-  const SLOTS2 = ['plan','morning','am','pm','night'];
-  lo.added.push({
-    ...orig,
-    uid: 'moved_' + Date.now(),
-    display_type: type === 'weekly' ? 'weekly' : 'one_time',
-    _dayIdx: toDay,
-    slot: SLOTS2[toSlot] || 'night',
-    _slotIdx: toSlot,
-    weekday_index: toDay,
-    order: 99,
-    repeat_key: type === 'weekly' ? 'local_' + Date.now() : null
-  });
+    // 元のorigUid：_isWeeklyMovedなら既存のweeklyMoveを更新、そうでなければ新規
+    const origUid = orig._isWeeklyMoved ? orig._origUid || orig.uid : orig.uid;
+    const origDayIdx = orig._isWeeklyMoved ? orig._origDayIdx || orig._dayIdx : orig._dayIdx;
+
+    // 既存のweeklyMoveを上書き（同じorigUidがあれば）
+    const existIdx = localOverrides._weeklyMoves.findIndex(mv => mv.origUid === origUid && mv.origDayIdx === origDayIdx);
+    const moveUid = 'wm_' + Date.now();
+    const moveEntry = {
+      origUid,
+      origDayIdx,
+      toDay,
+      toSlot: SLOTS2[toSlot] || 'night',
+      moveUid
+    };
+    if (existIdx >= 0) {
+      localOverrides._weeklyMoves[existIdx] = moveEntry;
+    } else {
+      localOverrides._weeklyMoves.push(moveEntry);
+    }
+    // 元タスクデータを保存（RAW_DATAにないローカル追加タスクのために）
+    const taskCopy = {...orig, uid: origUid, _dayIdx: origDayIdx, _origDayIdx: undefined, _isWeeklyMoved: undefined};
+    const taskIdx = localOverrides._weeklyMoves_tasks.findIndex(t => t.uid === origUid);
+    if (taskIdx >= 0) {
+      localOverrides._weeklyMoves_tasks[taskIdx] = taskCopy;
+    } else {
+      localOverrides._weeklyMoves_tasks.push(taskCopy);
+    }
+
+    // 今週の週単位overridesから、同タスクの今週限り移動（added）があれば削除
+    const wk = getWeekKey();
+    if (localOverrides[wk]) {
+      const lo = localOverrides[wk];
+      if (lo.added) {
+        lo.added = lo.added.filter(a => a.uid !== orig.uid);
+      }
+      // 今週の非表示も解除（毎週移動が優先されるため）
+      if (lo.hidden) {
+        delete lo.hidden[origUid + '_' + origDayIdx];
+      }
+    }
+
+  } else {
+    // ===== 今週だけ移動：従来通り週単位overrides =====
+    const wk = getWeekKey();
+    if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
+    const lo = localOverrides[wk];
+    if (!lo.hidden) lo.hidden = {};
+    if (!lo.added) lo.added = [];
+
+    // 元タスクを非表示
+    if (orig.display_type === 'weekly' || orig._isWeeklyMoved) {
+      lo.hidden[orig.uid + '_' + orig._dayIdx] = true;
+    } else {
+      lo.hidden[orig.uid] = true;
+    }
+    // ローカル追加タスクなら削除
+    const addIdx = lo.added.findIndex(a => a.uid === orig.uid);
+    if (addIdx >= 0) lo.added.splice(addIdx, 1);
+
+    // 移動先に追加
+    lo.added.push({
+      ...orig,
+      uid: 'moved_' + Date.now(),
+      display_type: 'one_time',
+      _dayIdx: toDay,
+      slot: SLOTS2[toSlot] || 'night',
+      _slotIdx: toSlot,
+      weekday_index: toDay,
+      order: 99,
+      repeat_key: null
+    });
+  }
 
   saveLocal();
   closeMoveModal();
@@ -1288,5 +1408,5 @@ window.addEventListener('DOMContentLoaded', function() {
   }
 });
 </script>
-</body>
+<!-- _260608.2032 --></body>
 </html>
