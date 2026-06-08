@@ -43,8 +43,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 .day-cell.drag-over{background:#ddeeff;outline:2px dashed #378add;}
 
 /* タスクカード */
-.card{border-radius:4px;padding:3px 5px;font-size:13px;font-weight:700;cursor:grab;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;line-height:1.5;text-align:center;touch-action:none;-webkit-tap-highlight-color:transparent;}
+.card{border-radius:4px;padding:3px 5px;font-size:13px;font-weight:700;cursor:grab;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;line-height:1.5;text-align:center;touch-action:none;-webkit-tap-highlight-color:transparent;outline:none;}
 .card:active{cursor:grabbing;}
+.card:focus{outline:none;box-shadow:none;}
 .card-ghost{opacity:0.3!important;background:#ccc!important;}
 .card-chosen{transform:scale(1.05);box-shadow:0 4px 12px rgba(0,0,0,0.3);}
 .card-dragging{opacity:0.85;box-shadow:0 6px 20px rgba(0,0,0,0.4);transform:scale(1.1);z-index:9999;}
@@ -125,16 +126,16 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 
   <div class="bnav">
     <button class="bnav-btn active" onclick="showView('cal')">
-      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>ホーム
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    </button>
+    <button class="bnav-btn" onclick="">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
     </button>
     <button class="bnav-btn" onclick="openAddModal()">
-      <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>追加
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
     </button>
     <button class="bnav-btn" onclick="showStats()">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>集計
-    </button>
-    <button class="bnav-btn">
-      <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>メニュー
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
     </button>
   </div>
 
@@ -171,17 +172,52 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
         <button class="modal-close" onclick="closeAdd()">×</button>
       </div>
       <div class="modal-body">
-        <div style="display:flex;gap:16px;margin-bottom:10px;">
+        <!-- ラジオ -->
+        <div style="display:flex;gap:16px;margin-bottom:12px;">
           <label style="font-size:16px;cursor:pointer;"><input type="radio" name="addType" value="one_time" checked onchange="toggleAddDate()"> 今週だけの予定</label>
           <label style="font-size:16px;cursor:pointer;"><input type="radio" name="addType" value="weekly" onchange="toggleAddDate()"> 毎週くりかえす予定</label>
         </div>
-        <div id="addDateRow" style="background:#f0f4ff;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:16px;font-weight:700;color:#1a2744;"></div>
-        <div class="field"><label>曜日</label>
-          <select id="aWeekday">
-            <option value="0">月</option><option value="1">火</option><option value="2">水</option>
-            <option value="3">木</option><option value="4">金</option><option value="5">土</option><option value="6">日</option>
-          </select>
+
+        <!-- 今週だけ：日付ピッカー -->
+        <div id="addDateSection">
+          <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">
+            <div style="flex:1;">
+              <label style="font-size:13px;color:#888;display:block;margin-bottom:3px;">日付</label>
+              <div id="addDateDisplay" onclick="toggleAddCal()"
+                style="border:1.5px solid #ccc;border-radius:8px;padding:10px 12px;font-size:15px;font-weight:700;color:#1a2744;cursor:pointer;background:white;">
+                選択してください
+              </div>
+            </div>
+            <div style="flex:1;">
+              <label style="font-size:13px;color:#888;display:block;margin-bottom:3px;">曜日（自動表示）</label>
+              <div id="addWeekdayDisplay"
+                style="border:1.5px solid #eee;border-radius:8px;padding:10px 12px;font-size:15px;font-weight:700;color:#888;background:#f8f8f8;">
+                —
+              </div>
+            </div>
+          </div>
+          <!-- カレンダー -->
+          <div id="addCalWrap" style="display:none;background:white;border:1.5px solid #ddd;border-radius:10px;padding:12px;margin-bottom:10px;box-shadow:0 2px 12px rgba(0,0,0,.1);">
+            <div id="addCalGrid"></div>
+            <div style="display:flex;justify-content:space-around;margin-top:8px;border-top:1px solid #eee;padding-top:8px;">
+              <span onclick="selectAddDateToday()" style="font-size:12px;color:#378add;cursor:pointer;">▶ Today</span>
+              <span onclick="clearAddDate()" style="font-size:12px;color:#e24b4a;cursor:pointer;">— Clear</span>
+              <span onclick="document.getElementById('addCalWrap').style.display='none'" style="font-size:12px;color:#888;cursor:pointer;">× Close</span>
+            </div>
+          </div>
+          <input type="hidden" id="addSelectedDate">
         </div>
+
+        <!-- 毎週くりかえす：曜日セレクト -->
+        <div id="addWeeklySection" style="display:none;">
+          <div class="field"><label>曜日</label>
+            <select id="aWeekday">
+              <option value="0">月</option><option value="1">火</option><option value="2">水</option>
+              <option value="3">木</option><option value="4">金</option><option value="5">土</option><option value="6">日</option>
+            </select>
+          </div>
+        </div>
+
         <div class="field"><label>時間帯</label>
           <select id="aSlot">
             <option value="plan">予定</option><option value="morning">朝</option>
@@ -346,12 +382,19 @@ function getTasksForWeek() {
   // ===== weeklyMoves: 毎週移動の適用 =====
   // _weeklyMoves → Firestoreキー衝突を避けてweeklyMovesキーを使う
   const weeklyMoves = localOverrides.weeklyMoves || [];
+  // この週の月曜日（文字列）
+  const thisWeekMonday = getWeekKey(); // "YYYY-MM-DD"
+
+  // fromDate以降の週にのみ適用するフィルタ済みmoves
+  const activeMoves = weeklyMoves.filter(mv => {
+    if (!mv.fromDate) return true; // fromDateなし（旧データ）は全週に適用
+    return thisWeekMonday >= mv.fromDate;
+  });
+
   // origUid + origDayIdx の組み合わせを非表示にするセット
   const weeklyMovedHidden = new Set();
-  weeklyMoves.forEach(mv => {
+  activeMoves.forEach(mv => {
     weeklyMovedHidden.add(mv.origUid + '_' + mv.origDayIdx);
-    // EXCEPTION_DATAのrepeat_keyベースでも非表示にする
-    weeklyMovedHidden.add('rk_' + mv.origUid + '_' + mv.origDayIdx);
   });
 
   // ローカルhidden
@@ -370,7 +413,7 @@ function getTasksForWeek() {
   });
 
   // weeklyMoves の移動先タスクをこの週に追加
-  weeklyMoves.forEach(mv => {
+  activeMoves.forEach(mv => {
     // このweekの当該曜日に今週限り非表示指定があればスキップ
     if (allHidden[mv.moveUid + '_' + mv.toDay]) return;
     // 元タスクを探す（RAW_DATA優先、なければweeklyMovesTasks）
@@ -394,15 +437,15 @@ function getTasksForWeek() {
   });
 
   // 2. weekly_exception（is_hidden=no → 表示追加）
-  // ただし weeklyMoves で元の位置が移動済みのものは除外
+  // ただし activeMoves で元の位置が移動済みのものは除外
   allExceptions.forEach(e => {
     if (e.is_hidden !== 'no') return;
     const eDate = new Date(e.date);
     const dayIdx = dates.findIndex(d => sameDateStr(d, eDate));
     if (dayIdx < 0) return;
-    // repeat_key が weeklyMoves の origUid と一致し、同じ曜日なら除外
+    // repeat_key が activeMoves の origUid と一致し、同じ曜日なら除外
     if (e.repeat_key) {
-      const isMovedAway = weeklyMoves.some(mv =>
+      const isMovedAway = activeMoves.some(mv =>
         mv.origUid === e.repeat_key && mv.origDayIdx === dayIdx
       );
       if (isMovedAway) return;
@@ -555,6 +598,8 @@ function openDetail(t) {
   document.getElementById('detailRepeatBtn').textContent = repeatBtnLabel;
   document.getElementById('detailModal')._task = t;
   document.getElementById('detailModal').classList.add('open');
+  // タップ後のフォーカス残りを解除
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
 }
 function closeDetail() { document.getElementById('detailModal').classList.remove('open'); }
 
@@ -750,21 +795,25 @@ function toggleRepeat() {
 }
 
 // ===== Add modal =====
+let addCalYear, addCalMonth;
+
 function openAdd(dayIdx, slotIdx) {
-  document.getElementById('aWeekday').value = dayIdx;
+  // デフォルト：今日の日付を選択済みにする
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth()+1, d = now.getDate();
+  const str = y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+  _setAddDate(str);
+
   document.getElementById('aSlot').value = SLOTS[slotIdx] || 'night';
-  // 日付表示
-  const d = addDays(currentMonday, dayIdx);
-  const m = d.getMonth()+1, da = d.getDate();
-  const slotLabel = {plan:'予定',morning:'朝',am:'午前',pm:'午後',night:'夜'}[SLOTS[slotIdx]||'night'];
-  document.getElementById('addDateRow').textContent = m+'/'+da+'（'+DAYS_JP[dayIdx]+'）' + '　' + slotLabel;
-  document.getElementById('addDateRow').style.display = 'block';
+  document.getElementById('aWeekday').value = dayIdx;
   // ラジオを今週だけにリセット
   document.querySelector('input[name="addType"][value="one_time"]').checked = true;
+  toggleAddDate();
   // 教科の初期色をリセット
   const sel = document.getElementById('aSubject');
   sel.value = '算数';
   updateSubjectColor();
+  document.getElementById('addCalWrap').style.display = 'none';
   document.getElementById('addModal').classList.add('open');
 }
 function openAddModal() {
@@ -772,16 +821,90 @@ function openAddModal() {
   const dayIdx = (now.getDay() + 6) % 7;
   const h = now.getHours();
   let slotIdx;
-  if (h >= 6 && h < 9)   slotIdx = 1; // 朝
-  else if (h >= 9 && h < 12)  slotIdx = 2; // 午前
-  else if (h >= 12 && h < 18) slotIdx = 3; // 午後
-  else if (h >= 18 && h < 23) slotIdx = 4; // 夜
-  else slotIdx = 0; // 予定（深夜・早朝）
+  if (h >= 6 && h < 9)   slotIdx = 1;
+  else if (h >= 9 && h < 12)  slotIdx = 2;
+  else if (h >= 12 && h < 18) slotIdx = 3;
+  else if (h >= 18 && h < 23) slotIdx = 4;
+  else slotIdx = 0;
   openAdd(dayIdx, slotIdx);
 }
 function toggleAddDate() {
   const isWeekly = document.querySelector('input[name="addType"]:checked').value === 'weekly';
-  document.getElementById('addDateRow').style.display = isWeekly ? 'none' : 'block';
+  document.getElementById('addDateSection').style.display = isWeekly ? 'none' : 'block';
+  document.getElementById('addWeeklySection').style.display = isWeekly ? 'block' : 'none';
+}
+function toggleAddCal() {
+  const wrap = document.getElementById('addCalWrap');
+  if (wrap.style.display === 'none') {
+    addCalYear = new Date().getFullYear();
+    addCalMonth = new Date().getMonth();
+    renderAddCal();
+    wrap.style.display = 'block';
+  } else {
+    wrap.style.display = 'none';
+  }
+}
+function renderAddCal() {
+  const y = addCalYear, mo = addCalMonth;
+  const firstDay = new Date(y, mo, 1).getDay();
+  const daysInMonth = new Date(y, mo+1, 0).getDate();
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const startOffset = (firstDay+6)%7;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const selectedStr = document.getElementById('addSelectedDate').value || '';
+  let grid = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;">';
+  ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(d => {
+    grid += `<div style="font-size:11px;color:#888;padding:4px 0;">${d}</div>`;
+  });
+  for (let i = 0; i < startOffset; i++) grid += '<div></div>';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dt = new Date(y, mo, d); dt.setHours(0,0,0,0);
+    const dtStr = y+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const isToday = dt.getTime() === today.getTime();
+    const isSel = dtStr === selectedStr;
+    let style = 'font-size:13px;padding:5px 2px;border-radius:50%;cursor:pointer;';
+    if (isSel) style += 'background:#1a2744;color:white;';
+    else if (isToday) style += 'border:2px solid #1a2744;color:#1a2744;font-weight:700;';
+    grid += `<div style="${style}" onclick="selectAddDate('${dtStr}',${d},${mo+1},${y})">${d}</div>`;
+  }
+  grid += '</div>';
+  document.getElementById('addCalGrid').innerHTML =
+    `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <button onclick="addCalYear-=(addCalMonth===0?1:0);addCalMonth=(addCalMonth+11)%12;renderAddCal();" style="background:none;border:none;font-size:18px;cursor:pointer;">◀</button>
+      <span style="font-weight:700;font-size:14px;">${monthNames[mo]} <span style="color:#888;font-size:12px;">${y}</span></span>
+      <button onclick="addCalYear+=(addCalMonth===11?1:0);addCalMonth=(addCalMonth+1)%12;renderAddCal();" style="background:none;border:none;font-size:18px;cursor:pointer;">▶</button>
+    </div>` + grid;
+}
+function _setAddDate(str) {
+  document.getElementById('addSelectedDate').value = str;
+  if (!str) {
+    document.getElementById('addDateDisplay').textContent = '選択してください';
+    document.getElementById('addDateDisplay').style.color = '#aaa';
+    document.getElementById('addWeekdayDisplay').textContent = '—';
+    document.getElementById('addWeekdayDisplay').style.color = '#888';
+    return;
+  }
+  const [y,mo,d] = str.split('-').map(Number);
+  const dt = new Date(y, mo-1, d);
+  const dayIdx = (dt.getDay()+6)%7;
+  document.getElementById('addDateDisplay').textContent = mo+'/'+String(d).padStart(2,'0')+'/'+y;
+  document.getElementById('addDateDisplay').style.color = '#1a2744';
+  document.getElementById('addWeekdayDisplay').textContent = DAYS_JP[dayIdx]+'曜日';
+  document.getElementById('addWeekdayDisplay').style.color = '#1a2744';
+  document.getElementById('aWeekday').value = dayIdx;
+}
+function selectAddDate(str, d, m, y) {
+  _setAddDate(str);
+  document.getElementById('addCalWrap').style.display = 'none';
+}
+function selectAddDateToday() {
+  const now = new Date();
+  const str = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  selectAddDate(str, now.getDate(), now.getMonth()+1, now.getFullYear());
+}
+function clearAddDate() {
+  _setAddDate('');
+  document.getElementById('addCalWrap').style.display = 'none';
 }
 function updateSubjectColor() {
   const sel = document.getElementById('aSubject');
@@ -794,7 +917,17 @@ function updateSubjectColor() {
 function closeAdd() { document.getElementById('addModal').classList.remove('open'); }
 function confirmAdd() {
   const type = document.querySelector('input[name="addType"]:checked').value;
-  const wi = parseInt(document.getElementById('aWeekday').value);
+  let wi, targetDate;
+  if (type === 'one_time') {
+    const dateStr = document.getElementById('addSelectedDate').value;
+    if (!dateStr) { alert('日付を選んでください'); return; }
+    const [y,mo,d] = dateStr.split('-').map(Number);
+    targetDate = new Date(y, mo-1, d);
+    wi = (targetDate.getDay()+6)%7;
+  } else {
+    wi = parseInt(document.getElementById('aWeekday').value);
+    targetDate = null;
+  }
   const slot = document.getElementById('aSlot').value;
   const subj = document.getElementById('aSubject').value;
   const unit = document.getElementById('aUnit').value || '新しい予定';
@@ -802,6 +935,7 @@ function confirmAdd() {
   const memo = document.getElementById('aMemo').value;
   const st = parseInt(document.getElementById('aTime').value)||null;
   const colors = SUBJ_COLOR[subj] || ['#eee','#333'];
+
   const newTask = {
     color: colors[0], weekday: DAYS_JP[wi], weekday_index: wi,
     slot, subject: subj, unit_name: unit, note: memo, study_time: st,
@@ -809,10 +943,19 @@ function confirmAdd() {
     hash, is_hidden:'no', order:99, uid:'new_'+Date.now(),
     _dayIdx: wi, _slotIdx: SLOT_IDX[slot]||0
   };
-  const wk = getWeekKey();
+
+  // one_time の場合は対象週のoverridesに追加
+  let wk;
+  if (type === 'one_time' && targetDate) {
+    const targetMonday = getMonday(targetDate);
+    wk = dateKey(targetMonday);
+  } else {
+    wk = getWeekKey();
+  }
   if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
   if (!localOverrides[wk].added) localOverrides[wk].added = [];
   localOverrides[wk].added.push(newTask);
+
   saveLocal(); closeAdd(); render();
   document.getElementById('aUnit').value='';
   document.getElementById('aHash').value='';
@@ -1268,7 +1411,8 @@ function confirmMove() {
       origDayIdx,
       toDay,
       toSlot: SLOTS2[toSlot] || 'night',
-      moveUid
+      moveUid,
+      fromDate: dateKey(currentMonday) // この週の月曜日以降に適用
     };
     if (existIdx >= 0) {
       localOverrides.weeklyMoves[existIdx] = moveEntry;
@@ -1457,5 +1601,5 @@ window.addEventListener('DOMContentLoaded', function() {
   }
 });
 </script>
-<!-- _260608.2145 --></body>
+<!-- _260608.2245 --></body>
 </html>
