@@ -535,7 +535,10 @@ function render() {
     });
     card.addEventListener('dragend', () => card.classList.remove('dragging'));
     card.addEventListener('click', e => { e.stopPropagation(); openDetail(t); });
-    card.addEventListener('touchstart', e => { card._touchMoved = false; }, {passive:true});
+    card.addEventListener('touchstart', e => {
+      e.preventDefault(); // iOSの:activeハイライトを防ぐ
+      card._touchMoved = false;
+    }, {passive:false});
     card.addEventListener('touchmove', e => { card._touchMoved = true; });
     card.addEventListener('touchend', e => {
       e.stopPropagation();
@@ -1348,7 +1351,7 @@ function _findCell(x, y) {
 function _addTouch() {
   document.querySelectorAll('.card').forEach(card => {
     card.removeEventListener('touchstart', _tStart);
-    card.addEventListener('touchstart', _tStart, {passive:true});
+    card.addEventListener('touchstart', _tStart, {passive:false});
   });
 }
 
