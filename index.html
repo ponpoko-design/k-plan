@@ -43,8 +43,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 .day-cell.drag-over{background:#ddeeff;outline:2px dashed #378add;}
 
 /* タスクカード */
-.card{border-radius:4px;padding:3px 5px;font-size:13px;font-weight:700;cursor:grab;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;line-height:1.5;text-align:center;touch-action:none;}
-.card:active{cursor:grabbing;opacity:.7;}
+.card{border-radius:4px;padding:3px 5px;font-size:13px;font-weight:700;cursor:grab;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;line-height:1.5;text-align:center;touch-action:none;-webkit-tap-highlight-color:transparent;}
+.card:active{cursor:grabbing;}
 .card-ghost{opacity:0.3!important;background:#ccc!important;}
 .card-chosen{transform:scale(1.05);box-shadow:0 4px 12px rgba(0,0,0,0.3);}
 .card-dragging{opacity:0.85;box-shadow:0 6px 20px rgba(0,0,0,0.4);transform:scale(1.1);z-index:9999;}
@@ -716,7 +716,7 @@ function toggleRepeat() {
   const t = document.getElementById('detailModal')._task;
   if (!t) return;
 
-  // 毎週移動済みタスク → 元に戻す
+  // 毎週移動済みタスク → 元の曜日に戻す（全週）
   if (t._isWeeklyMoved) {
     if (localOverrides.weeklyMoves) {
       localOverrides.weeklyMoves = localOverrides.weeklyMoves.filter(mv => mv.moveUid !== t.uid);
@@ -725,7 +725,27 @@ function toggleRepeat() {
     return;
   }
 
-  // それ以外は「今後実装」のままにする
+  // 毎週くりかえす予定 → 今週だけ非表示にして、今週限りの予定として追加
+  if (t.display_type === 'weekly') {
+    const wk = getWeekKey();
+    if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
+    const lo = localOverrides[wk];
+    lo.hidden = lo.hidden || {};
+    lo.added = lo.added || [];
+    // 元の毎週タスクを今週非表示
+    lo.hidden[t.uid + '_' + t._dayIdx] = true;
+    // 今週限りの予定として追加（内容は同じ、display_typeをone_timeに）
+    lo.added.push({
+      ...t,
+      uid: 'once_' + Date.now(),
+      display_type: 'one_time',
+      repeat_key: null,
+      order: t.order || 99
+    });
+    saveLocal(); closeDetail(); render();
+    return;
+  }
+
   alert('この機能は今後実装予定です');
 }
 
@@ -1361,6 +1381,15 @@ async function loadFromFirestore() {
       const data = doc.data();
       if (data.overrides) {
         localOverrides = data.overrides;
+        // 旧キー名マイグレーション: _weeklyMoves → weeklyMoves
+        if (localOverrides._weeklyMoves && !localOverrides.weeklyMoves) {
+          localOverrides.weeklyMoves = localOverrides._weeklyMoves;
+          delete localOverrides._weeklyMoves;
+        }
+        if (localOverrides._weeklyMoves_tasks && !localOverrides.weeklyMovesTasks) {
+          localOverrides.weeklyMovesTasks = localOverrides._weeklyMoves_tasks;
+          delete localOverrides._weeklyMoves_tasks;
+        }
         localStorage.setItem('schedule_overrides', JSON.stringify(localOverrides));
       }
     }
@@ -1389,6 +1418,15 @@ try {
       if (data.updatedBy === DEVICE_ID) return;
       if (data.overrides) {
         localOverrides = data.overrides;
+        // 旧キー名マイグレーション
+        if (localOverrides._weeklyMoves && !localOverrides.weeklyMoves) {
+          localOverrides.weeklyMoves = localOverrides._weeklyMoves;
+          delete localOverrides._weeklyMoves;
+        }
+        if (localOverrides._weeklyMoves_tasks && !localOverrides.weeklyMovesTasks) {
+          localOverrides.weeklyMovesTasks = localOverrides._weeklyMoves_tasks;
+          delete localOverrides._weeklyMoves_tasks;
+        }
         localStorage.setItem('schedule_overrides', JSON.stringify(localOverrides));
         if (sessionStorage.getItem('auth') === '1') render();
       }
@@ -1419,5 +1457,5 @@ window.addEventListener('DOMContentLoaded', function() {
   }
 });
 </script>
-<!-- _260608.2108 --></body>
+<!-- _260608.2145 --></body>
 </html>
