@@ -144,7 +144,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
   <div id="toast"></div>
 
   <!-- 削除確認モーダル -->
-  <div class="modal-bg" id="deleteConfirmModal">
+  <div class="modal-bg" id="deleteConfirmModal" style="z-index:200;">
     <div class="modal" style="width:340px;">
       <div class="modal-hdr">
         <span>予定を削除する</span>
@@ -666,8 +666,9 @@ function deleteTask() {
     saveLocal(); closeDetail(); render();
     return;
   }
-  // 毎週くりかえす予定 → 選択モーダル
-  document.getElementById('deleteConfirmName').textContent = `「${t.unit_name || '予定'}」を削除する方法を選んでください`;
+  // 毎週くりかえす予定 → detailを閉じてから選択モーダルを開く
+  closeDetail();
+  document.getElementById('deleteConfirmName').textContent = `「${t.unit_name || '予定'}」をどのように削除しますか？`;
   document.getElementById('deleteConfirmModal')._task = t;
   document.getElementById('deleteConfirmModal').classList.add('open');
 }
@@ -982,13 +983,20 @@ function confirmAdd() {
     hash, is_hidden:'no', order:99, uid:'new_'+Date.now(),
     _dayIdx:wi, _slotIdx:SLOT_IDX[slot]||0
   };
-  let wk;
-  if (type==='one_time'&&targetDate) {
-    wk=dateKey(getMonday(targetDate));
-  } else { wk=getWeekKey(); }
-  if (!localOverrides[wk]) localOverrides[wk]={added:[],hidden:{}};
-  if (!localOverrides[wk].added) localOverrides[wk].added=[];
-  localOverrides[wk].added.push(newTask);
+  if (type==='weekly') {
+    // 毎週くりかえす → weeklyAddedに追加（今週以降全週に表示）
+    if (!localOverrides.weeklyAdded) localOverrides.weeklyAdded=[];
+    localOverrides.weeklyAdded.push({
+      ...newTask,
+      fromDate: dateKey(currentMonday)
+    });
+  } else {
+    // 今週だけ → 対象週のoverridesに追加
+    const wk = targetDate ? dateKey(getMonday(targetDate)) : getWeekKey();
+    if (!localOverrides[wk]) localOverrides[wk]={added:[],hidden:{}};
+    if (!localOverrides[wk].added) localOverrides[wk].added=[];
+    localOverrides[wk].added.push(newTask);
+  }
   saveLocal(); closeAdd(); render();
   document.getElementById('aUnit').value='';
   document.getElementById('aHash').value='';
@@ -1585,5 +1593,5 @@ window.addEventListener('DOMContentLoaded', function() {
   }
 });
 </script>
-<!-- _260609.1000 --></body>
+<!-- _260609.1030 --></body>
 </html>
