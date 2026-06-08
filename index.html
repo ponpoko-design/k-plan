@@ -326,9 +326,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
     <div id="statsMonth" style="padding:16px 18px;overflow-y:auto;max-height:640px;"></div>
   </div>
 </div>
-    </div>
-  </div>
-</div>
 
 <script>
 // ===== データ定義 =====
@@ -1701,7 +1698,7 @@ try {
           delete localOverrides._weeklyMoves_tasks;
         }
         localStorage.setItem('schedule_overrides', JSON.stringify(localOverrides));
-        if (sessionStorage.getItem('auth') === '1') render();
+        if (localStorage.getItem('auth') === '1') render();
       }
     }
   });
@@ -1712,7 +1709,7 @@ function checkPw() {
   if (input === 'Buchan_tensai1223') {
     document.getElementById('pwScreen').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
-    sessionStorage.setItem('auth', '1');
+    localStorage.setItem('auth', '1');
     // ログイン後にFirestoreから最新データを読み込む
     loadFromFirestore().then(() => render());
   } else {
@@ -1723,12 +1720,12 @@ function checkPw() {
 }
 // セッション中は再入力不要
 window.addEventListener('DOMContentLoaded', function() {
-  if (sessionStorage.getItem('auth') === '1') {
+  if (localStorage.getItem('auth') === '1') {
     document.getElementById('pwScreen').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
     loadFromFirestore().then(() => render());
   }
 });
 </script>
-<!-- _260609.0020 --></body>
+<!-- _260609.0835 --></body>
 </html>
