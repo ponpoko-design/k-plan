@@ -169,24 +169,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
     </div>
   </div>
 
-  <!-- 削除確認モーダル（毎週くりかえす用） -->
-  <div class="modal-bg" id="deleteConfirmModal">
-    <div class="modal" style="width:340px;">
-      <div class="modal-hdr">
-        <span>予定を削除する</span>
-        <button class="modal-close" onclick="closeDeleteConfirm()">×</button>
-      </div>
-      <div class="modal-body" style="padding:20px 18px;">
-        <div id="deleteConfirmName" style="font-size:15px;font-weight:700;color:#1a2744;text-align:center;margin-bottom:18px;"></div>
-        <div style="display:flex;flex-direction:column;gap:10px;">
-          <button onclick="confirmDeleteOnce()" style="width:100%;background:white;border:2px solid #e24b4a;color:#e24b4a;border-radius:20px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;">今週だけ削除する</button>
-          <button onclick="confirmDeleteAll()" style="width:100%;background:#e24b4a;border:none;color:white;border-radius:20px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;">今週以降すべて削除する</button>
-          <button onclick="closeDeleteConfirm()" style="width:100%;background:white;border:2px solid #ccc;color:#888;border-radius:20px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;">やめる</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- 追加モーダル -->
   <div class="modal-bg" id="addModal">
     <div class="modal">
@@ -399,23 +381,15 @@ function getTasksForWeek() {
     }
   });
 
-  // ===== weeklyDeleted: 今週以降削除されたweeklyタスクのセット =====
-  const thisWeekMonday = getWeekKey(); // "YYYY-MM-DD"
-  const weeklyDeleted = localOverrides.weeklyDeleted || [];
-  const weeklyDeletedSet = new Set();
-  weeklyDeleted.forEach(d => {
-    // fromDate以降の週なら削除済みとして扱う
-    if (!d.fromDate || thisWeekMonday >= d.fromDate) {
-      weeklyDeletedSet.add(d.uid + '_' + d.dayIdx);
-    }
-  });
-
   // ===== weeklyMoves: 毎週移動の適用 =====
+  // _weeklyMoves → Firestoreキー衝突を避けてweeklyMovesキーを使う
   const weeklyMoves = localOverrides.weeklyMoves || [];
+  // この週の月曜日（文字列）
+  const thisWeekMonday = getWeekKey(); // "YYYY-MM-DD"
 
   // fromDate以降の週にのみ適用するフィルタ済みmoves
   const activeMoves = weeklyMoves.filter(mv => {
-    if (!mv.fromDate) return true;
+    if (!mv.fromDate) return true; // fromDateなし（旧データ）は全週に適用
     return thisWeekMonday >= mv.fromDate;
   });
 
@@ -436,8 +410,7 @@ function getTasksForWeek() {
     const key = (t.repeat_key || t.uid) + '_' + wi;
     if (hiddenByRepeatKey[key]) return;
     if (allHidden[t.uid + '_' + wi]) return;
-    if (weeklyMovedHidden.has(t.uid + '_' + wi)) return;
-    if (weeklyDeletedSet.has(t.uid + '_' + wi)) return; // 今週以降削除済み
+    if (weeklyMovedHidden.has(t.uid + '_' + wi)) return; // 毎週移動で非表示
     result.push({...t, _dayIdx: wi, _slotIdx: SLOT_IDX[t.slot] ?? 0});
   });
 
@@ -499,11 +472,11 @@ function getTasksForWeek() {
   });
 
   // 5. weeklyAdded：「今回だけ→毎週」に変換されたタスクをこの週に展開
+  // fromDate以降の週にのみ表示
   (localOverrides.weeklyAdded || []).forEach(t => {
-    if (t.fromDate && thisWeekMonday < t.fromDate) return;
+    if (t.fromDate && thisWeekMonday < t.fromDate) return; // 適用開始前はスキップ
     const wi = t.weekday_index;
     if (allHidden[t.uid + '_' + wi]) return;
-    if (weeklyDeletedSet.has(t.uid + '_' + wi)) return; // 削除済み
     result.push({...t, _dayIdx: wi, _slotIdx: SLOT_IDX[t.slot] ?? 0, display_type: 'weekly'});
   });
 
@@ -682,75 +655,24 @@ function deleteTask() {
   const t = document.getElementById('detailModal')._task;
   if (!t) return;
 
-  // weeklyMoveされたタスク → 確認モーダルへ（weekly扱い）
-  // 今週だけの予定 → 即削除
-  if (t.display_type !== 'weekly' && !t._isWeeklyMoved) {
-    const wk = getWeekKey();
-    if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
-    const lo = localOverrides[wk];
-    lo.hidden = lo.hidden || {};
-    lo.hidden[t.uid] = true;
-    const idx = (lo.added||[]).findIndex(a => a.uid === t.uid);
-    if (idx >= 0) lo.added.splice(idx, 1);
+  // weeklyMoveされたタスクの削除：weeklyMovesからエントリを削除し元に戻す
+  if (t._isWeeklyMoved) {
+    if (localOverrides.weeklyMoves) {
+      localOverrides.weeklyMoves = localOverrides.weeklyMoves.filter(mv => mv.moveUid !== t.uid);
+    }
     saveLocal(); closeDetail(); render();
     return;
   }
 
-  // 毎週くりかえす予定 → 選択モーダルを開く
-  const name = t.unit_name || '予定';
-  document.getElementById('deleteConfirmName').textContent = `「${name}」を削除する方法を選んでください`;
-  document.getElementById('deleteConfirmModal')._task = t;
-  document.getElementById('deleteConfirmModal').classList.add('open');
-}
-
-function closeDeleteConfirm() {
-  document.getElementById('deleteConfirmModal').classList.remove('open');
-}
-
-// 今週だけ削除
-function confirmDeleteOnce() {
-  const t = document.getElementById('deleteConfirmModal')._task;
-  if (!t) return;
   const wk = getWeekKey();
   if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
   const lo = localOverrides[wk];
   lo.hidden = lo.hidden || {};
-
-  if (t._isWeeklyMoved) {
-    // 移動済みタスクの今週だけ削除：今週のhiddenに入れる
-    lo.hidden[t.uid + '_' + t._dayIdx] = true;
-  } else {
-    lo.hidden[t.uid + '_' + t._dayIdx] = true;
-  }
-  saveLocal(); closeDeleteConfirm(); closeDetail(); render();
-}
-
-// 今週以降すべて削除
-function confirmDeleteAll() {
-  const t = document.getElementById('deleteConfirmModal')._task;
-  if (!t) return;
-
-  if (t._isWeeklyMoved) {
-    // 移動済みタスク：weeklyMovesから削除（全週で元に戻る＝消える）
-    if (localOverrides.weeklyMoves) {
-      localOverrides.weeklyMoves = localOverrides.weeklyMoves.filter(mv => mv.moveUid !== t.uid);
-    }
-  } else {
-    // 通常のweeklyタスク：weeklyDeletedに今週以降削除として登録
-    if (!localOverrides.weeklyDeleted) localOverrides.weeklyDeleted = [];
-    const existIdx = localOverrides.weeklyDeleted.findIndex(d => d.uid === t.uid);
-    const entry = { uid: t.uid, dayIdx: t._dayIdx, fromDate: dateKey(currentMonday) };
-    if (existIdx >= 0) {
-      localOverrides.weeklyDeleted[existIdx] = entry;
-    } else {
-      localOverrides.weeklyDeleted.push(entry);
-    }
-    // weeklyAddedから来たタスクなら配列からも削除
-    if (localOverrides.weeklyAdded) {
-      localOverrides.weeklyAdded = localOverrides.weeklyAdded.filter(a => a.uid !== t.uid);
-    }
-  }
-  saveLocal(); closeDeleteConfirm(); closeDetail(); render();
+  const hkey = t.display_type === 'weekly' ? t.uid+'_'+t._dayIdx : t.uid;
+  lo.hidden[hkey] = true;
+  const idx = (lo.added||[]).findIndex(a => a.uid === t.uid);
+  if (idx >= 0) lo.added.splice(idx, 1);
+  saveLocal(); closeDetail(); render();
 }
 
 function copyTask() {
@@ -1727,5 +1649,5 @@ window.addEventListener('DOMContentLoaded', function() {
   }
 });
 </script>
-<!-- _260609.0020 --><!-- _260609.0850 --></body>
+<!-- _260609.0900 --></body>
 </html>
