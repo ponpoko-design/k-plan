@@ -1203,13 +1203,76 @@ render();
 
 </div><!-- #app -->
 
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script>
+// ===== Firebase初期化 =====
+const firebaseConfig = {
+  apiKey: "AIzaSyCNwD87rfjGlAlx6Xpr5UnYjh6PPof2Pxg",
+  authDomain: "k-plan-bf484.firebaseapp.com",
+  projectId: "k-plan-bf484",
+  storageBucket: "k-plan-bf484.firebasestorage.app",
+  messagingSenderId: "255850303553",
+  appId: "1:255850303553:web:e5608c4a17fdd9bcbeb6c0"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// ===== Firestore同期 =====
+const DEVICE_ID = localStorage.getItem('deviceId') || ('device_' + Date.now());
+localStorage.setItem('deviceId', DEVICE_ID);
+
+// Firestoreからデータを読み込む
+async function loadFromFirestore() {
+  try {
+    const doc = await db.collection('schedules').doc('main').get();
+    if (doc.exists) {
+      const data = doc.data();
+      if (data.overrides) {
+        localOverrides = data.overrides;
+        localStorage.setItem('schedule_overrides', JSON.stringify(localOverrides));
+      }
+    }
+  } catch(e) {
+    console.log('Firestore読み込みエラー:', e);
+  }
+}
+
+// Firestoreにデータを保存する（既存のsaveLocal関数を上書き）
+const _origSaveLocal = saveLocal;
+window.saveLocal = function() {
+  _origSaveLocal();
+  // Firestoreにも保存
+  db.collection('schedules').doc('main').set({
+    overrides: localOverrides,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    updatedBy: DEVICE_ID
+  }).catch(e => console.log('Firestore保存エラー:', e));
+};
+
+// リアルタイム同期（他のデバイスの変更を受信）
+try {
+  db.collection('schedules').doc('main').onSnapshot(doc => {
+    if (doc.exists) {
+      const data = doc.data();
+      if (data.updatedBy === DEVICE_ID) return;
+      if (data.overrides) {
+        localOverrides = data.overrides;
+        localStorage.setItem('schedule_overrides', JSON.stringify(localOverrides));
+        if (sessionStorage.getItem('auth') === '1') render();
+      }
+    }
+  });
+} catch(e) { console.log('snapshot error:', e); }
+
 function checkPw() {
   const input = document.getElementById('pwInput').value;
   if (input === 'Buchan_tensai1223') {
     document.getElementById('pwScreen').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
     sessionStorage.setItem('auth', '1');
+    // ログイン後にFirestoreから最新データを読み込む
+    loadFromFirestore().then(() => render());
   } else {
     document.getElementById('pwError').textContent = 'パスワードが違います';
     document.getElementById('pwInput').value = '';
@@ -1217,10 +1280,13 @@ function checkPw() {
   }
 }
 // セッション中は再入力不要
-if (sessionStorage.getItem('auth') === '1') {
-  document.getElementById('pwScreen').style.display = 'none';
-  document.getElementById('app').style.display = 'flex';
-}
+window.addEventListener('DOMContentLoaded', function() {
+  if (sessionStorage.getItem('auth') === '1') {
+    document.getElementById('pwScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    loadFromFirestore().then(() => render());
+  }
+});
 </script>
 </body>
 </html>
