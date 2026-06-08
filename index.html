@@ -43,11 +43,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 .day-cell.drag-over{background:#ddeeff;outline:2px dashed #378add;}
 
 /* タスクカード */
-.card{border-radius:4px;padding:3px 5px;font-size:13px;font-weight:700;cursor:grab;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;line-height:1.5;text-align:center;touch-action:none;-webkit-tap-highlight-color:rgba(0,0,0,0)!important;outline:none;}
-.card:active,.card:focus,.card:focus-visible{outline:none!important;box-shadow:none!important;transform:none!important;opacity:1!important;}
+.card{border-radius:4px;padding:3px 5px;font-size:13px;font-weight:700;cursor:grab;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;line-height:1.5;text-align:center;touch-action:none;}
+.card:active{cursor:grabbing;opacity:.7;}
 .card-ghost{opacity:0.3!important;background:#ccc!important;}
-.card-chosen{} /* 無効化 */
-.card-dragging{} /* 無効化 */
+.card-chosen{transform:scale(1.05);box-shadow:0 4px 12px rgba(0,0,0,0.3);}
+.card-dragging{opacity:0.85;box-shadow:0 6px 20px rgba(0,0,0,0.4);transform:scale(1.1);z-index:9999;}
 .card.dragging{opacity:.35;}
 .card.math{background:var(--c-math);color:var(--c-math-t);}
 .card.jp{background:var(--c-jp);color:var(--c-jp-t);}
@@ -64,10 +64,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 .bnav-btn{display:flex;flex-direction:column;align-items:center;gap:0;color:var(--navy);font-size:0;cursor:pointer;padding:4px 30px;border:none;background:none;border-radius:8px;}
 .bnav-btn svg{width:28px;height:28px;stroke:currentColor;fill:none;stroke-width:1.8;}
 .bnav-btn.active{color:#378add;}
-
-/* トースト通知 */
-#toast{position:fixed;bottom:72px;left:50%;transform:translateX(-50%) translateY(20px);background:#1a2744;color:white;padding:10px 22px;border-radius:20px;font-size:14px;font-weight:700;opacity:0;pointer-events:none;transition:opacity .3s,transform .3s;z-index:9999;white-space:nowrap;}
-#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
 /* モーダル共通 */
 .modal-bg{display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center;}
@@ -105,9 +101,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 
 <div id="app" style="display:none;width:100%;height:100%;">
   <div class="hdr">
-    <button class="nav-btn" onclick="changeWeek(-1)"><svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor"><polygon points="10,0 10,12 0,6"/></svg> 前の週</button>
+    <button class="nav-btn" onclick="changeWeek(-1)">◀ 前の週</button>
     <div class="hdr-title">航大 家庭学習スケジュール</div>
-    <button class="nav-btn" onclick="changeWeek(1)">次の週 <svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor"><polygon points="0,0 0,12 10,6"/></svg></button>
+    <button class="nav-btn" onclick="changeWeek(1)">次の週 ▶</button>
   </div>
 
   <div class="cal-wrap">
@@ -129,20 +125,18 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 
   <div class="bnav">
     <button class="bnav-btn active" onclick="showView('cal')">
-      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-    </button>
-    <button class="bnav-btn" onclick="">
-      <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-    </button>
-    <button class="bnav-btn" onclick="showStats()">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>ホーム
     </button>
     <button class="bnav-btn" onclick="openAddModal()">
-      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>追加
+    </button>
+    <button class="bnav-btn" onclick="showStats()">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>集計
+    </button>
+    <button class="bnav-btn">
+      <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>メニュー
     </button>
   </div>
-
-<div id="toast"></div>
 
   <!-- 詳細モーダル -->
   <div class="modal-bg" id="detailModal">
@@ -177,52 +171,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
         <button class="modal-close" onclick="closeAdd()">×</button>
       </div>
       <div class="modal-body">
-        <!-- ラジオ -->
-        <div style="display:flex;gap:16px;margin-bottom:12px;">
+        <div style="display:flex;gap:16px;margin-bottom:10px;">
           <label style="font-size:16px;cursor:pointer;"><input type="radio" name="addType" value="one_time" checked onchange="toggleAddDate()"> 今週だけの予定</label>
           <label style="font-size:16px;cursor:pointer;"><input type="radio" name="addType" value="weekly" onchange="toggleAddDate()"> 毎週くりかえす予定</label>
         </div>
-
-        <!-- 今週だけ：日付ピッカー -->
-        <div id="addDateSection">
-          <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">
-            <div style="flex:1;">
-              <label style="font-size:13px;color:#888;display:block;margin-bottom:3px;">日付</label>
-              <div id="addDateDisplay" onclick="toggleAddCal()"
-                style="border:1.5px solid #ccc;border-radius:8px;padding:10px 12px;font-size:15px;font-weight:700;color:#1a2744;cursor:pointer;background:white;">
-                選択してください
-              </div>
-            </div>
-            <div style="flex:1;">
-              <label style="font-size:13px;color:#888;display:block;margin-bottom:3px;">曜日（自動表示）</label>
-              <div id="addWeekdayDisplay"
-                style="border:1.5px solid #eee;border-radius:8px;padding:10px 12px;font-size:15px;font-weight:700;color:#888;background:#f8f8f8;">
-                —
-              </div>
-            </div>
-          </div>
-          <!-- カレンダー -->
-          <div id="addCalWrap" style="display:none;background:white;border:1.5px solid #ddd;border-radius:10px;padding:12px;margin-bottom:10px;box-shadow:0 2px 12px rgba(0,0,0,.1);">
-            <div id="addCalGrid"></div>
-            <div style="display:flex;justify-content:space-around;margin-top:8px;border-top:1px solid #eee;padding-top:8px;">
-              <span onclick="selectAddDateToday()" style="font-size:12px;color:#378add;cursor:pointer;">▶ Today</span>
-              <span onclick="clearAddDate()" style="font-size:12px;color:#e24b4a;cursor:pointer;">— Clear</span>
-              <span onclick="document.getElementById('addCalWrap').style.display='none'" style="font-size:12px;color:#888;cursor:pointer;">× Close</span>
-            </div>
-          </div>
-          <input type="hidden" id="addSelectedDate">
+        <div id="addDateRow" style="background:#f0f4ff;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:16px;font-weight:700;color:#1a2744;"></div>
+        <div class="field"><label>曜日</label>
+          <select id="aWeekday">
+            <option value="0">月</option><option value="1">火</option><option value="2">水</option>
+            <option value="3">木</option><option value="4">金</option><option value="5">土</option><option value="6">日</option>
+          </select>
         </div>
-
-        <!-- 毎週くりかえす：曜日セレクト -->
-        <div id="addWeeklySection" style="display:none;">
-          <div class="field"><label>曜日</label>
-            <select id="aWeekday">
-              <option value="0">月</option><option value="1">火</option><option value="2">水</option>
-              <option value="3">木</option><option value="4">金</option><option value="5">土</option><option value="6">日</option>
-            </select>
-          </div>
-        </div>
-
         <div class="field"><label>時間帯</label>
           <select id="aSlot">
             <option value="plan">予定</option><option value="morning">朝</option>
@@ -308,6 +267,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
     <div id="statsMonth" style="padding:16px 18px;overflow-y:auto;max-height:640px;"></div>
   </div>
 </div>
+    </div>
+  </div>
+</div>
 
 <script>
 // ===== データ定義 =====
@@ -381,24 +343,6 @@ function getTasksForWeek() {
     }
   });
 
-  // ===== weeklyMoves: 毎週移動の適用 =====
-  // _weeklyMoves → Firestoreキー衝突を避けてweeklyMovesキーを使う
-  const weeklyMoves = localOverrides.weeklyMoves || [];
-  // この週の月曜日（文字列）
-  const thisWeekMonday = getWeekKey(); // "YYYY-MM-DD"
-
-  // fromDate以降の週にのみ適用するフィルタ済みmoves
-  const activeMoves = weeklyMoves.filter(mv => {
-    if (!mv.fromDate) return true; // fromDateなし（旧データ）は全週に適用
-    return thisWeekMonday >= mv.fromDate;
-  });
-
-  // origUid + origDayIdx の組み合わせを非表示にするセット
-  const weeklyMovedHidden = new Set();
-  activeMoves.forEach(mv => {
-    weeklyMovedHidden.add(mv.origUid + '_' + mv.origDayIdx);
-  });
-
   // ローカルhidden
   const allHidden = {...local.hidden};
 
@@ -410,49 +354,15 @@ function getTasksForWeek() {
     const key = (t.repeat_key || t.uid) + '_' + wi;
     if (hiddenByRepeatKey[key]) return;
     if (allHidden[t.uid + '_' + wi]) return;
-    if (weeklyMovedHidden.has(t.uid + '_' + wi)) return; // 毎週移動で非表示
     result.push({...t, _dayIdx: wi, _slotIdx: SLOT_IDX[t.slot] ?? 0});
   });
 
-  // weeklyMoves の移動先タスクをこの週に追加
-  activeMoves.forEach(mv => {
-    // このweekの当該曜日に今週限り非表示指定があればスキップ
-    if (allHidden[mv.moveUid + '_' + mv.toDay]) return;
-    // 元タスクを探す（RAW_DATA優先、なければweeklyMovesTasks）
-    const origTask = RAW_DATA.find(t => t.uid === mv.origUid)
-      || (localOverrides.weeklyMovesTasks || []).find(t => t.uid === mv.origUid);
-    if (!origTask) return;
-    result.push({
-      ...origTask,
-      uid: mv.moveUid,
-      _dayIdx: mv.toDay,
-      slot: mv.toSlot,
-      _slotIdx: SLOT_IDX[mv.toSlot] ?? 0,
-      weekday_index: mv.toDay,
-      display_type: 'weekly',
-      repeat_key: mv.moveUid,
-      order: origTask.order || 99,
-      _isWeeklyMoved: true,
-      _origUid: mv.origUid,
-      _origDayIdx: mv.origDayIdx
-    });
-  });
-
   // 2. weekly_exception（is_hidden=no → 表示追加）
-  // ただし activeMoves で元の位置が移動済みのものは除外
   allExceptions.forEach(e => {
     if (e.is_hidden !== 'no') return;
     const eDate = new Date(e.date);
     const dayIdx = dates.findIndex(d => sameDateStr(d, eDate));
     if (dayIdx < 0) return;
-    // repeat_key が activeMoves の origUid と一致し、同じ曜日なら除外
-    if (e.repeat_key) {
-      const isMovedAway = activeMoves.some(mv =>
-        mv.origUid === e.repeat_key && mv.origDayIdx === dayIdx
-      );
-      if (isMovedAway) return;
-    }
-    if (allHidden[e.uid]) return;
     result.push({...e, _dayIdx: dayIdx, _slotIdx: SLOT_IDX[e.slot] ?? 0});
   });
 
@@ -466,18 +376,9 @@ function getTasksForWeek() {
     result.push({...t, _dayIdx: dayIdx, _slotIdx: SLOT_IDX[t.slot] ?? 0});
   });
 
-  // 4. ローカル追加（今週分）
+  // 4. ローカル追加
   (local.added || []).forEach(t => {
     result.push({...t, _dayIdx: t._dayIdx, _slotIdx: SLOT_IDX[t.slot] ?? 0});
-  });
-
-  // 5. weeklyAdded：「今回だけ→毎週」に変換されたタスクをこの週に展開
-  // fromDate以降の週にのみ表示
-  (localOverrides.weeklyAdded || []).forEach(t => {
-    if (t.fromDate && thisWeekMonday < t.fromDate) return; // 適用開始前はスキップ
-    const wi = t.weekday_index;
-    if (allHidden[t.uid + '_' + wi]) return;
-    result.push({...t, _dayIdx: wi, _slotIdx: SLOT_IDX[t.slot] ?? 0, display_type: 'weekly'});
   });
 
   return result;
@@ -526,7 +427,6 @@ function render() {
     card.setAttribute('data-key', t._dayIdx + '-' + t._slotIdx);
     card.setAttribute('data-id', t.id || t.uid || '');
     card.setAttribute('data-uid', t.uid || '');
-    card.setAttribute('tabindex', '-1');
     card.addEventListener('dragstart', e => {
       dragInfo = {t, fromDay: t._dayIdx, fromSlot: t._slotIdx};
       card.classList.add('dragging');
@@ -534,21 +434,14 @@ function render() {
     });
     card.addEventListener('dragend', () => card.classList.remove('dragging'));
     card.addEventListener('click', e => { e.stopPropagation(); openDetail(t); });
-    // タッチ：ロングプレスはD&D、短タップはモーダル
-    card.addEventListener('touchstart', e => {
-      card._touchMoved = false;
-      card._touchTime = Date.now();
-      // iOSの:active / tap highlightを防ぐ（ロングプレス前のみ）
-      // preventDefaultするとクリックイベントも来なくなるが、touchendで明示的に呼ぶので問題なし
-    }, {passive: true});
-    card.addEventListener('touchmove', e => { card._touchMoved = true; });
     card.addEventListener('touchend', e => {
       e.stopPropagation();
-      e.preventDefault(); // クリックイベントの二重発火を防ぐ
-      if (card.blur) card.blur();
-      if (!card._touchMoved) { openDetail(t); }
+      // 短いタッチ（300ms以内）なら詳細を開く
+      if (!card._touchMoved) { e.preventDefault(); openDetail(t); }
       card._touchMoved = false;
     });
+    card.addEventListener('touchstart', e => { card._touchMoved = false; });
+    card.addEventListener('touchmove', e => { card._touchMoved = true; });
     cell.appendChild(card);
   });
 }
@@ -601,24 +494,10 @@ function openDetail(t) {
   document.getElementById('dHash').value = t.hash || '';
   document.getElementById('dMemo').value = t.note || '';
   document.getElementById('dTime').value = t.study_time || '';
-
-  let modeLabel, repeatBtnLabel;
-  if (t._isWeeklyMoved) {
-    modeLabel = '「毎週くりかえす」予定（移動済み）';
-    repeatBtnLabel = '元の曜日に戻す（毎週）';
-  } else if (t.display_type === 'weekly') {
-    modeLabel = '「毎週くりかえす」予定';
-    repeatBtnLabel = '今回だけの予定に変更';
-  } else {
-    modeLabel = '「今回だけ」の予定';
-    repeatBtnLabel = '毎週くりかえす予定に変更';
-  }
-  document.getElementById('detailModeLabel').textContent = modeLabel;
-  document.getElementById('detailRepeatBtn').textContent = repeatBtnLabel;
+  document.getElementById('detailModeLabel').textContent = t.display_type === 'weekly' ? '「毎週くりかえす」予定' : '「今回だけ」の予定';
+  document.getElementById('detailRepeatBtn').textContent = t.display_type === 'weekly' ? '今回だけの予定に変更' : '毎週くりかえす予定に変更';
   document.getElementById('detailModal')._task = t;
   document.getElementById('detailModal').classList.add('open');
-  // タップ後のフォーカス残りを解除
-  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
 }
 function closeDetail() { document.getElementById('detailModal').classList.remove('open'); }
 
@@ -654,16 +533,6 @@ function saveTask() {
 function deleteTask() {
   const t = document.getElementById('detailModal')._task;
   if (!t) return;
-
-  // weeklyMoveされたタスクの削除：weeklyMovesからエントリを削除し元に戻す
-  if (t._isWeeklyMoved) {
-    if (localOverrides.weeklyMoves) {
-      localOverrides.weeklyMoves = localOverrides.weeklyMoves.filter(mv => mv.moveUid !== t.uid);
-    }
-    saveLocal(); closeDetail(); render();
-    return;
-  }
-
   const wk = getWeekKey();
   if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
   const lo = localOverrides[wk];
@@ -776,92 +645,24 @@ function closeCopyModal(){
   document.getElementById('copyModal').classList.remove('open');
 }
 
-function showToast(msg, duration) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  clearTimeout(el._timer);
-  el._timer = setTimeout(() => el.classList.remove('show'), duration || 2500);
-}
-
-function toggleRepeat() {
-  const t = document.getElementById('detailModal')._task;
-  if (!t) return;
-
-  // 毎週移動済みタスク → 元の曜日に戻す（全週）
-  if (t._isWeeklyMoved) {
-    if (localOverrides.weeklyMoves) {
-      localOverrides.weeklyMoves = localOverrides.weeklyMoves.filter(mv => mv.moveUid !== t.uid);
-    }
-    saveLocal(); closeDetail(); render();
-    return;
-  }
-
-  // 毎週くりかえす予定 → 今週だけの予定に変更
-  if (t.display_type === 'weekly') {
-    const wk = getWeekKey();
-    if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
-    const lo = localOverrides[wk];
-    lo.hidden = lo.hidden || {};
-    lo.added = lo.added || [];
-    lo.hidden[t.uid + '_' + t._dayIdx] = true;
-    lo.added.push({
-      ...t,
-      uid: 'once_' + Date.now(),
-      display_type: 'one_time',
-      repeat_key: null,
-      order: t.order || 99
-    });
-    saveLocal(); closeDetail(); render();
-    return;
-  }
-
-  // 今週だけの予定 → 毎週くりかえす予定に変更（今週以降）
-  if (t.display_type === 'one_time') {
-    if (!localOverrides.weeklyAdded) localOverrides.weeklyAdded = [];
-    // 元のone_timeタスクを今週のhiddenに追加
-    const wk = getWeekKey();
-    if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
-    const lo = localOverrides[wk];
-    lo.hidden = lo.hidden || {};
-    lo.hidden[t.uid] = true;
-    // ローカル追加の中にあれば削除
-    if (lo.added) lo.added = lo.added.filter(a => a.uid !== t.uid);
-    // weeklyAddedに追加（今週月曜日以降に毎週表示）
-    localOverrides.weeklyAdded.push({
-      ...t,
-      uid: 'wa_' + Date.now(),
-      display_type: 'weekly',
-      repeat_key: 'wa_' + Date.now(),
-      fromDate: dateKey(currentMonday),
-      weekday_index: t._dayIdx,
-      order: t.order || 99
-    });
-    saveLocal(); closeDetail(); render();
-    showToast('毎週くりかえす予定に変更しました ✓');
-    return;
-}
+function toggleRepeat() { alert('この機能は今後実装予定です'); }
 
 // ===== Add modal =====
-let addCalYear, addCalMonth;
-
 function openAdd(dayIdx, slotIdx) {
-  // デフォルト：今日の日付を選択済みにする
-  const now = new Date();
-  const y = now.getFullYear(), m = now.getMonth()+1, d = now.getDate();
-  const str = y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
-  _setAddDate(str);
-
-  document.getElementById('aSlot').value = SLOTS[slotIdx] || 'night';
   document.getElementById('aWeekday').value = dayIdx;
+  document.getElementById('aSlot').value = SLOTS[slotIdx] || 'night';
+  // 日付表示
+  const d = addDays(currentMonday, dayIdx);
+  const m = d.getMonth()+1, da = d.getDate();
+  const slotLabel = {plan:'予定',morning:'朝',am:'午前',pm:'午後',night:'夜'}[SLOTS[slotIdx]||'night'];
+  document.getElementById('addDateRow').textContent = m+'/'+da+'（'+DAYS_JP[dayIdx]+'）' + '　' + slotLabel;
+  document.getElementById('addDateRow').style.display = 'block';
   // ラジオを今週だけにリセット
   document.querySelector('input[name="addType"][value="one_time"]').checked = true;
-  toggleAddDate();
   // 教科の初期色をリセット
   const sel = document.getElementById('aSubject');
   sel.value = '算数';
   updateSubjectColor();
-  document.getElementById('addCalWrap').style.display = 'none';
   document.getElementById('addModal').classList.add('open');
 }
 function openAddModal() {
@@ -869,90 +670,16 @@ function openAddModal() {
   const dayIdx = (now.getDay() + 6) % 7;
   const h = now.getHours();
   let slotIdx;
-  if (h >= 6 && h < 9)   slotIdx = 1;
-  else if (h >= 9 && h < 12)  slotIdx = 2;
-  else if (h >= 12 && h < 18) slotIdx = 3;
-  else if (h >= 18 && h < 23) slotIdx = 4;
-  else slotIdx = 0;
+  if (h >= 6 && h < 9)   slotIdx = 1; // 朝
+  else if (h >= 9 && h < 12)  slotIdx = 2; // 午前
+  else if (h >= 12 && h < 18) slotIdx = 3; // 午後
+  else if (h >= 18 && h < 23) slotIdx = 4; // 夜
+  else slotIdx = 0; // 予定（深夜・早朝）
   openAdd(dayIdx, slotIdx);
 }
 function toggleAddDate() {
   const isWeekly = document.querySelector('input[name="addType"]:checked').value === 'weekly';
-  document.getElementById('addDateSection').style.display = isWeekly ? 'none' : 'block';
-  document.getElementById('addWeeklySection').style.display = isWeekly ? 'block' : 'none';
-}
-function toggleAddCal() {
-  const wrap = document.getElementById('addCalWrap');
-  if (wrap.style.display === 'none') {
-    addCalYear = new Date().getFullYear();
-    addCalMonth = new Date().getMonth();
-    renderAddCal();
-    wrap.style.display = 'block';
-  } else {
-    wrap.style.display = 'none';
-  }
-}
-function renderAddCal() {
-  const y = addCalYear, mo = addCalMonth;
-  const firstDay = new Date(y, mo, 1).getDay();
-  const daysInMonth = new Date(y, mo+1, 0).getDate();
-  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const startOffset = (firstDay+6)%7;
-  const today = new Date(); today.setHours(0,0,0,0);
-  const selectedStr = document.getElementById('addSelectedDate').value || '';
-  let grid = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;">';
-  ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(d => {
-    grid += `<div style="font-size:11px;color:#888;padding:4px 0;">${d}</div>`;
-  });
-  for (let i = 0; i < startOffset; i++) grid += '<div></div>';
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dt = new Date(y, mo, d); dt.setHours(0,0,0,0);
-    const dtStr = y+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
-    const isToday = dt.getTime() === today.getTime();
-    const isSel = dtStr === selectedStr;
-    let style = 'font-size:13px;padding:5px 2px;border-radius:50%;cursor:pointer;';
-    if (isSel) style += 'background:#1a2744;color:white;';
-    else if (isToday) style += 'border:2px solid #1a2744;color:#1a2744;font-weight:700;';
-    grid += `<div style="${style}" onclick="selectAddDate('${dtStr}',${d},${mo+1},${y})">${d}</div>`;
-  }
-  grid += '</div>';
-  document.getElementById('addCalGrid').innerHTML =
-    `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-      <button onclick="addCalYear-=(addCalMonth===0?1:0);addCalMonth=(addCalMonth+11)%12;renderAddCal();" style="background:none;border:none;font-size:18px;cursor:pointer;">◀</button>
-      <span style="font-weight:700;font-size:14px;">${monthNames[mo]} <span style="color:#888;font-size:12px;">${y}</span></span>
-      <button onclick="addCalYear+=(addCalMonth===11?1:0);addCalMonth=(addCalMonth+1)%12;renderAddCal();" style="background:none;border:none;font-size:18px;cursor:pointer;">▶</button>
-    </div>` + grid;
-}
-function _setAddDate(str) {
-  document.getElementById('addSelectedDate').value = str;
-  if (!str) {
-    document.getElementById('addDateDisplay').textContent = '選択してください';
-    document.getElementById('addDateDisplay').style.color = '#aaa';
-    document.getElementById('addWeekdayDisplay').textContent = '—';
-    document.getElementById('addWeekdayDisplay').style.color = '#888';
-    return;
-  }
-  const [y,mo,d] = str.split('-').map(Number);
-  const dt = new Date(y, mo-1, d);
-  const dayIdx = (dt.getDay()+6)%7;
-  document.getElementById('addDateDisplay').textContent = mo+'/'+String(d).padStart(2,'0')+'/'+y;
-  document.getElementById('addDateDisplay').style.color = '#1a2744';
-  document.getElementById('addWeekdayDisplay').textContent = DAYS_JP[dayIdx]+'曜日';
-  document.getElementById('addWeekdayDisplay').style.color = '#1a2744';
-  document.getElementById('aWeekday').value = dayIdx;
-}
-function selectAddDate(str, d, m, y) {
-  _setAddDate(str);
-  document.getElementById('addCalWrap').style.display = 'none';
-}
-function selectAddDateToday() {
-  const now = new Date();
-  const str = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
-  selectAddDate(str, now.getDate(), now.getMonth()+1, now.getFullYear());
-}
-function clearAddDate() {
-  _setAddDate('');
-  document.getElementById('addCalWrap').style.display = 'none';
+  document.getElementById('addDateRow').style.display = isWeekly ? 'none' : 'block';
 }
 function updateSubjectColor() {
   const sel = document.getElementById('aSubject');
@@ -965,17 +692,7 @@ function updateSubjectColor() {
 function closeAdd() { document.getElementById('addModal').classList.remove('open'); }
 function confirmAdd() {
   const type = document.querySelector('input[name="addType"]:checked').value;
-  let wi, targetDate;
-  if (type === 'one_time') {
-    const dateStr = document.getElementById('addSelectedDate').value;
-    if (!dateStr) { alert('日付を選んでください'); return; }
-    const [y,mo,d] = dateStr.split('-').map(Number);
-    targetDate = new Date(y, mo-1, d);
-    wi = (targetDate.getDay()+6)%7;
-  } else {
-    wi = parseInt(document.getElementById('aWeekday').value);
-    targetDate = null;
-  }
+  const wi = parseInt(document.getElementById('aWeekday').value);
   const slot = document.getElementById('aSlot').value;
   const subj = document.getElementById('aSubject').value;
   const unit = document.getElementById('aUnit').value || '新しい予定';
@@ -983,7 +700,6 @@ function confirmAdd() {
   const memo = document.getElementById('aMemo').value;
   const st = parseInt(document.getElementById('aTime').value)||null;
   const colors = SUBJ_COLOR[subj] || ['#eee','#333'];
-
   const newTask = {
     color: colors[0], weekday: DAYS_JP[wi], weekday_index: wi,
     slot, subject: subj, unit_name: unit, note: memo, study_time: st,
@@ -991,19 +707,10 @@ function confirmAdd() {
     hash, is_hidden:'no', order:99, uid:'new_'+Date.now(),
     _dayIdx: wi, _slotIdx: SLOT_IDX[slot]||0
   };
-
-  // one_time の場合は対象週のoverridesに追加
-  let wk;
-  if (type === 'one_time' && targetDate) {
-    const targetMonday = getMonday(targetDate);
-    wk = dateKey(targetMonday);
-  } else {
-    wk = getWeekKey();
-  }
+  const wk = getWeekKey();
   if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
   if (!localOverrides[wk].added) localOverrides[wk].added = [];
   localOverrides[wk].added.push(newTask);
-
   saveLocal(); closeAdd(); render();
   document.getElementById('aUnit').value='';
   document.getElementById('aHash').value='';
@@ -1286,11 +993,11 @@ render();
 <style>
 #moveModal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:10000;align-items:center;justify-content:center;}
 #moveModal.open{display:flex;}
-#moveModalBox{background:white;border-radius:14px;width:min(420px, 92vw);padding:20px 24px;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+#moveModalBox{background:white;border-radius:14px;width:340px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.3);}
 #moveModalBox h3{font-size:16px;font-weight:700;color:#1a2744;margin-bottom:16px;text-align:center;}
 .move-radio{display:flex;flex-direction:column;gap:12px;margin-bottom:20px;}
-.move-radio label{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600;color:#1a2744;cursor:pointer;white-space:nowrap;}
-.move-radio input{width:18px;height:18px;cursor:pointer;flex-shrink:0;}
+.move-radio label{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600;color:#1a2744;cursor:pointer;}
+.move-radio input{width:18px;height:18px;cursor:pointer;}
 .move-btns{display:flex;gap:10px;}
 .move-btns button{flex:1;padding:11px;border-radius:20px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;}
 #moveCancelBtn{background:white;border:2px solid #888;color:#888;}
@@ -1302,7 +1009,7 @@ render();
     <h3 id="moveModalTitle">移動しますか？</h3>
     <div class="move-radio">
       <label><input type="radio" name="moveType" value="once" checked> 今週だけ移動</label>
-      <label style="white-space:normal;"><input type="radio" name="moveType" value="weekly" style="flex-shrink:0;"> <span>毎週 <span id="moveWeeklyLabel">〇曜日</span> に変更 <span style="font-size:11px;color:#888;font-weight:400;">（全ての週に反映）</span></span></label>
+      <label><input type="radio" name="moveType" value="weekly"> 毎週 <span id="moveWeeklyLabel">〇曜日</span> に変更</label>
     </div>
     <div class="move-btns">
       <button id="moveCancelBtn" onclick="closeMoveModal()">やめる</button>
@@ -1429,97 +1136,47 @@ function confirmMove() {
   if (!_pendingMove) return;
   const {task, toDay, toSlot} = _pendingMove;
   const type = document.querySelector('input[name="moveType"]:checked').value;
-  const SLOTS2 = ['plan','morning','am','pm','night'];
+  const wk = getWeekKey();
+  if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
+  const lo = localOverrides[wk];
+  if (!lo.hidden) lo.hidden = {};
+  if (!lo.added) lo.added = [];
 
-  // 元タスクを取得
+  // 元タスクを取得（keyでdayIdxとslotIdxも照合）
   const allTasks = getTasksForWeek();
   const keyParts = task.key ? task.key.split('-') : [];
   const fromDayIdx = keyParts.length >= 1 ? parseInt(keyParts[0]) : -1;
   const fromSlotIdx = keyParts.length >= 2 ? parseInt(keyParts[1]) : -1;
-  const orig = allTasks.find(t =>
-    (t.uid === task.uid || t.id === task.id) &&
-    t._dayIdx === fromDayIdx && t._slotIdx === fromSlotIdx
+  const orig = allTasks.find(t => 
+    (t.uid === task.uid || t.id === task.id) && 
+    t._dayIdx === fromDayIdx && 
+    t._slotIdx === fromSlotIdx
   ) || allTasks.find(t => t.uid === task.uid || t.id === task.id);
   if (!orig) { closeMoveModal(); return; }
 
-  if (type === 'weekly') {
-    // ===== 毎週移動：weeklyMovesに保存（全週に反映） =====
-    if (!localOverrides.weeklyMoves) localOverrides.weeklyMoves = [];
-    if (!localOverrides.weeklyMovesTasks) localOverrides.weeklyMovesTasks = [];
-
-    // origUid: _isWeeklyMovedなら既存のweeklyMoveのorigUidを辿る
-    const origUid = orig._origUid || orig.uid;
-    const origDayIdx = orig._origDayIdx !== undefined ? orig._origDayIdx : orig._dayIdx;
-
-    // 既存のweeklyMoveを上書き（同じorigUidがあれば）
-    const existIdx = localOverrides.weeklyMoves.findIndex(mv => mv.origUid === origUid && mv.origDayIdx === origDayIdx);
-    const moveUid = 'wm_' + Date.now();
-    const moveEntry = {
-      origUid,
-      origDayIdx,
-      toDay,
-      toSlot: SLOTS2[toSlot] || 'night',
-      moveUid,
-      fromDate: dateKey(currentMonday) // この週の月曜日以降に適用
-    };
-    if (existIdx >= 0) {
-      localOverrides.weeklyMoves[existIdx] = moveEntry;
-    } else {
-      localOverrides.weeklyMoves.push(moveEntry);
-    }
-    // 元タスクデータを保存（RAW_DATAにないローカル追加タスクのために）
-    const taskCopy = {...orig, uid: origUid};
-    delete taskCopy._isWeeklyMoved; delete taskCopy._origUid; delete taskCopy._origDayIdx;
-    const taskIdx = localOverrides.weeklyMovesTasks.findIndex(t => t.uid === origUid);
-    if (taskIdx >= 0) {
-      localOverrides.weeklyMovesTasks[taskIdx] = taskCopy;
-    } else {
-      localOverrides.weeklyMovesTasks.push(taskCopy);
-    }
-
-    // 今週の週単位overridesから、同タスクの今週限り移動（added）があれば削除
-    const wk = getWeekKey();
-    if (localOverrides[wk]) {
-      const lo = localOverrides[wk];
-      if (lo.added) {
-        lo.added = lo.added.filter(a => a.uid !== orig.uid);
-      }
-      if (lo.hidden) {
-        delete lo.hidden[origUid + '_' + origDayIdx];
-      }
-    }
-
+  // 元タスクを非表示（display_typeに応じてkeyを決定）
+  if (orig.display_type === 'weekly') {
+    lo.hidden[orig.uid + '_' + orig._dayIdx] = true;
   } else {
-    // ===== 今週だけ移動：従来通り週単位overrides =====
-    const wk = getWeekKey();
-    if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
-    const lo = localOverrides[wk];
-    if (!lo.hidden) lo.hidden = {};
-    if (!lo.added) lo.added = [];
-
-    // 元タスクを非表示
-    if (orig.display_type === 'weekly' || orig._isWeeklyMoved) {
-      lo.hidden[orig.uid + '_' + orig._dayIdx] = true;
-    } else {
-      lo.hidden[orig.uid] = true;
-    }
-    // ローカル追加タスクなら削除
-    const addIdx = lo.added.findIndex(a => a.uid === orig.uid);
-    if (addIdx >= 0) lo.added.splice(addIdx, 1);
-
-    // 移動先に追加
-    lo.added.push({
-      ...orig,
-      uid: 'moved_' + Date.now(),
-      display_type: 'one_time',
-      _dayIdx: toDay,
-      slot: SLOTS2[toSlot] || 'night',
-      _slotIdx: toSlot,
-      weekday_index: toDay,
-      order: 99,
-      repeat_key: null
-    });
+    lo.hidden[orig.uid] = true;
   }
+  // ローカル追加タスクなら削除
+  const addIdx = lo.added.findIndex(a => a.uid === orig.uid);
+  if (addIdx >= 0) lo.added.splice(addIdx, 1);
+
+  // 移動先に追加
+  const SLOTS2 = ['plan','morning','am','pm','night'];
+  lo.added.push({
+    ...orig,
+    uid: 'moved_' + Date.now(),
+    display_type: type === 'weekly' ? 'weekly' : 'one_time',
+    _dayIdx: toDay,
+    slot: SLOTS2[toSlot] || 'night',
+    _slotIdx: toSlot,
+    weekday_index: toDay,
+    order: 99,
+    repeat_key: type === 'weekly' ? 'local_' + Date.now() : null
+  });
 
   saveLocal();
   closeMoveModal();
@@ -1573,15 +1230,6 @@ async function loadFromFirestore() {
       const data = doc.data();
       if (data.overrides) {
         localOverrides = data.overrides;
-        // 旧キー名マイグレーション: _weeklyMoves → weeklyMoves
-        if (localOverrides._weeklyMoves && !localOverrides.weeklyMoves) {
-          localOverrides.weeklyMoves = localOverrides._weeklyMoves;
-          delete localOverrides._weeklyMoves;
-        }
-        if (localOverrides._weeklyMoves_tasks && !localOverrides.weeklyMovesTasks) {
-          localOverrides.weeklyMovesTasks = localOverrides._weeklyMoves_tasks;
-          delete localOverrides._weeklyMoves_tasks;
-        }
         localStorage.setItem('schedule_overrides', JSON.stringify(localOverrides));
       }
     }
@@ -1610,15 +1258,6 @@ try {
       if (data.updatedBy === DEVICE_ID) return;
       if (data.overrides) {
         localOverrides = data.overrides;
-        // 旧キー名マイグレーション
-        if (localOverrides._weeklyMoves && !localOverrides.weeklyMoves) {
-          localOverrides.weeklyMoves = localOverrides._weeklyMoves;
-          delete localOverrides._weeklyMoves;
-        }
-        if (localOverrides._weeklyMoves_tasks && !localOverrides.weeklyMovesTasks) {
-          localOverrides.weeklyMovesTasks = localOverrides._weeklyMoves_tasks;
-          delete localOverrides._weeklyMoves_tasks;
-        }
         localStorage.setItem('schedule_overrides', JSON.stringify(localOverrides));
         if (localStorage.getItem('auth') === '1') render();
       }
@@ -1649,5 +1288,5 @@ window.addEventListener('DOMContentLoaded', function() {
   }
 });
 </script>
-<!-- _260609.0900 --></body>
+<!-- _260609.0910 --></body>
 </html>
