@@ -966,6 +966,13 @@ function updateSubjectColor() {
   sel.style.background = colors[0];
   sel.style.color = colors[1];
   sel.style.borderColor = colors[1] + '55';
+  // 教科別デフォルト学習内容
+  const defaults = {'学校の宿題':'学校の宿題', '予定':'母出社', 'テスト':'グノレブ'};
+  if (defaults[subj]) {
+    document.getElementById('aUnit').value = defaults[subj];
+  } else {
+    document.getElementById('aUnit').value = '';
+  }
 }
 function closeAdd() { document.getElementById('addModal').classList.remove('open'); }
 function confirmAdd() {
@@ -1366,7 +1373,7 @@ function _tStart(e) {
       padding:'3px 5px', fontSize:'13px', fontWeight:'700', textAlign:'center'
     });
     document.body.appendChild(_tClone);
-    _tCard.style.opacity = '0.25';
+    // opacityはtouchmoveが来てから変える（タップだけなら変えない）
     if (navigator.vibrate) navigator.vibrate(40);
   }, 400);
 
@@ -1381,6 +1388,8 @@ function _tMove(e) {
   const t = e.touches[0];
   _tClone.style.left = (t.clientX - _tClone.offsetWidth/2) + 'px';
   _tClone.style.top = (t.clientY - _tClone.offsetHeight/2) + 'px';
+  // 動かし始めたらカードを半透明に
+  if (_tCard) _tCard.style.opacity = '0.25';
   document.querySelectorAll('.day-cell').forEach(c => c.classList.remove('drag-over'));
   const cell = _findCell(t.clientX, t.clientY);
   _tDropCell = cell || null;
