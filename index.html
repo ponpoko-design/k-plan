@@ -169,6 +169,24 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
     </div>
   </div>
 
+  <!-- 削除確認モーダル（毎週くりかえす用） -->
+  <div class="modal-bg" id="deleteConfirmModal">
+    <div class="modal" style="width:340px;">
+      <div class="modal-hdr">
+        <span>予定を削除する</span>
+        <button class="modal-close" onclick="closeDeleteConfirm()">×</button>
+      </div>
+      <div class="modal-body" style="padding:20px 18px;">
+        <div id="deleteConfirmName" style="font-size:15px;font-weight:700;color:#1a2744;text-align:center;margin-bottom:18px;"></div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <button onclick="confirmDeleteOnce()" style="width:100%;background:white;border:2px solid #e24b4a;color:#e24b4a;border-radius:20px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;">今週だけ削除する</button>
+          <button onclick="confirmDeleteAll()" style="width:100%;background:#e24b4a;border:none;color:white;border-radius:20px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;">今週以降すべて削除する</button>
+          <button onclick="closeDeleteConfirm()" style="width:100%;background:white;border:2px solid #ccc;color:#888;border-radius:20px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;">やめる</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- 追加モーダル -->
   <div class="modal-bg" id="addModal">
     <div class="modal">
@@ -306,9 +324,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
   <div style="display:grid;grid-template-columns:1fr 1fr;min-height:0;">
     <div id="statsWeek" style="padding:16px 18px;border-right:1px solid #eee;overflow-y:auto;max-height:640px;"></div>
     <div id="statsMonth" style="padding:16px 18px;overflow-y:auto;max-height:640px;"></div>
-  </div>
-</div>
-    </div>
   </div>
 </div>
 
@@ -667,19 +682,62 @@ function deleteTask() {
   const t = document.getElementById('detailModal')._task;
   if (!t) return;
 
-  // weeklyMoveされたタスク → weeklyMovesからエントリを削除（全週で元に戻る）
-  if (t._isWeeklyMoved) {
-    if (localOverrides.weeklyMoves) {
-      localOverrides.weeklyMoves = localOverrides.weeklyMoves.filter(mv => mv.moveUid !== t.uid);
-    }
+  // weeklyMoveされたタスク → 確認モーダルへ（weekly扱い）
+  // 今週だけの予定 → 即削除
+  if (t.display_type !== 'weekly' && !t._isWeeklyMoved) {
+    const wk = getWeekKey();
+    if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
+    const lo = localOverrides[wk];
+    lo.hidden = lo.hidden || {};
+    lo.hidden[t.uid] = true;
+    const idx = (lo.added||[]).findIndex(a => a.uid === t.uid);
+    if (idx >= 0) lo.added.splice(idx, 1);
     saveLocal(); closeDetail(); render();
     return;
   }
 
-  // 毎週くりかえす予定（RAW_DATA由来 または weeklyAdded） → 今週以降を全部消す
-  if (t.display_type === 'weekly') {
+  // 毎週くりかえす予定 → 選択モーダルを開く
+  const name = t.unit_name || '予定';
+  document.getElementById('deleteConfirmName').textContent = `「${name}」を削除する方法を選んでください`;
+  document.getElementById('deleteConfirmModal')._task = t;
+  document.getElementById('deleteConfirmModal').classList.add('open');
+}
+
+function closeDeleteConfirm() {
+  document.getElementById('deleteConfirmModal').classList.remove('open');
+}
+
+// 今週だけ削除
+function confirmDeleteOnce() {
+  const t = document.getElementById('deleteConfirmModal')._task;
+  if (!t) return;
+  const wk = getWeekKey();
+  if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
+  const lo = localOverrides[wk];
+  lo.hidden = lo.hidden || {};
+
+  if (t._isWeeklyMoved) {
+    // 移動済みタスクの今週だけ削除：今週のhiddenに入れる
+    lo.hidden[t.uid + '_' + t._dayIdx] = true;
+  } else {
+    lo.hidden[t.uid + '_' + t._dayIdx] = true;
+  }
+  saveLocal(); closeDeleteConfirm(); closeDetail(); render();
+}
+
+// 今週以降すべて削除
+function confirmDeleteAll() {
+  const t = document.getElementById('deleteConfirmModal')._task;
+  if (!t) return;
+
+  if (t._isWeeklyMoved) {
+    // 移動済みタスク：weeklyMovesから削除（全週で元に戻る＝消える）
+    if (localOverrides.weeklyMoves) {
+      localOverrides.weeklyMoves = localOverrides.weeklyMoves.filter(mv => mv.moveUid !== t.uid);
+    }
+  } else {
+    // 通常のweeklyタスク：weeklyDeletedに今週以降削除として登録
     if (!localOverrides.weeklyDeleted) localOverrides.weeklyDeleted = [];
-    // 既存エントリがあれば上書き、なければ追加
     const existIdx = localOverrides.weeklyDeleted.findIndex(d => d.uid === t.uid);
     const entry = { uid: t.uid, dayIdx: t._dayIdx, fromDate: dateKey(currentMonday) };
     if (existIdx >= 0) {
@@ -691,19 +749,8 @@ function deleteTask() {
     if (localOverrides.weeklyAdded) {
       localOverrides.weeklyAdded = localOverrides.weeklyAdded.filter(a => a.uid !== t.uid);
     }
-    saveLocal(); closeDetail(); render();
-    return;
   }
-
-  // 今週だけの予定 → 今週のhiddenに追加
-  const wk = getWeekKey();
-  if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
-  const lo = localOverrides[wk];
-  lo.hidden = lo.hidden || {};
-  lo.hidden[t.uid] = true;
-  const idx = (lo.added||[]).findIndex(a => a.uid === t.uid);
-  if (idx >= 0) lo.added.splice(idx, 1);
-  saveLocal(); closeDetail(); render();
+  saveLocal(); closeDeleteConfirm(); closeDetail(); render();
 }
 
 function copyTask() {
@@ -1651,7 +1698,7 @@ try {
           delete localOverrides._weeklyMoves_tasks;
         }
         localStorage.setItem('schedule_overrides', JSON.stringify(localOverrides));
-        if (sessionStorage.getItem('auth') === '1') render();
+        if (localStorage.getItem('auth') === '1') render();
       }
     }
   });
@@ -1662,7 +1709,7 @@ function checkPw() {
   if (input === 'Buchan_tensai1223') {
     document.getElementById('pwScreen').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
-    sessionStorage.setItem('auth', '1');
+    localStorage.setItem('auth', '1');
     // ログイン後にFirestoreから最新データを読み込む
     loadFromFirestore().then(() => render());
   } else {
@@ -1673,12 +1720,12 @@ function checkPw() {
 }
 // セッション中は再入力不要
 window.addEventListener('DOMContentLoaded', function() {
-  if (sessionStorage.getItem('auth') === '1') {
+  if (localStorage.getItem('auth') === '1') {
     document.getElementById('pwScreen').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
     loadFromFirestore().then(() => render());
   }
 });
 </script>
-<!-- _260608.2358 --></body>
+<!-- _260609.0020 --><!-- _260609.0850 --></body>
 </html>
