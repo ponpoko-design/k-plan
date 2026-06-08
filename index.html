@@ -344,12 +344,14 @@ function getTasksForWeek() {
   });
 
   // ===== weeklyMoves: 毎週移動の適用 =====
-  // グローバルなweeklyMoves配列を参照し、元の曜日を非表示・移動先を追加として扱う
-  const weeklyMoves = localOverrides._weeklyMoves || [];
-  // 元の位置を非表示にするためのセット {uid_dayIdx}
+  // _weeklyMoves → Firestoreキー衝突を避けてweeklyMovesキーを使う
+  const weeklyMoves = localOverrides.weeklyMoves || [];
+  // origUid + origDayIdx の組み合わせを非表示にするセット
   const weeklyMovedHidden = new Set();
   weeklyMoves.forEach(mv => {
     weeklyMovedHidden.add(mv.origUid + '_' + mv.origDayIdx);
+    // EXCEPTION_DATAのrepeat_keyベースでも非表示にする
+    weeklyMovedHidden.add('rk_' + mv.origUid + '_' + mv.origDayIdx);
   });
 
   // ローカルhidden
@@ -369,13 +371,12 @@ function getTasksForWeek() {
 
   // weeklyMoves の移動先タスクをこの週に追加
   weeklyMoves.forEach(mv => {
-    // 元タスクを探す（RAW_DATA or local.added）
+    // このweekの当該曜日に今週限り非表示指定があればスキップ
+    if (allHidden[mv.moveUid + '_' + mv.toDay]) return;
+    // 元タスクを探す（RAW_DATA優先、なければweeklyMovesTasks）
     const origTask = RAW_DATA.find(t => t.uid === mv.origUid)
-      || (localOverrides._weeklyMoves_tasks || []).find(t => t.uid === mv.origUid);
+      || (localOverrides.weeklyMovesTasks || []).find(t => t.uid === mv.origUid);
     if (!origTask) return;
-    // 元タスクが週に1回存在するかチェック（同じweeklyMovesで二重追加しない）
-    const alreadyHidden = allHidden[mv.moveUid + '_' + mv.toDay];
-    if (alreadyHidden) return;
     result.push({
       ...origTask,
       uid: mv.moveUid,
@@ -386,16 +387,27 @@ function getTasksForWeek() {
       display_type: 'weekly',
       repeat_key: mv.moveUid,
       order: origTask.order || 99,
-      _isWeeklyMoved: true
+      _isWeeklyMoved: true,
+      _origUid: mv.origUid,
+      _origDayIdx: mv.origDayIdx
     });
   });
 
   // 2. weekly_exception（is_hidden=no → 表示追加）
+  // ただし weeklyMoves で元の位置が移動済みのものは除外
   allExceptions.forEach(e => {
     if (e.is_hidden !== 'no') return;
     const eDate = new Date(e.date);
     const dayIdx = dates.findIndex(d => sameDateStr(d, eDate));
     if (dayIdx < 0) return;
+    // repeat_key が weeklyMoves の origUid と一致し、同じ曜日なら除外
+    if (e.repeat_key) {
+      const isMovedAway = weeklyMoves.some(mv =>
+        mv.origUid === e.repeat_key && mv.origDayIdx === dayIdx
+      );
+      if (isMovedAway) return;
+    }
+    if (allHidden[e.uid]) return;
     result.push({...e, _dayIdx: dayIdx, _slotIdx: SLOT_IDX[e.slot] ?? 0});
   });
 
@@ -409,9 +421,8 @@ function getTasksForWeek() {
     result.push({...t, _dayIdx: dayIdx, _slotIdx: SLOT_IDX[t.slot] ?? 0});
   });
 
-  // 4. ローカル追加（今週限りの追加 + 週ごとのhiddenを考慮）
+  // 4. ローカル追加
   (local.added || []).forEach(t => {
-    // weeklyMoveで非表示になったmoveUidのものはスキップしない（移動先は別uidで管理）
     result.push({...t, _dayIdx: t._dayIdx, _slotIdx: SLOT_IDX[t.slot] ?? 0});
   });
 
@@ -580,10 +591,10 @@ function deleteTask() {
   const t = document.getElementById('detailModal')._task;
   if (!t) return;
 
-  // weeklyMoveされたタスクの削除：_weeklyMovesからエントリを削除し元に戻す
+  // weeklyMoveされたタスクの削除：weeklyMovesからエントリを削除し元に戻す
   if (t._isWeeklyMoved) {
-    if (localOverrides._weeklyMoves) {
-      localOverrides._weeklyMoves = localOverrides._weeklyMoves.filter(mv => mv.moveUid !== t.uid);
+    if (localOverrides.weeklyMoves) {
+      localOverrides.weeklyMoves = localOverrides.weeklyMoves.filter(mv => mv.moveUid !== t.uid);
     }
     saveLocal(); closeDetail(); render();
     return;
@@ -707,8 +718,8 @@ function toggleRepeat() {
 
   // 毎週移動済みタスク → 元に戻す
   if (t._isWeeklyMoved) {
-    if (localOverrides._weeklyMoves) {
-      localOverrides._weeklyMoves = localOverrides._weeklyMoves.filter(mv => mv.moveUid !== t.uid);
+    if (localOverrides.weeklyMoves) {
+      localOverrides.weeklyMoves = localOverrides.weeklyMoves.filter(mv => mv.moveUid !== t.uid);
     }
     saveLocal(); closeDetail(); render();
     return;
@@ -1064,11 +1075,11 @@ render();
 <style>
 #moveModal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:10000;align-items:center;justify-content:center;}
 #moveModal.open{display:flex;}
-#moveModalBox{background:white;border-radius:14px;width:340px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+#moveModalBox{background:white;border-radius:14px;width:min(420px, 92vw);padding:20px 24px;box-shadow:0 20px 60px rgba(0,0,0,.3);}
 #moveModalBox h3{font-size:16px;font-weight:700;color:#1a2744;margin-bottom:16px;text-align:center;}
 .move-radio{display:flex;flex-direction:column;gap:12px;margin-bottom:20px;}
-.move-radio label{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600;color:#1a2744;cursor:pointer;}
-.move-radio input{width:18px;height:18px;cursor:pointer;}
+.move-radio label{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600;color:#1a2744;cursor:pointer;white-space:nowrap;}
+.move-radio input{width:18px;height:18px;cursor:pointer;flex-shrink:0;}
 .move-btns{display:flex;gap:10px;}
 .move-btns button{flex:1;padding:11px;border-radius:20px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;}
 #moveCancelBtn{background:white;border:2px solid #888;color:#888;}
@@ -1080,7 +1091,7 @@ render();
     <h3 id="moveModalTitle">移動しますか？</h3>
     <div class="move-radio">
       <label><input type="radio" name="moveType" value="once" checked> 今週だけ移動</label>
-      <label><input type="radio" name="moveType" value="weekly"> 毎週 <span id="moveWeeklyLabel">〇曜日</span> に変更<br><span style="font-size:11px;color:#888;margin-left:22px;">（全ての週に反映されます）</span></label>
+      <label style="white-space:normal;"><input type="radio" name="moveType" value="weekly" style="flex-shrink:0;"> <span>毎週 <span id="moveWeeklyLabel">〇曜日</span> に変更 <span style="font-size:11px;color:#888;font-weight:400;">（全ての週に反映）</span></span></label>
     </div>
     <div class="move-btns">
       <button id="moveCancelBtn" onclick="closeMoveModal()">やめる</button>
@@ -1221,16 +1232,16 @@ function confirmMove() {
   if (!orig) { closeMoveModal(); return; }
 
   if (type === 'weekly') {
-    // ===== 毎週移動：_weeklyMovesに保存（全週に反映） =====
-    if (!localOverrides._weeklyMoves) localOverrides._weeklyMoves = [];
-    if (!localOverrides._weeklyMoves_tasks) localOverrides._weeklyMoves_tasks = [];
+    // ===== 毎週移動：weeklyMovesに保存（全週に反映） =====
+    if (!localOverrides.weeklyMoves) localOverrides.weeklyMoves = [];
+    if (!localOverrides.weeklyMovesTasks) localOverrides.weeklyMovesTasks = [];
 
-    // 元のorigUid：_isWeeklyMovedなら既存のweeklyMoveを更新、そうでなければ新規
-    const origUid = orig._isWeeklyMoved ? orig._origUid || orig.uid : orig.uid;
-    const origDayIdx = orig._isWeeklyMoved ? orig._origDayIdx || orig._dayIdx : orig._dayIdx;
+    // origUid: _isWeeklyMovedなら既存のweeklyMoveのorigUidを辿る
+    const origUid = orig._origUid || orig.uid;
+    const origDayIdx = orig._origDayIdx !== undefined ? orig._origDayIdx : orig._dayIdx;
 
     // 既存のweeklyMoveを上書き（同じorigUidがあれば）
-    const existIdx = localOverrides._weeklyMoves.findIndex(mv => mv.origUid === origUid && mv.origDayIdx === origDayIdx);
+    const existIdx = localOverrides.weeklyMoves.findIndex(mv => mv.origUid === origUid && mv.origDayIdx === origDayIdx);
     const moveUid = 'wm_' + Date.now();
     const moveEntry = {
       origUid,
@@ -1240,17 +1251,18 @@ function confirmMove() {
       moveUid
     };
     if (existIdx >= 0) {
-      localOverrides._weeklyMoves[existIdx] = moveEntry;
+      localOverrides.weeklyMoves[existIdx] = moveEntry;
     } else {
-      localOverrides._weeklyMoves.push(moveEntry);
+      localOverrides.weeklyMoves.push(moveEntry);
     }
     // 元タスクデータを保存（RAW_DATAにないローカル追加タスクのために）
-    const taskCopy = {...orig, uid: origUid, _dayIdx: origDayIdx, _origDayIdx: undefined, _isWeeklyMoved: undefined};
-    const taskIdx = localOverrides._weeklyMoves_tasks.findIndex(t => t.uid === origUid);
+    const taskCopy = {...orig, uid: origUid};
+    delete taskCopy._isWeeklyMoved; delete taskCopy._origUid; delete taskCopy._origDayIdx;
+    const taskIdx = localOverrides.weeklyMovesTasks.findIndex(t => t.uid === origUid);
     if (taskIdx >= 0) {
-      localOverrides._weeklyMoves_tasks[taskIdx] = taskCopy;
+      localOverrides.weeklyMovesTasks[taskIdx] = taskCopy;
     } else {
-      localOverrides._weeklyMoves_tasks.push(taskCopy);
+      localOverrides.weeklyMovesTasks.push(taskCopy);
     }
 
     // 今週の週単位overridesから、同タスクの今週限り移動（added）があれば削除
@@ -1260,7 +1272,6 @@ function confirmMove() {
       if (lo.added) {
         lo.added = lo.added.filter(a => a.uid !== orig.uid);
       }
-      // 今週の非表示も解除（毎週移動が優先されるため）
       if (lo.hidden) {
         delete lo.hidden[origUid + '_' + origDayIdx];
       }
@@ -1408,5 +1419,5 @@ window.addEventListener('DOMContentLoaded', function() {
   }
 });
 </script>
-<!-- _260608.2032 --></body>
+<!-- _260608.2108 --></body>
 </html>
