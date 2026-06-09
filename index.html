@@ -128,6 +128,30 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
   .bnav-btn{padding:2px 20px;}
   .bnav-btn svg{width:22px;height:22px;}
 }
+
+/* AI提案カード */
+.card.ai-suggest{
+  border:2px dashed #9b59b6 !important;
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(155,89,182,0.08),
+    rgba(155,89,182,0.08) 4px,
+    rgba(255,255,255,0.7) 4px,
+    rgba(255,255,255,0.7) 8px
+  ) !important;
+  color:#6c3483 !important;
+  opacity:0.9;
+  position:relative;
+}
+.card.ai-suggest::after{
+  content:'✦';
+  position:absolute;
+  top:1px;
+  right:3px;
+  font-size:8px;
+  color:#9b59b6;
+  line-height:1;
+}
 </style>
 </head>
 <body>
@@ -586,7 +610,8 @@ function render() {
     if (!cell) return;
     const card = document.createElement('div');
     const cls = SUBJ_CLASS[t.subject] || 'plan';
-    card.className = 'card ' + cls;
+    const aiCls = t._aiSuggest ? ' ai-suggest' : '';
+    card.className = 'card ' + cls + aiCls;
     const name = t.unit_name || '';
     const span = document.createElement('span');
     span.style.cssText = 'pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;';
@@ -1597,6 +1622,30 @@ render();
   .bnav-btn{padding:2px 20px;}
   .bnav-btn svg{width:22px;height:22px;}
 }
+
+/* AI提案カード */
+.card.ai-suggest{
+  border:2px dashed #9b59b6 !important;
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(155,89,182,0.08),
+    rgba(155,89,182,0.08) 4px,
+    rgba(255,255,255,0.7) 4px,
+    rgba(255,255,255,0.7) 8px
+  ) !important;
+  color:#6c3483 !important;
+  opacity:0.9;
+  position:relative;
+}
+.card.ai-suggest::after{
+  content:'✦';
+  position:absolute;
+  top:1px;
+  right:3px;
+  font-size:8px;
+  color:#9b59b6;
+  line-height:1;
+}
 </style>
 
 <div id="moveModal">
@@ -1815,6 +1864,112 @@ function fitModals() {
   });
 }
 window.addEventListener('resize', fitModals);
+
+
+// ===== AI提案データの投入 =====
+(function injectAiProposals() {
+  const SUBJ_COLOR_MAP = {
+    '算数':['#C1E8FB','#1a2744'],'国語':['#F2B9E4','#1a2744'],
+    '理科':['#B6EBB0','#1a2744'],'社会':['#F9DB82','#1a2744'],
+    '学校の宿題':['#D3D3D3','#1a2744'],'習い事':['#D6C3AA','#1a2744'],
+    '予定':['#F5F4E4','#1a2744'],'テスト':['#F104BA','#fff']
+  };
+  const DAYS_JP_AI = ['月','火','水','木','金','土','日'];
+  const SLOT_IDX_AI = {plan:0,morning:1,am:2,pm:3,night:4};
+  const proposals = [
+  {"date":"2026-06-22","slot":"morning","subject":"算数","unit_name":"基礎力テスト","study_time":15},
+  {"date":"2026-06-22","slot":"morning","subject":"国語","unit_name":"漢字12復習","study_time":15},
+  {"date":"2026-06-23","slot":"morning","subject":"算数","unit_name":"基礎力テスト","study_time":15},
+  {"date":"2026-06-23","slot":"morning","subject":"国語","unit_name":"漢字13復習","study_time":15},
+  {"date":"2026-06-23","slot":"pm","subject":"理科","unit_name":"確認問題12-13","study_time":40},
+  {"date":"2026-06-23","slot":"night","subject":"国語","unit_name":"単元音読12-13","study_time":15},
+  {"date":"2026-06-23","slot":"night","subject":"社会","unit_name":"単元音読12-13","study_time":10},
+  {"date":"2026-06-23","slot":"night","subject":"国語","unit_name":"意味調べ12","study_time":20},
+  {"date":"2026-06-25","slot":"morning","subject":"算数","unit_name":"基礎力テスト","study_time":15},
+  {"date":"2026-06-25","slot":"morning","subject":"国語","unit_name":"漢字14復習","study_time":15},
+  {"date":"2026-06-25","slot":"night","subject":"算数","unit_name":"単元14-15復習","study_time":30},
+  {"date":"2026-06-25","slot":"night","subject":"理科","unit_name":"確認問題14-15","study_time":30},
+  {"date":"2026-06-26","slot":"morning","subject":"算数","unit_name":"基礎力テスト","study_time":15},
+  {"date":"2026-06-26","slot":"morning","subject":"国語","unit_name":"言葉12-13","study_time":15},
+  {"date":"2026-06-26","slot":"pm","subject":"社会","unit_name":"復習12-13","study_time":30},
+  {"date":"2026-06-26","slot":"pm","subject":"理科","unit_name":"グノチェック12-15","study_time":30},
+  {"date":"2026-06-26","slot":"night","subject":"算数","unit_name":"復習12-13","study_time":40},
+  {"date":"2026-06-26","slot":"night","subject":"算数","unit_name":"基礎力復習12-15","study_time":20},
+  {"date":"2026-06-27","slot":"morning","subject":"算数","unit_name":"基礎力テスト","study_time":15},
+  {"date":"2026-06-27","slot":"morning","subject":"国語","unit_name":"言葉14-15","study_time":15},
+  {"date":"2026-06-27","slot":"am","subject":"算数","unit_name":"計算マスタ","study_time":20},
+  {"date":"2026-06-27","slot":"night","subject":"算数","unit_name":"復習14-15","study_time":40},
+  {"date":"2026-06-27","slot":"night","subject":"社会","unit_name":"復習14-15","study_time":20},
+  {"date":"2026-06-28","slot":"morning","subject":"算数","unit_name":"基礎力テスト","study_time":15},
+  {"date":"2026-06-28","slot":"morning","subject":"国語","unit_name":"漢字総復習12-15","study_time":15},
+  {"date":"2026-06-28","slot":"am","subject":"算数","unit_name":"間違い12-15","study_time":30},
+  {"date":"2026-06-28","slot":"am","subject":"理科","unit_name":"復習12-15","study_time":30},
+  {"date":"2026-06-28","slot":"night","subject":"算数","unit_name":"計算マスタ","study_time":20},
+  {"date":"2026-06-28","slot":"night","subject":"社会","unit_name":"基礎問題12-15","study_time":10},
+  {"date":"2026-06-28","slot":"night","subject":"理科","unit_name":"基礎力テスト","study_time":15},
+  {"date":"2026-07-01","slot":"night","subject":"算数","unit_name":"テスト振り返り","study_time":20},
+  {"date":"2026-07-03","slot":"morning","subject":"算数","unit_name":"基礎力テスト","study_time":15},
+  {"date":"2026-07-03","slot":"morning","subject":"国語","unit_name":"漢字","study_time":15},
+  {"date":"2026-07-03","slot":"night","subject":"算数","unit_name":"Nテキスト","study_time":30},
+  {"date":"2026-07-03","slot":"night","subject":"国語","unit_name":"グノレブ振り返り","study_time":15},
+  {"date":"2026-07-03","slot":"night","subject":"社会","unit_name":"グノレブ振り返り","study_time":15},
+  {"date":"2026-07-04","slot":"morning","subject":"算数","unit_name":"基礎力テスト","study_time":15},
+  {"date":"2026-07-04","slot":"morning","subject":"国語","unit_name":"漢字","study_time":15},
+  {"date":"2026-07-04","slot":"pm","subject":"社会","unit_name":"用語/基礎力確認","study_time":30},
+  {"date":"2026-07-04","slot":"pm","subject":"理科","unit_name":"グノチェック","study_time":30},
+  {"date":"2026-07-04","slot":"night","subject":"算数","unit_name":"Nテキスト","study_time":30},
+  {"date":"2026-07-04","slot":"night","subject":"算数","unit_name":"N家庭学習","study_time":30},
+  {"date":"2026-07-05","slot":"morning","subject":"算数","unit_name":"基礎力テスト","study_time":15},
+  {"date":"2026-07-05","slot":"morning","subject":"国語","unit_name":"漢字","study_time":15},
+  {"date":"2026-07-05","slot":"am","subject":"算数","unit_name":"計算マスタ","study_time":20},
+  {"date":"2026-07-05","slot":"night","subject":"国語","unit_name":"塾前復習12-15","study_time":20},
+  {"date":"2026-07-05","slot":"night","subject":"社会","unit_name":"塾前復習12-15","study_time":20},
+  {"date":"2026-07-05","slot":"night","subject":"算数","unit_name":"N家庭学習","study_time":30}
+];
+
+  proposals.forEach((p, i) => {
+    const [y,mo,d] = p.date.split('-').map(Number);
+    const dt = new Date(y, mo-1, d);
+    // 月曜日を計算
+    const dow = dt.getDay();
+    const mondayDiff = dow === 0 ? -6 : 1 - dow;
+    const monday = new Date(dt);
+    monday.setDate(dt.getDate() + mondayDiff);
+    monday.setHours(0,0,0,0);
+    const wk = monday.toISOString().slice(0,10);
+
+    if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
+    if (!localOverrides[wk].added) localOverrides[wk].added = [];
+
+    const dayIdx = dow === 0 ? 6 : dow - 1;
+    const colors = SUBJ_COLOR_MAP[p.subject] || ['#eee','#333'];
+    const uid = 'ai_' + p.date + '_' + i;
+
+    // 同じuidが既に入っていたらスキップ
+    if (localOverrides[wk].added.find(a => a.uid === uid)) return;
+
+    localOverrides[wk].added.push({
+      uid,
+      color: colors[0],
+      weekday: DAYS_JP_AI[dayIdx],
+      weekday_index: dayIdx,
+      slot: p.slot,
+      subject: p.subject,
+      unit_name: p.unit_name,
+      study_time: p.study_time,
+      display_type: 'one_time',
+      repeat_key: null,
+      is_hidden: 'no',
+      order: 99,
+      note: 'AI提案',
+      _dayIdx: dayIdx,
+      _slotIdx: SLOT_IDX_AI[p.slot] || 0,
+      _aiSuggest: true
+    });
+  });
+  saveLocal();
+  console.log('AI提案データを投入しました');
+})();
 
 // 初期表示：スマホ縦向きは今日を中央に
 initPhoneViewStart();
