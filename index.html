@@ -538,23 +538,10 @@ function render() {
       e.stopPropagation();
     });
     card.addEventListener('dragend', () => card.classList.remove('dragging'));
-    card.addEventListener('click', e => { e.stopPropagation(); openDetail(t); });
+    card.addEventListener('click', e => { e.stopPropagation(); });
     card.addEventListener('contextmenu', e => { e.preventDefault(); e.stopPropagation(); });
-    card.addEventListener('touchstart', e => {
-      e.preventDefault();
-      e.stopPropagation();
-      card._touchMoved = false;
-    }, {passive:false});
-    card.addEventListener('touchmove', e => { card._touchMoved = true; });
-    card.addEventListener('touchend', e => {
-      e.stopPropagation();
-      e.preventDefault();
-      if (card.blur) card.blur();
-      if (!card._touchMoved) {
-        setTimeout(() => openDetail(t), 10);
-      }
-      card._touchMoved = false;
-    });
+    // タッチはすべて_tStart/_tEndで処理（_addTouch経由）
+    // ここでは登録しない
     cell.appendChild(card);
   });
 }
@@ -1364,20 +1351,23 @@ function _addTouch() {
 }
 
 function _tStart(e) {
-  // iOS吹き出し・テキスト選択を完全防止
+  // iOS吹き出し・ハイライト・テキスト選択を完全防止
   e.preventDefault();
   e.stopPropagation();
   _tActive = false; _tDropCell = null;
   _tCard = e.currentTarget;
   _tTask = {key:_tCard.getAttribute('data-key'), id:parseInt(_tCard.getAttribute('data-id')), uid:_tCard.getAttribute('data-uid')};
+  _tCard._touchMoved = false;
 
   _tTimer = setTimeout(() => {
+    if (_tCard._touchMoved) return; // 動いていたらD&D起動しない
     _tActive = true;
     _cacheCells();
     const rect = _tCard.getBoundingClientRect();
     _tClone = document.createElement('div');
     _tClone.className = _tCard.className;
-    _tClone.textContent = _tCard.textContent;
+    const span = _tCard.querySelector('span');
+    _tClone.textContent = span ? span.textContent : _tCard.textContent;
     Object.assign(_tClone.style, {
       position:'fixed', left:rect.left+'px', top:rect.top+'px',
       width:rect.width+'px', opacity:'0.9', pointerEvents:'none',
@@ -1387,7 +1377,6 @@ function _tStart(e) {
       padding:'3px 5px', fontSize:'13px', fontWeight:'700', textAlign:'center'
     });
     document.body.appendChild(_tClone);
-    // opacityはtouchmoveが来てから変える（タップだけなら変えない）
     if (navigator.vibrate) navigator.vibrate(40);
   }, 400);
 
@@ -1397,6 +1386,7 @@ function _tStart(e) {
 }
 
 function _tMove(e) {
+  if (_tCard) _tCard._touchMoved = true;
   if (!_tActive || !_tClone) { e.preventDefault(); return; }
   e.preventDefault();
   const t = e.touches[0];
@@ -1420,7 +1410,17 @@ function _tEnd(e) {
   if (_tClone) { _tClone.remove(); _tClone = null; }
   if (_tCard) { _tCard.style.opacity = '1'; }
 
-  if (_tActive && _tTask && _tDropCell) {
+  if (!_tActive && _tTask && _tCard && !_tCard._touchMoved) {
+    // タップ（長押しなし・動きなし）→ カード詳細を開く
+    const allTasks = getTasksForWeek();
+    const kp = (_tTask.key||'').split('-');
+    const di = kp.length>=1 ? parseInt(kp[0]) : -1;
+    const si = kp.length>=2 ? parseInt(kp[1]) : -1;
+    const found = allTasks.find(t =>
+      t.uid === _tTask.uid && t._dayIdx === di && t._slotIdx === si
+    ) || allTasks.find(t => t.uid === _tTask.uid);
+    if (found) openDetail(found);
+  } else if (_tActive && _tTask && _tDropCell) {
     const m = _tDropCell.id.match(/^c(\d+)-(\d+)$/);
     if (m) openMoveModal(_tTask, parseInt(m[1]), parseInt(m[2]));
   }
