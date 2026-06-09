@@ -1259,10 +1259,13 @@ function renderPieChart(canvasId, legendId, data) {
     const colors=SUBJ_COLOR[subj]||['#eee','#333'];
     const pct=Math.round(mins/total*100);
     if (sm) {
-      legend+=`<div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;">
+      legend+=`<div style="display:flex;align-items:center;gap:5px;margin-bottom:5px;">
         <div style="width:10px;height:10px;border-radius:2px;background:${colors[0]};flex-shrink:0;"></div>
-        <span style="font-size:11px;font-weight:700;background:${colors[0]};color:${colors[1]};padding:1px 5px;border-radius:3px;flex:1;">${subj}</span>
-        <span style="font-size:12px;font-weight:700;color:#1a2744;font-family:'Inter',sans-serif;">${pct}%</span>
+        <span style="font-size:11px;font-weight:700;color:${colors[1]};background:${colors[0]};padding:1px 5px;border-radius:3px;flex-shrink:0;min-width:52px;text-align:center;">${subj}</span>
+        <div style="flex:1;background:#eee;border-radius:3px;height:8px;min-width:0;">
+          <div style="background:${colors[0]};height:8px;border-radius:3px;width:${pct}%;"></div>
+        </div>
+        <span style="font-size:11px;font-weight:700;color:#1a2744;font-family:'Inter',sans-serif;flex-shrink:0;min-width:28px;text-align:right;">${pct}%</span>
       </div>`;
     } else {
       legend+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
