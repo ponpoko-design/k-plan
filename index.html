@@ -536,26 +536,16 @@ function render() {
     });
     card.addEventListener('dragend', () => card.classList.remove('dragging'));
     card.addEventListener('click', e => { e.stopPropagation(); openDetail(t); });
+    card.addEventListener('contextmenu', e => { e.preventDefault(); e.stopPropagation(); });
     card.addEventListener('touchstart', e => {
       e.preventDefault();
+      e.stopPropagation();
       card._touchMoved = false;
-      // タッチ中は背景色・影をinlineで固定してiOSハイライトを上書き
-      card._origBg = card.style.backgroundColor;
-      const computed = getComputedStyle(card).backgroundColor;
-      card.style.setProperty('background-color', computed, 'important');
-      card.style.setProperty('box-shadow', 'none', 'important');
-      card.style.setProperty('transform', 'none', 'important');
-      card.style.setProperty('opacity', '1', 'important');
     }, {passive:false});
     card.addEventListener('touchmove', e => { card._touchMoved = true; });
     card.addEventListener('touchend', e => {
       e.stopPropagation();
       e.preventDefault();
-      // inline styleをリセット
-      card.style.removeProperty('background-color');
-      card.style.removeProperty('box-shadow');
-      card.style.removeProperty('transform');
-      card.style.removeProperty('opacity');
       if (card.blur) card.blur();
       if (!card._touchMoved) { openDetail(t); }
       card._touchMoved = false;
@@ -1301,6 +1291,10 @@ function changeWeek(dir) {
 
 function showView(v) {}
 
+// iOS長押し吹き出しをページ全体で防止
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('selectstart', e => e.preventDefault());
+
 function selectCopyDateToday(){
   const now=new Date();
   const y=now.getFullYear(),mo=now.getMonth()+1,d=now.getDate();
@@ -1369,6 +1363,9 @@ function _addTouch() {
 }
 
 function _tStart(e) {
+  // iOS吹き出し・テキスト選択を完全防止
+  e.preventDefault();
+  e.stopPropagation();
   _tActive = false; _tDropCell = null;
   _tCard = e.currentTarget;
   _tTask = {key:_tCard.getAttribute('data-key'), id:parseInt(_tCard.getAttribute('data-id')), uid:_tCard.getAttribute('data-uid')};
