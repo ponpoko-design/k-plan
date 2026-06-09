@@ -131,9 +131,52 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 
 /* AI提案カード */
 .card.ai-suggest{
-  border-left:3px solid #9b59b6 !important;
+  border-left:3px solid rgba(255,255,255,0.8) !important;
   border-radius:0 4px 4px 0 !important;
   opacity:0.92;
+}
+
+/* 複数選択モード */
+.card.selected{
+  outline:2px solid #e24b4a !important;
+  outline-offset:1px;
+  opacity:0.85;
+}
+#multiDeleteBar{
+  display:none;
+  position:fixed;
+  bottom:52px;
+  left:0;width:100%;
+  background:#e24b4a;
+  color:white;
+  padding:10px 16px;
+  font-size:15px;
+  font-weight:700;
+  text-align:center;
+  z-index:500;
+  cursor:pointer;
+  box-shadow:0 -2px 10px rgba(0,0,0,0.2);
+}
+#multiDeleteBar.show{display:block;}
+#multiCancelBar{
+  display:none;
+  position:fixed;
+  bottom:52px;
+  right:12px;
+  background:white;
+  border:2px solid #888;
+  color:#888;
+  padding:8px 16px;
+  font-size:13px;
+  font-weight:700;
+  border-radius:20px;
+  z-index:501;
+  cursor:pointer;
+}
+#multiCancelBar.show{display:block;}
+@media (max-width:767px) and (orientation:portrait){
+  #multiDeleteBar{bottom:36px;}
+  #multiCancelBar{bottom:36px;}
 }
 </style>
 </head>
@@ -153,7 +196,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 <div id="app" style="display:none;width:100%;height:100%;">
   <div class="hdr">
     <button class="nav-btn" onclick="changeWeek(-1)"><svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor"><polygon points="10,0 10,12 0,6"/></svg> 前の週</button>
-    <div class="hdr-title">航大 家庭学習スケジュール</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="hdr-title">航大 家庭学習スケジュール</div>
+      <button id="multiSelectToggle" onclick="toggleMultiSelect()"
+        style="background:white;border:1.5px solid #ccc;color:#888;border-radius:14px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">選択</button>
+    </div>
     <button class="nav-btn" onclick="changeWeek(1)">次の週 <svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor"><polygon points="0,0 0,12 10,6"/></svg></button>
   </div>
 
@@ -193,6 +240,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
   </div>
 
   <div id="toast"></div>
+  <div id="multiDeleteBar" onclick="confirmMultiDelete()">🗑 <span id="multiDeleteCount">0</span>件を今週だけ削除する</div>
+  <div id="multiCancelBar" onclick="cancelMultiSelect()">キャンセル</div>
 
   <!-- グノレブ予定モーダル -->
   <div class="modal-bg" id="gnorevModal" style="z-index:200;">
@@ -623,7 +672,7 @@ function render() {
     const aiCls = t._aiSuggest ? ' ai-suggest' : '';
     card.className = 'card ' + cls + aiCls;
     const name = t.unit_name || '';
-    const displayName = t._aiSuggest ? '◆' + name : name;
+    const displayName = name;
     const span = document.createElement('span');
     span.style.cssText = 'pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;';
     span.textContent = displayName.length > 8 ? displayName.slice(0,8) : displayName;
@@ -1511,6 +1560,82 @@ function changeWeek(dir) {
 
 function showView(v) {}
 
+// ===== 複数選択削除 =====
+let _multiSelectMode = false;
+let _selectedCards = new Map(); // uid+key → task
+
+function toggleMultiSelect() {
+  if (_multiSelectMode) {
+    cancelMultiSelect();
+  } else {
+    _multiSelectMode = true;
+    document.getElementById('multiSelectToggle').textContent = '選択中';
+    document.getElementById('multiSelectToggle').style.background = '#e24b4a';
+    document.getElementById('multiSelectToggle').style.color = 'white';
+    document.getElementById('multiSelectToggle').style.borderColor = '#e24b4a';
+    document.getElementById('multiDeleteBar').classList.add('show');
+    document.getElementById('multiCancelBar').classList.add('show');
+    document.getElementById('multiDeleteCount').textContent = '0';
+    showToast('カードをタップして選択してください', 2000);
+  }
+}
+
+function enterMultiSelect(t, cardEl) {
+  _multiSelectMode = true;
+  _selectedCards.clear();
+  _addToSelection(t, cardEl);
+  document.getElementById('multiDeleteBar').classList.add('show');
+  document.getElementById('multiCancelBar').classList.add('show');
+  if (navigator.vibrate) navigator.vibrate(40);
+}
+
+function _addToSelection(t, cardEl) {
+  const key = t.uid + '_' + t._dayIdx + '_' + t._slotIdx;
+  if (_selectedCards.has(key)) {
+    _selectedCards.delete(key);
+    cardEl.classList.remove('selected');
+  } else {
+    _selectedCards.set(key, {t, cardEl});
+    cardEl.classList.add('selected');
+  }
+  const count = _selectedCards.size;
+  document.getElementById('multiDeleteCount').textContent = count;
+  if (count === 0) cancelMultiSelect();
+}
+
+function cancelMultiSelect() {
+  _multiSelectMode = false;
+  _selectedCards.forEach(({t, cardEl}) => cardEl.classList.remove('selected'));
+  _selectedCards.clear();
+  document.getElementById('multiDeleteBar').classList.remove('show');
+  document.getElementById('multiCancelBar').classList.remove('show');
+  const btn = document.getElementById('multiSelectToggle');
+  if (btn) { btn.textContent='選択'; btn.style.background='white'; btn.style.color='#888'; btn.style.borderColor='#ccc'; }
+}
+
+function confirmMultiDelete() {
+  const count = _selectedCards.size;
+  if (count === 0) return;
+  const wk = getWeekKey();
+  if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
+  const lo = localOverrides[wk];
+  lo.hidden = lo.hidden || {};
+
+  _selectedCards.forEach(({t}) => {
+    if (t.display_type === 'weekly' || t._isWeeklyMoved) {
+      lo.hidden[t.uid + '_' + t._dayIdx] = true;
+    } else {
+      lo.hidden[t.uid] = true;
+      if (lo.added) lo.added = lo.added.filter(a => a.uid !== t.uid);
+    }
+  });
+
+  saveLocal();
+  cancelMultiSelect();
+  render();
+  showToast(`${count}件を今週だけ削除しました`, 2500);
+}
+
 // ===== グノレブ機能 =====
 function openGnorevModal() {
   // デフォルト日付：今日から2週間後
@@ -1613,46 +1738,40 @@ function confirmGnorev() {
   const prevMonday = new Date(thisMonday); prevMonday.setDate(thisMonday.getDate() - 7);
 
   // 直前週の各日（月〜テスト前日）に提案
+  // 月：朝のみ（基礎力・漢字は通常予定あり→提案なし）
+  // 火：午後・夜可
+  // 水：午後のみ（塾前）
+  // 木：夜のみ（プロタゴ後）
+  // 金：午後・夜可
+  // 土日：朝か夜に集約（本人が動かす前提）
   const plan = [
-    // 月曜
-    {offset:0, slot:'morning', subject:'算数', unit:'基礎力テスト', time:15},
-    {offset:0, slot:'morning', subject:'国語', unit:'漢字 間違い復習', time:15},
-    // 火曜
-    {offset:1, slot:'morning', subject:'算数', unit:'基礎力テスト', time:15},
-    {offset:1, slot:'morning', subject:'国語', unit:'漢字 間違い復習', time:15},
-    {offset:1, slot:'pm',      subject:'理科', unit:'確認問題 復習', time:40},
-    {offset:1, slot:'night',   subject:'国語', unit:'単元音読 復習', time:15},
-    {offset:1, slot:'night',   subject:'社会', unit:'単元音読 復習', time:10},
-    {offset:1, slot:'night',   subject:'国語', unit:'意味調べ 復習', time:20},
-    // 水曜（+2）
-    {offset:2, slot:'morning', subject:'算数', unit:'基礎力テスト', time:15},
-    {offset:2, slot:'morning', subject:'国語', unit:'漢字 間違い復習', time:15},
-    // 木曜（+3）
-    {offset:3, slot:'morning', subject:'算数', unit:'基礎力テスト', time:15},
-    {offset:3, slot:'morning', subject:'国語', unit:'漢字 間違い復習', time:15},
-    {offset:3, slot:'night',   subject:'算数', unit:'復習 後半', time:30},
-    {offset:3, slot:'night',   subject:'理科', unit:'確認問題 復習', time:30},
-    // 金曜（+4）
-    {offset:4, slot:'morning', subject:'算数', unit:'基礎力テスト', time:15},
-    {offset:4, slot:'morning', subject:'国語', unit:'言葉 復習', time:15},
-    {offset:4, slot:'pm',      subject:'社会', unit:'復習 前半', time:30},
-    {offset:4, slot:'pm',      subject:'理科', unit:'グノチェック', time:30},
-    {offset:4, slot:'night',   subject:'算数', unit:'復習 前半', time:40},
-    {offset:4, slot:'night',   subject:'算数', unit:'基礎力復習', time:20},
-    // 土曜（+5）
-    {offset:5, slot:'morning', subject:'算数', unit:'基礎力テスト', time:15},
-    {offset:5, slot:'morning', subject:'国語', unit:'言葉 復習', time:15},
-    {offset:5, slot:'am',      subject:'算数', unit:'計算マスタ', time:20},
-    {offset:5, slot:'night',   subject:'算数', unit:'復習 後半', time:40},
-    {offset:5, slot:'night',   subject:'社会', unit:'復習 後半', time:20},
-    // 日曜（+6）
-    {offset:6, slot:'morning', subject:'算数', unit:'基礎力テスト', time:15},
-    {offset:6, slot:'morning', subject:'国語', unit:'漢字総復習', time:15},
-    {offset:6, slot:'am',      subject:'算数', unit:'間違い総復習', time:30},
-    {offset:6, slot:'am',      subject:'理科', unit:'総復習', time:30},
-    {offset:6, slot:'night',   subject:'算数', unit:'計算マスタ', time:20},
-    {offset:6, slot:'night',   subject:'社会', unit:'基礎問題 復習', time:10},
-    {offset:6, slot:'night',   subject:'理科', unit:'基礎力テスト', time:15},
+    // 火曜(+1)：月曜塾（国語・社会）翌日復習 ＋ 水曜塾（算数・理科）前日対策
+    {offset:1, slot:'pm',    subject:'理科', unit:'確認問題 復習', time:40},
+    {offset:1, slot:'night', subject:'国語', unit:'単元音読 復習', time:15},
+    {offset:1, slot:'night', subject:'社会', unit:'単元音読 復習', time:10},
+    {offset:1, slot:'night', subject:'国語', unit:'意味調べ 復習', time:20},
+    // 水曜(+2)：午後のみ（塾前）
+    {offset:2, slot:'pm',    subject:'算数', unit:'Nテキスト 復習', time:30},
+    {offset:2, slot:'pm',    subject:'理科', unit:'基礎力テスト', time:15},
+    // 木曜(+3)：水曜塾（算数・理科）翌日復習 夜のみ
+    {offset:3, slot:'night', subject:'算数', unit:'N家庭学習 復習', time:30},
+    {offset:3, slot:'night', subject:'理科', unit:'テスト振り返り', time:30},
+    // 金曜(+4)：グノチェック＋算数・社会
+    {offset:4, slot:'pm',    subject:'社会', unit:'復習 前半', time:30},
+    {offset:4, slot:'pm',    subject:'理科', unit:'グノチェック', time:30},
+    {offset:4, slot:'night', subject:'算数', unit:'復習 前半', time:40},
+    {offset:4, slot:'night', subject:'算数', unit:'基礎力復習', time:20},
+    // 土曜(+5)：午前（通常枠）＋夜
+    {offset:5, slot:'am',    subject:'算数', unit:'計算マスタ 復習', time:20},
+    {offset:5, slot:'am',    subject:'理科', unit:'基礎力テスト', time:15},
+    {offset:5, slot:'night', subject:'社会', unit:'復習 後半', time:20},
+    {offset:5, slot:'night', subject:'算数', unit:'復習 後半', time:30},
+    // 日曜(+6)：午前（通常枠）＋夜
+    {offset:6, slot:'am',    subject:'算数', unit:'N間違い 復習', time:30},
+    {offset:6, slot:'am',    subject:'社会', unit:'基礎問題 復習', time:30},
+    {offset:6, slot:'night', subject:'理科', unit:'総復習', time:30},
+    {offset:6, slot:'night', subject:'算数', unit:'計算ルール', time:15},
+    {offset:6, slot:'night', subject:'国語', unit:'漢字総復習', time:15},
   ];
 
   plan.forEach(p => {
@@ -1671,24 +1790,23 @@ function confirmGnorev() {
   else { daysToNextClass = (8 - dow) % 7 + 1; } // その他→翌月曜
 
   // テスト翌日〜次回授業前日まで提案
+  // テスト翌日〜次回授業前日まで提案
+  // 7/1水（グノレブ）→翌週月曜7/6に塾（国・社）
+  // 木（+2）：夜のみ、金（+3）：午後・夜、土（+4）：夜
   const afterPlan = [
-    {dOff:2, slot:'morning', subject:'算数', unit:'基礎力テスト', time:15},
-    {dOff:2, slot:'morning', subject:'国語', unit:'漢字', time:15},
-    {dOff:2, slot:'night',   subject:'算数', unit:'Nテキスト', time:30},
-    {dOff:2, slot:'night',   subject:'国語', unit:'グノレブ振り返り', time:15},
-    {dOff:2, slot:'night',   subject:'社会', unit:'グノレブ振り返り', time:15},
-    {dOff:3, slot:'morning', subject:'算数', unit:'基礎力テスト', time:15},
-    {dOff:3, slot:'morning', subject:'国語', unit:'漢字', time:15},
-    {dOff:3, slot:'pm',      subject:'社会', unit:'用語/基礎力確認', time:30},
-    {dOff:3, slot:'pm',      subject:'理科', unit:'グノチェック', time:30},
-    {dOff:3, slot:'night',   subject:'算数', unit:'Nテキスト', time:30},
-    {dOff:3, slot:'night',   subject:'算数', unit:'N家庭学習', time:30},
-    {dOff:4, slot:'morning', subject:'算数', unit:'基礎力テスト', time:15},
-    {dOff:4, slot:'morning', subject:'国語', unit:'漢字', time:15},
-    {dOff:4, slot:'am',      subject:'算数', unit:'計算マスタ', time:20},
-    {dOff:4, slot:'night',   subject:'国語', unit:'塾前復習', time:20},
-    {dOff:4, slot:'night',   subject:'社会', unit:'塾前復習', time:20},
-    {dOff:4, slot:'night',   subject:'算数', unit:'N家庭学習', time:30},
+    // 木7/3（+2）夜
+    {dOff:2, slot:'night', subject:'算数', unit:'Nテキスト', time:30},
+    {dOff:2, slot:'night', subject:'国語', unit:'グノレブ振り返り', time:15},
+    {dOff:2, slot:'night', subject:'社会', unit:'グノレブ振り返り', time:15},
+    // 金7/4（+3）午後・夜
+    {dOff:3, slot:'pm',    subject:'社会', unit:'用語/基礎力確認', time:30},
+    {dOff:3, slot:'pm',    subject:'理科', unit:'グノチェック', time:30},
+    {dOff:3, slot:'night', subject:'算数', unit:'Nテキスト', time:30},
+    {dOff:3, slot:'night', subject:'算数', unit:'N家庭学習', time:30},
+    // 土7/5（+4）夜（本人が動かす前提）
+    {dOff:4, slot:'night', subject:'国語', unit:'塾前復習', time:20},
+    {dOff:4, slot:'night', subject:'社会', unit:'塾前復習', time:20},
+    {dOff:4, slot:'night', subject:'算数', unit:'N家庭学習', time:30},
   ];
 
   afterPlan.forEach(p => {
@@ -1833,9 +1951,52 @@ render();
 
 /* AI提案カード */
 .card.ai-suggest{
-  border-left:3px solid #9b59b6 !important;
+  border-left:3px solid rgba(255,255,255,0.8) !important;
   border-radius:0 4px 4px 0 !important;
   opacity:0.92;
+}
+
+/* 複数選択モード */
+.card.selected{
+  outline:2px solid #e24b4a !important;
+  outline-offset:1px;
+  opacity:0.85;
+}
+#multiDeleteBar{
+  display:none;
+  position:fixed;
+  bottom:52px;
+  left:0;width:100%;
+  background:#e24b4a;
+  color:white;
+  padding:10px 16px;
+  font-size:15px;
+  font-weight:700;
+  text-align:center;
+  z-index:500;
+  cursor:pointer;
+  box-shadow:0 -2px 10px rgba(0,0,0,0.2);
+}
+#multiDeleteBar.show{display:block;}
+#multiCancelBar{
+  display:none;
+  position:fixed;
+  bottom:52px;
+  right:12px;
+  background:white;
+  border:2px solid #888;
+  color:#888;
+  padding:8px 16px;
+  font-size:13px;
+  font-weight:700;
+  border-radius:20px;
+  z-index:501;
+  cursor:pointer;
+}
+#multiCancelBar.show{display:block;}
+@media (max-width:767px) and (orientation:portrait){
+  #multiDeleteBar{bottom:36px;}
+  #multiCancelBar{bottom:36px;}
 }
 </style>
 
