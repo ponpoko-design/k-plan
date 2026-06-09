@@ -131,26 +131,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 
 /* AI提案カード */
 .card.ai-suggest{
-  border:2px dashed #9b59b6 !important;
-  background: repeating-linear-gradient(
-    -45deg,
-    rgba(155,89,182,0.08),
-    rgba(155,89,182,0.08) 4px,
-    rgba(255,255,255,0.7) 4px,
-    rgba(255,255,255,0.7) 8px
-  ) !important;
-  color:#6c3483 !important;
-  opacity:0.9;
-  position:relative;
-}
-.card.ai-suggest::after{
-  content:'✦';
-  position:absolute;
-  top:1px;
-  right:3px;
-  font-size:8px;
-  color:#9b59b6;
-  line-height:1;
+  border-left:3px solid #9b59b6 !important;
+  border-radius:0 4px 4px 0 !important;
+  opacity:0.92;
 }
 </style>
 </head>
@@ -225,8 +208,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
           <input type="date" id="gnorevDate" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;">
         </div>
         <div class="field">
-          <label>テストの範囲（例：単元12-15）</label>
-          <input type="text" id="gnorevRange" placeholder="例：単元12-15" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;">
+          <label># 単元番号（例：12-15）</label>
+          <input type="text" id="gnorevRange" placeholder="例：12-15" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;">
         </div>
         <div id="gnorevPreview" style="display:none;background:#f8f0ff;border-radius:8px;padding:12px;margin-top:10px;font-size:13px;color:#6c3483;border:1.5px solid #d7bfef;"></div>
         <div class="modal-actions" style="margin-top:16px;">
@@ -640,9 +623,10 @@ function render() {
     const aiCls = t._aiSuggest ? ' ai-suggest' : '';
     card.className = 'card ' + cls + aiCls;
     const name = t.unit_name || '';
+    const displayName = t._aiSuggest ? '◆' + name : name;
     const span = document.createElement('span');
     span.style.cssText = 'pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;';
-    span.textContent = name.length > 8 ? name.slice(0,8) : name;
+    span.textContent = displayName.length > 8 ? displayName.slice(0,8) : displayName;
     card.appendChild(span);
     // タッチデバイスではdraggable無効（iOSの吹き出し防止）、PCも独自D&Dを使うので無効
     const isTouch = ('ontouchstart' in window);
@@ -1566,9 +1550,12 @@ function updateGnorevPreview() {
     nextClass = new Date(testDate); nextClass.setDate(testDate.getDate()+5);
   }
 
+  const range = document.getElementById('gnorevRange').value || '';
+  const rangeLabel = range ? `（単元${range}）` : '';
+
   document.getElementById('gnorevPreview').style.display = 'block';
   document.getElementById('gnorevPreview').innerHTML = `
-    <div style="font-weight:700;margin-bottom:6px;">📅 ${fmt(testDate)}（${dowLabel}）グノレブ [${range}]</div>
+    <div style="font-weight:700;margin-bottom:6px;">📅 ${fmt(testDate)}（${dowLabel}）グノレブ${rangeLabel}</div>
     <div style="margin-bottom:3px;">📚 直前週（${fmt(prevMonday)}〜${fmt(new Date(prevMonday.getTime()+6*86400000))}）に学習計画を提案</div>
     <div>📝 当日夜〜${fmt(nextClass)}（次回授業前）に振り返り計画を提案</div>
   `;
@@ -1587,7 +1574,7 @@ function confirmGnorev() {
   const dow = testDate.getDay();
 
   // ===== グノレブ当日のテストカードを登録 =====
-  function addTask(dt, slot, subject, unitName, studyTime, isAi) {
+  function addTask(dt, slot, subject, unitName, studyTime, isAi, hash) {
     const dow2 = dt.getDay();
     const daysToMon = dow2 === 0 ? 6 : dow2 - 1;
     const monday = new Date(dt); monday.setDate(dt.getDate() - daysToMon); monday.setHours(0,0,0,0);
@@ -1611,6 +1598,7 @@ function confirmGnorev() {
       weekday_index: dayIdx, slot, subject, unit_name: unitName,
       study_time: studyTime, display_type: 'one_time',
       repeat_key: null, is_hidden: 'no', order: 90,
+      hash: hash || '',
       note: isAi ? 'AI提案' : '',
       _dayIdx: dayIdx, _slotIdx: SLOT_IDX2[slot]||0,
       _aiSuggest: isAi
@@ -1618,7 +1606,7 @@ function confirmGnorev() {
   }
 
   // テスト当日カード
-  addTask(testDate, 'plan', 'テスト', 'グノレブ（'+range+'）', null, false);
+  addTask(testDate, 'plan', 'テスト', 'グノレブ', null, false, range);
 
   // ===== 直前週の学習提案 =====
   const daysToMon = dow === 0 ? 6 : dow - 1;
@@ -1846,26 +1834,9 @@ render();
 
 /* AI提案カード */
 .card.ai-suggest{
-  border:2px dashed #9b59b6 !important;
-  background: repeating-linear-gradient(
-    -45deg,
-    rgba(155,89,182,0.08),
-    rgba(155,89,182,0.08) 4px,
-    rgba(255,255,255,0.7) 4px,
-    rgba(255,255,255,0.7) 8px
-  ) !important;
-  color:#6c3483 !important;
-  opacity:0.9;
-  position:relative;
-}
-.card.ai-suggest::after{
-  content:'✦';
-  position:absolute;
-  top:1px;
-  right:3px;
-  font-size:8px;
-  color:#9b59b6;
-  line-height:1;
+  border-left:3px solid #9b59b6 !important;
+  border-radius:0 4px 4px 0 !important;
+  opacity:0.92;
 }
 </style>
 
