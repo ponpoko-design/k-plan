@@ -1540,13 +1540,12 @@ function updateGnorevPreview() {
   const prevMonday = new Date(thisMonday); prevMonday.setDate(thisMonday.getDate() - 7);
 
   const fmt = dt => `${dt.getMonth()+1}/${dt.getDate()}`;
-  const range = document.getElementById('gnorevRange').value || '範囲未入力';
 
   // 翌授業日の計算
   let nextClass;
-  if (dow === 1) { // 月曜グノレブ→翌々日水曜
+  if (dow === 1) {
     nextClass = new Date(testDate); nextClass.setDate(testDate.getDate()+2);
-  } else { // 水曜グノレブ→翌週月曜
+  } else {
     nextClass = new Date(testDate); nextClass.setDate(testDate.getDate()+5);
   }
 
