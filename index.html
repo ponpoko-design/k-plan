@@ -829,6 +829,7 @@ function saveTask() {
     lo.added.push({...t, subject: newSubject, unit_name: newUnit, hash: newHash, note: newMemo, study_time: newTime, color: newColors[0], uid: t.uid+'_edit_'+Date.now()});
   }
   saveLocal(); closeDetail(); render();
+  showToast('変更を保存しました ✓');
 }
 
 function showToast(msg, duration) {
