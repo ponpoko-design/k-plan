@@ -605,7 +605,12 @@ function render() {
       e.stopPropagation();
     });
     card.addEventListener('dragend', () => card.classList.remove('dragging'));
-    card.addEventListener('click', e => { e.stopPropagation(); });
+    // PCブラウザ（タッチなし）はclickで詳細を開く
+    if (!isTouch) {
+      card.addEventListener('click', e => { e.stopPropagation(); openDetail(t); });
+    } else {
+      card.addEventListener('click', e => { e.stopPropagation(); });
+    }
     card.addEventListener('contextmenu', e => { e.preventDefault(); e.stopPropagation(); });
     // タッチはすべて_tStart/_tEndで処理（_addTouch経由）
     // ここでは登録しない
@@ -928,9 +933,9 @@ function toggleRepeat() {
 // ===== Add modal =====
 let addCalYear, addCalMonth;
 
-function openAdd(dayIdx, slotIdx) {
+function openAdd(dayIdx, slotIdx, defaultDate) {
   const now = new Date();
-  const str = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  const str = defaultDate || (now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0'));
   _setAddDate(str);
   document.getElementById('aSlot').value = SLOTS[slotIdx] || 'night';
   document.getElementById('aWeekday').value = dayIdx;
@@ -944,15 +949,29 @@ function openAdd(dayIdx, slotIdx) {
 }
 function openAddModal() {
   const now = new Date();
-  const dayIdx = (now.getDay()+6)%7;
-  const h = now.getHours();
-  let slotIdx;
-  if (h>=6&&h<9) slotIdx=1;
-  else if (h>=9&&h<12) slotIdx=2;
-  else if (h>=12&&h<18) slotIdx=3;
-  else if (h>=18&&h<23) slotIdx=4;
-  else slotIdx=0;
-  openAdd(dayIdx, slotIdx);
+  const todayMonday = getMonday(now);
+  const isThisWeek = dateKey(currentMonday) === dateKey(todayMonday);
+
+  let defaultDate, dayIdx, slotIdx;
+
+  if (isThisWeek) {
+    // 今週：今日の日付・現在時刻のスロット
+    dayIdx = (now.getDay()+6)%7;
+    const h = now.getHours();
+    if (h>=6&&h<9) slotIdx=1;
+    else if (h>=9&&h<12) slotIdx=2;
+    else if (h>=12&&h<18) slotIdx=3;
+    else if (h>=18&&h<23) slotIdx=4;
+    else slotIdx=0;
+    defaultDate = dateKey(now);
+  } else {
+    // 今週以外：表示中の週の水曜日（index=2）
+    dayIdx = 2;
+    slotIdx = 3; // 午後をデフォルト
+    const wed = addDays(currentMonday, 2);
+    defaultDate = dateKey(wed);
+  }
+  openAdd(dayIdx, slotIdx, defaultDate);
 }
 function toggleAddDate() {
   const isWeekly = document.querySelector('input[name="addType"]:checked').value === 'weekly';
