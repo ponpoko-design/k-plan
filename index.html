@@ -90,30 +90,39 @@ body{overflow-y:auto;overflow-x:hidden;}
 .btn-save{flex:1;background:white;border:2px solid var(--navy);color:var(--navy);border-radius:20px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;}
 .modal-repeat{text-align:center;margin-top:12px;color:var(--navy);font-size:13px;text-decoration:underline;cursor:pointer;}
 
-/* iPhone SE横向き（高さが狭い）対応 */
-@media (max-height: 430px) {
-  .hdr{height:36px;padding:4px 10px;}
-  .hdr-title{font-size:15px;}
-  .nav-btn{font-size:12px;padding:4px 10px;}
-  .cal-hcell{font-size:11px;padding:3px 2px;}
-  .time-lbl{font-size:10px;letter-spacing:1px;width:28px;}
-  .time-row{grid-template-columns:28px repeat(7,1fr);}
-  .cal-head{grid-template-columns:28px repeat(7,1fr);}
-  .card{font-size:10px;padding:2px 3px;}
-  .bnav{height:44px;padding:4px 0;}
-  .bnav-btn svg{width:22px;height:22px;}
-  .cal-wrap{margin:4px;min-height:320px;}
-  #app{min-height:unset;}
+/* ===== スマートフォン縦向き：3列表示 ===== */
+@media (max-width: 767px) and (orientation: portrait) {
   html,body{height:100%;overflow:hidden;}
+  #app{min-height:unset;height:100%;}
+  .hdr-title{font-size:16px;}
+  .nav-btn{font-size:12px;padding:5px 10px;}
+  /* 3列（ラベル+3日）*/
+  .cal-head{grid-template-columns:32px repeat(3,1fr)!important;}
+  .time-row{grid-template-columns:32px repeat(3,1fr)!important;}
+  /* スマホ縦向き非表示セル */
+  .day-cell.sp-hide,.cal-hcell.sp-hide{display:none!important;}
+  .time-lbl{width:32px;font-size:11px;}
+  .cal-hcell{font-size:13px;padding:5px 2px;}
+  .card{font-size:12px;padding:3px 4px;}
 }
-/* 小さい横幅（iPhone SE）対応 */
-@media (max-width: 420px) {
-  .hdr-title{font-size:14px;}
-  .cal-hcell{font-size:10px;}
-  .card{font-size:10px;padding:2px 3px;}
-  .time-lbl{font-size:10px;width:28px;}
-  .time-row{grid-template-columns:28px repeat(7,1fr);}
-  .cal-head{grid-template-columns:28px repeat(7,1fr);}
+
+/* ===== スマートフォン横向き：7列・スクロール ===== */
+@media (max-width: 900px) and (orientation: landscape) {
+  html,body{height:auto;overflow-y:auto;overflow-x:hidden;}
+  #app{min-height:100vh;height:auto;}
+  .cal-wrap{min-height:500px;overflow:visible;}
+  .cal-body{overflow:visible;}
+  .hdr{height:34px;padding:3px 8px;}
+  .hdr-title{font-size:13px;}
+  .nav-btn{font-size:11px;padding:3px 8px;}
+  .cal-head{grid-template-columns:26px repeat(7,1fr);}
+  .time-row{grid-template-columns:26px repeat(7,1fr);}
+  .time-lbl{width:26px;font-size:9px;letter-spacing:1px;}
+  .cal-hcell{font-size:10px;padding:3px 1px;}
+  .card{font-size:9px;padding:2px 2px;line-height:1.4;}
+  .bnav{height:40px;padding:2px 0;}
+  .bnav-btn{padding:2px 20px;}
+  .bnav-btn svg{width:22px;height:22px;}
 }
 </style>
 </head>
@@ -517,24 +526,53 @@ function render() {
   const today = new Date(); today.setHours(0,0,0,0);
   const dates = getWeekDates();
 
+  // スマホ縦向きかどうか判定
+  const phonePortrait = isPhone() && isPortrait();
+  const visibleIndices = phonePortrait ? getPhoneViewIndices() : [0,1,2,3,4,5,6];
+
+  // ヘッダーの列数をCSSで動的に設定
+  const colCount = phonePortrait ? 3 : 7;
+  const lblW = phonePortrait ? '32px' : '40px';
+  const gridCols = `${lblW} repeat(${colCount}, 1fr)`;
+  document.querySelectorAll('.cal-head, .time-row').forEach(el => {
+    el.style.gridTemplateColumns = gridCols;
+  });
+
   // ヘッダー
+  let visCol = 0;
   for (let i = 0; i < 7; i++) {
     const cell = document.getElementById('hd'+i);
+    if (!cell) continue;
     const d = dates[i];
     const m = d.getMonth()+1, da = d.getDate();
     cell.textContent = m+'/'+da+'('+DAYS_JP[i]+')';
     const isToday = d.getTime() === today.getTime();
     cell.className = 'cal-hcell' + (isToday ? ' today' : '');
+    if (phonePortrait) {
+      if (visibleIndices.includes(i)) {
+        cell.style.display = '';
+      } else {
+        cell.style.display = 'none';
+      }
+    } else {
+      cell.style.display = '';
+    }
   }
 
   // セルクリア
   for (let d = 0; d < 7; d++) for (let s = 0; s < 5; s++) {
     const cell = document.getElementById('c'+d+'-'+s);
+    if (!cell) continue;
     cell.innerHTML = '';
-    cell.onclick = null; // 新規追加はボトムナビから
+    cell.onclick = null;
     cell.ondragover = ev => { ev.preventDefault(); cell.classList.add('drag-over'); };
     cell.ondragleave = () => cell.classList.remove('drag-over');
     cell.ondrop = ev => { ev.preventDefault(); cell.classList.remove('drag-over'); dropTask(d, s); };
+    if (phonePortrait) {
+      cell.style.display = visibleIndices.includes(d) ? '' : 'none';
+    } else {
+      cell.style.display = '';
+    }
   }
 
   // タスク描画
@@ -1311,13 +1349,42 @@ function showView(v) {}
 document.addEventListener('contextmenu', e => e.preventDefault());
 document.addEventListener('selectstart', e => e.preventDefault());
 
-// ===== スワイプで週切り替え =====
+// ===== スマートフォン判定・表示列数 =====
+function isPhone() { return window.innerWidth < 768; }
+function isPortrait() { return window.innerHeight > window.innerWidth; }
+
+// スマホ縦向き時の表示開始インデックス（0-6、今日を中央に）
+let phoneViewStart = 0; // 表示する最初の曜日インデックス（0=月〜6=日）
+
+function getPhoneViewIndices() {
+  // 今日の曜日インデックスを中央にした3日間
+  return [phoneViewStart, (phoneViewStart+1)%7, (phoneViewStart+2)%7];
+}
+
+function initPhoneViewStart() {
+  const today = new Date();
+  const todayIdx = (today.getDay()+6)%7;
+  // 今日を中央（インデックス1）にする → startは前日
+  phoneViewStart = (todayIdx - 1 + 7) % 7;
+}
+
+function phoneSwiped(dir) {
+  // dir: 1=次(左スワイプ) -1=前(右スワイプ)
+  if (isPhone() && isPortrait()) {
+    phoneViewStart = (phoneViewStart + dir * 3 + 7) % 7;
+    // 3日進むと週をまたぐ場合は週も変える
+    if (dir === 1 && phoneViewStart < 3) changeWeek(1);
+    else if (dir === -1 && phoneViewStart > 4) changeWeek(-1);
+    else render();
+  } else {
+    changeWeek(dir);
+  }
+}
 (function() {
   let swipeStartX = 0, swipeStartY = 0, swipeStartTime = 0;
   const cal = document.getElementById('app');
 
   cal.addEventListener('touchstart', e => {
-    // カード上のタッチは除外（_tStartが処理）
     if (e.target.closest('.card')) return;
     swipeStartX = e.touches[0].clientX;
     swipeStartY = e.touches[0].clientY;
@@ -1326,15 +1393,13 @@ document.addEventListener('selectstart', e => e.preventDefault());
 
   cal.addEventListener('touchend', e => {
     if (e.target.closest('.card')) return;
-    // モーダルが開いているときは無効
     if (document.querySelector('.modal-bg.open')) return;
     const dx = e.changedTouches[0].clientX - swipeStartX;
     const dy = e.changedTouches[0].clientY - swipeStartY;
     const dt = Date.now() - swipeStartTime;
-    // 横移動が縦の2倍以上、50px以上、500ms以内
     if (Math.abs(dx) > Math.abs(dy) * 2 && Math.abs(dx) > 50 && dt < 500) {
-      if (dx < 0) changeWeek(1);  // 左スワイプ → 次の週
-      else changeWeek(-1);         // 右スワイプ → 前の週
+      if (dx < 0) phoneSwiped(1);
+      else phoneSwiped(-1);
     }
   }, {passive: true});
 })();
@@ -1362,30 +1427,39 @@ render();
 #moveCancelBtn{background:white;border:2px solid #888;color:#888;}
 #moveConfirmBtn{background:#1a2744;border:none;color:white;}
 
-/* iPhone SE横向き（高さが狭い）対応 */
-@media (max-height: 430px) {
-  .hdr{height:36px;padding:4px 10px;}
-  .hdr-title{font-size:15px;}
-  .nav-btn{font-size:12px;padding:4px 10px;}
-  .cal-hcell{font-size:11px;padding:3px 2px;}
-  .time-lbl{font-size:10px;letter-spacing:1px;width:28px;}
-  .time-row{grid-template-columns:28px repeat(7,1fr);}
-  .cal-head{grid-template-columns:28px repeat(7,1fr);}
-  .card{font-size:10px;padding:2px 3px;}
-  .bnav{height:44px;padding:4px 0;}
-  .bnav-btn svg{width:22px;height:22px;}
-  .cal-wrap{margin:4px;min-height:320px;}
-  #app{min-height:unset;}
+/* ===== スマートフォン縦向き：3列表示 ===== */
+@media (max-width: 767px) and (orientation: portrait) {
   html,body{height:100%;overflow:hidden;}
+  #app{min-height:unset;height:100%;}
+  .hdr-title{font-size:16px;}
+  .nav-btn{font-size:12px;padding:5px 10px;}
+  /* 3列（ラベル+3日）*/
+  .cal-head{grid-template-columns:32px repeat(3,1fr)!important;}
+  .time-row{grid-template-columns:32px repeat(3,1fr)!important;}
+  /* スマホ縦向き非表示セル */
+  .day-cell.sp-hide,.cal-hcell.sp-hide{display:none!important;}
+  .time-lbl{width:32px;font-size:11px;}
+  .cal-hcell{font-size:13px;padding:5px 2px;}
+  .card{font-size:12px;padding:3px 4px;}
 }
-/* 小さい横幅（iPhone SE）対応 */
-@media (max-width: 420px) {
-  .hdr-title{font-size:14px;}
-  .cal-hcell{font-size:10px;}
-  .card{font-size:10px;padding:2px 3px;}
-  .time-lbl{font-size:10px;width:28px;}
-  .time-row{grid-template-columns:28px repeat(7,1fr);}
-  .cal-head{grid-template-columns:28px repeat(7,1fr);}
+
+/* ===== スマートフォン横向き：7列・スクロール ===== */
+@media (max-width: 900px) and (orientation: landscape) {
+  html,body{height:auto;overflow-y:auto;overflow-x:hidden;}
+  #app{min-height:100vh;height:auto;}
+  .cal-wrap{min-height:500px;overflow:visible;}
+  .cal-body{overflow:visible;}
+  .hdr{height:34px;padding:3px 8px;}
+  .hdr-title{font-size:13px;}
+  .nav-btn{font-size:11px;padding:3px 8px;}
+  .cal-head{grid-template-columns:26px repeat(7,1fr);}
+  .time-row{grid-template-columns:26px repeat(7,1fr);}
+  .time-lbl{width:26px;font-size:9px;letter-spacing:1px;}
+  .cal-hcell{font-size:10px;padding:3px 1px;}
+  .card{font-size:9px;padding:2px 2px;line-height:1.4;}
+  .bnav{height:40px;padding:2px 0;}
+  .bnav-btn{padding:2px 20px;}
+  .bnav-btn svg{width:22px;height:22px;}
 }
 </style>
 
@@ -1605,6 +1679,14 @@ function fitModals() {
   });
 }
 window.addEventListener('resize', fitModals);
+
+// 初期表示：スマホ縦向きは今日を中央に
+initPhoneViewStart();
+// 画面向き変更時に再レンダリング
+window.addEventListener('orientationchange', () => {
+  setTimeout(() => { initPhoneViewStart(); render(); }, 100);
+});
+window.addEventListener('resize', () => setTimeout(() => render(), 150));
 
 const _origRender2 = render;
 window.render = function() {
