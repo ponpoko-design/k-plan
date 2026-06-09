@@ -142,8 +142,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
   outline-offset:1px;
   opacity:0.85;
 }
-#multiDeleteBar{display:none!important;}
-#multiCancelBar{display:none!important;}
+
+
 </style>
 </head>
 <body>
@@ -206,8 +206,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
   </div>
 
   <div id="toast"></div>
-  <div id="multiDeleteBar" onclick="confirmMultiDelete()">🗑 <span id="multiDeleteCount">0</span>件を今週だけ削除する</div>
-  <div id="multiCancelBar" onclick="cancelMultiSelect()">キャンセル</div>
 
   <!-- グノレブ予定モーダル -->
   <div class="modal-bg" id="gnorevModal" style="z-index:200;">
@@ -646,7 +644,7 @@ function render() {
     // 選択モード中はチェックボックスを表示
     if (_multiSelectMode) {
       const chk = document.createElement('span');
-      chk.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:16px;pointer-events:none;background:rgba(255,255,255,0.25);border-radius:inherit;';
+      chk.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px;pointer-events:none;z-index:10;';
       chk.textContent = '☐';
       chk.className = 'card-chk';
       card.style.position = 'relative';
@@ -1561,8 +1559,8 @@ function enterMultiSelect(t, cardEl) {
   _multiSelectMode = true;
   _selectedCards.clear();
   _addToSelection(t, cardEl);
-  document.getElementById('multiDeleteBar').classList.add('show');
-  document.getElementById('multiCancelBar').classList.add('show');
+  
+  
   if (navigator.vibrate) navigator.vibrate(40);
 }
 
@@ -1599,8 +1597,8 @@ function cancelMultiSelect() {
   _multiSelectMode = false;
   _selectedCards.forEach(({t, cardEl}) => cardEl.classList.remove('selected'));
   _selectedCards.clear();
-  document.getElementById('multiDeleteBar').classList.remove('show');
-  document.getElementById('multiCancelBar').classList.remove('show');
+  
+  
   const btn = document.getElementById('multiSelectToggle');
   if (btn) { btn.textContent='複数選択'; btn.style.background='white'; btn.style.color='#888'; btn.style.borderColor='#ccc'; }
   render();
@@ -1948,8 +1946,8 @@ render();
   outline-offset:1px;
   opacity:0.85;
 }
-#multiDeleteBar{display:none!important;}
-#multiCancelBar{display:none!important;}
+
+
 </style>
 
 <div id="moveModal">
