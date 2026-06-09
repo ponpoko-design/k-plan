@@ -131,7 +131,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 
 /* AI提案カード */
 .card.ai-suggest{
-  border-left:3px solid rgba(255,255,255,0.85) !important;
+  border-left:3px solid #9b59b6 !important;
   border-radius:0 4px 4px 0 !important;
   opacity:0.92;
 }
@@ -195,13 +195,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 
 <div id="app" style="display:none;width:100%;height:100%;">
   <div class="hdr">
-    <button class="nav-btn" onclick="changeWeek(-1)"><svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor"><polygon points="10,0 10,12 0,6"/></svg> 前の週</button>
+    <button class="nav-btn" onclick="changeWeek(-1)"><svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor"><polygon points="10,0 10,12 0,6"/></svg> 前週</button>
     <div style="display:flex;align-items:center;gap:8px;">
       <div class="hdr-title">航大 家庭学習スケジュール</div>
       <button id="multiSelectToggle" onclick="toggleMultiSelect()"
-        style="background:white;border:1.5px solid #ccc;color:#888;border-radius:14px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">選択</button>
+        style="background:white;border:1.5px solid #ccc;color:#888;border-radius:14px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">複数選択</button>
     </div>
-    <button class="nav-btn" onclick="changeWeek(1)">次の週 <svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor"><polygon points="0,0 0,12 10,6"/></svg></button>
+    <button class="nav-btn" onclick="changeWeek(1)">翌週 <svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor"><polygon points="0,0 0,12 10,6"/></svg></button>
   </div>
 
   <div class="cal-wrap">
@@ -677,6 +677,15 @@ function render() {
     span.style.cssText = 'pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;';
     span.textContent = displayName.length > 8 ? displayName.slice(0,8) : displayName;
     card.appendChild(span);
+    // 選択モード中はチェックボックスを表示
+    if (_multiSelectMode) {
+      const chk = document.createElement('span');
+      chk.style.cssText = 'position:absolute;top:1px;right:2px;font-size:9px;pointer-events:none;';
+      chk.textContent = '☐';
+      chk.className = 'card-chk';
+      card.style.position = 'relative';
+      card.appendChild(chk);
+    }
     // タッチデバイスではdraggable無効（iOSの吹き出し防止）、PCも独自D&Dを使うので無効
     const isTouch = ('ontouchstart' in window);
     card.draggable = false;
@@ -1576,6 +1585,7 @@ function toggleMultiSelect() {
     document.getElementById('multiDeleteBar').classList.add('show');
     document.getElementById('multiCancelBar').classList.add('show');
     document.getElementById('multiDeleteCount').textContent = '0';
+    render(); // チェックボックスを表示するため再描画
     showToast('カードをタップして選択してください', 2000);
   }
 }
@@ -1591,16 +1601,21 @@ function enterMultiSelect(t, cardEl) {
 
 function _addToSelection(t, cardEl) {
   const key = t.uid + '_' + t._dayIdx + '_' + t._slotIdx;
+  const chk = cardEl.querySelector('.card-chk');
   if (_selectedCards.has(key)) {
     _selectedCards.delete(key);
     cardEl.classList.remove('selected');
+    if (chk) chk.textContent = '☐';
   } else {
     _selectedCards.set(key, {t, cardEl});
     cardEl.classList.add('selected');
+    if (chk) chk.textContent = '☑';
   }
   const count = _selectedCards.size;
   document.getElementById('multiDeleteCount').textContent = count;
-  if (count === 0) cancelMultiSelect();
+  if (count === 0 && _multiSelectMode) {
+    document.getElementById('multiDeleteCount').textContent = '0';
+  }
 }
 
 function cancelMultiSelect() {
@@ -1610,7 +1625,8 @@ function cancelMultiSelect() {
   document.getElementById('multiDeleteBar').classList.remove('show');
   document.getElementById('multiCancelBar').classList.remove('show');
   const btn = document.getElementById('multiSelectToggle');
-  if (btn) { btn.textContent='選択'; btn.style.background='white'; btn.style.color='#888'; btn.style.borderColor='#ccc'; }
+  if (btn) { btn.textContent='複数選択'; btn.style.background='white'; btn.style.color='#888'; btn.style.borderColor='#ccc'; }
+  render();
 }
 
 function confirmMultiDelete() {
