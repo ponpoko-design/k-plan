@@ -602,12 +602,19 @@ function render() {
     card.addEventListener('dragstart', e => {
       dragInfo = {t, fromDay: t._dayIdx, fromSlot: t._slotIdx};
       card.classList.add('dragging');
+      card._isDragging = true;
       e.stopPropagation();
     });
-    card.addEventListener('dragend', () => card.classList.remove('dragging'));
-    // PCブラウザ（タッチなし）はclickで詳細を開く
+    card.addEventListener('dragend', () => {
+      card.classList.remove('dragging');
+      setTimeout(() => { card._isDragging = false; }, 100);
+    });
+    // PCブラウザ（タッチなし）はclickで詳細を開く（ドラッグ中は除く）
     if (!isTouch) {
-      card.addEventListener('click', e => { e.stopPropagation(); openDetail(t); });
+      card.addEventListener('click', e => {
+        e.stopPropagation();
+        if (!card._isDragging) openDetail(t);
+      });
     } else {
       card.addEventListener('click', e => { e.stopPropagation(); });
     }
