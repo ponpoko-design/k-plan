@@ -19,9 +19,7 @@
   --c-test:#F104BA;--c-test-t:#fff;
   --c-holiday:#AB0000;--c-holiday-t:#fff;
 }
-html,body{width:100%;min-height:100%;background:#dde0ea;}
-body{overflow-y:auto;overflow-x:hidden;}
-#app{min-height:100vh;}
+html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 #app{width:100%;height:100%;display:flex;flex-direction:column;position:relative;}
 
 /* ヘッダー */
@@ -343,17 +341,14 @@ body{overflow-y:auto;overflow-x:hidden;}
 
   <!-- 集計モーダル -->
   <div class="modal-bg" id="statsModal">
-    <div class="modal" style="width:960px;max-height:700px;overflow-y:auto;">
+    <div class="modal" style="width:min(960px,96vw);max-height:88vh;overflow-y:auto;">
       <div class="modal-hdr">
         <span>学習時間の集計</span>
-        <button class="modal-close" onclick="closeStats()">×</button>
+        <button class="modal-close" ontouchend="event.preventDefault();closeStats();" onclick="closeStats()">×</button>
       </div>
       <div class="modal-body" style="padding:0;">
-  <div style="display:grid;grid-template-columns:1fr 1fr;min-height:0;">
-    <div id="statsWeek" style="padding:16px 18px;border-right:1px solid #eee;overflow-y:auto;max-height:640px;"></div>
-    <div id="statsMonth" style="padding:16px 18px;overflow-y:auto;max-height:640px;"></div>
-  </div>
-</div>
+        <div id="statsInner"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -1191,17 +1186,31 @@ function renderBarChart(container, data, maxVal) {
     return b[1] - a[1];
   });
   const maxMin = maxVal || (sorted[0]?.[1] || 1);
+  const sm = isPhone();
   let html = '';
   sorted.forEach(([subj, mins]) => {
     const colors = SUBJ_COLOR[subj] || ['#eee','#333'];
     const pct = Math.round(mins/maxMin*100);
-    html += `<div style="margin-bottom:7px;display:flex;align-items:center;gap:8px;">
-      <div style="width:90px;text-align:center;font-size:13px;font-weight:700;background:${colors[0]};color:${colors[1]};padding:2px 6px;border-radius:4px;flex-shrink:0;white-space:nowrap;">${subj}</div>
-      <div style="width:160px;flex-shrink:0;background:#eee;border-radius:4px;height:12px;">
-        <div style="background:${colors[0]};border:1px solid ${colors[1]}44;height:12px;border-radius:4px;width:${pct}%;"></div>
-      </div>
-      <div style="font-size:16px;font-weight:700;color:#1a2744;white-space:nowrap;font-family:'Inter',sans-serif;min-width:90px;padding-left:10px;">${fmtTime(mins)}</div>
-    </div>`;
+    if (sm) {
+      // スマホ：コンパクトレイアウト
+      html += `<div style="margin-bottom:8px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">
+          <div style="font-size:12px;font-weight:700;background:${colors[0]};color:${colors[1]};padding:2px 8px;border-radius:4px;">${subj}</div>
+          <div style="font-size:14px;font-weight:700;color:#1a2744;font-family:'Inter',sans-serif;">${fmtTime(mins)}</div>
+        </div>
+        <div style="background:#eee;border-radius:4px;height:10px;">
+          <div style="background:${colors[0]};border:1px solid ${colors[1]}44;height:10px;border-radius:4px;width:${pct}%;"></div>
+        </div>
+      </div>`;
+    } else {
+      html += `<div style="margin-bottom:7px;display:flex;align-items:center;gap:8px;">
+        <div style="width:90px;text-align:center;font-size:13px;font-weight:700;background:${colors[0]};color:${colors[1]};padding:2px 6px;border-radius:4px;flex-shrink:0;white-space:nowrap;">${subj}</div>
+        <div style="width:160px;flex-shrink:0;background:#eee;border-radius:4px;height:12px;">
+          <div style="background:${colors[0]};border:1px solid ${colors[1]}44;height:12px;border-radius:4px;width:${pct}%;"></div>
+        </div>
+        <div style="font-size:16px;font-weight:700;color:#1a2744;white-space:nowrap;font-family:'Inter',sans-serif;min-width:90px;padding-left:10px;">${fmtTime(mins)}</div>
+      </div>`;
+    }
   });
   return html;
 }
@@ -1218,9 +1227,13 @@ function renderPieChart(canvasId, legendId, data) {
     return b[1] - a[1];
   });
   const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const sm = isPhone();
+  const size = sm ? 100 : 160;
+  canvas.width = size; canvas.height = size;
   const ctx = canvas.getContext('2d');
+  const cx = size/2, cy = size/2, r = size/2 - 6;
   let startAngle = -Math.PI/2;
-  const cx=80, cy=80, r=70;
   sorted.forEach(([subj, mins]) => {
     const colors = SUBJ_COLOR[subj] || ['#eee','#333'];
     const slice = (mins/total)*2*Math.PI;
@@ -1230,11 +1243,11 @@ function renderPieChart(canvasId, legendId, data) {
     ctx.fillStyle=colors[0]; ctx.fill();
     ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke();
     const pct=Math.round(mins/total*100);
-    if(pct>=5){
+    if(pct>=7){
       const mid=startAngle+slice/2;
       const lx=cx+r*0.65*Math.cos(mid), ly=cy+r*0.65*Math.sin(mid);
       ctx.fillStyle=colors[1]==='#fff'?'#fff':'#1a2744';
-      ctx.font='bold 12px Inter,sans-serif';
+      ctx.font=`bold ${sm?9:12}px Inter,sans-serif`;
       ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillText(pct+'%',lx,ly);
     }
@@ -1244,11 +1257,19 @@ function renderPieChart(canvasId, legendId, data) {
   sorted.forEach(([subj,mins])=>{
     const colors=SUBJ_COLOR[subj]||['#eee','#333'];
     const pct=Math.round(mins/total*100);
-    legend+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
-      <div style="width:12px;height:12px;border-radius:3px;background:${colors[0]};border:1px solid ${colors[1]}44;flex-shrink:0;"></div>
-      <span style="font-size:13px;font-weight:700;background:${colors[0]};color:${colors[1]};padding:1px 8px;border-radius:4px;width:90px;display:inline-block;text-align:center;white-space:nowrap;">${subj}</span>
-      <span style="font-size:16px;font-weight:700;color:#1a2744;font-family:'Inter',sans-serif;width:52px;text-align:left;padding-left:10px;">${pct}%</span>
-    </div>`;
+    if (sm) {
+      legend+=`<div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;">
+        <div style="width:10px;height:10px;border-radius:2px;background:${colors[0]};flex-shrink:0;"></div>
+        <span style="font-size:11px;font-weight:700;background:${colors[0]};color:${colors[1]};padding:1px 5px;border-radius:3px;flex:1;">${subj}</span>
+        <span style="font-size:12px;font-weight:700;color:#1a2744;font-family:'Inter',sans-serif;">${pct}%</span>
+      </div>`;
+    } else {
+      legend+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+        <div style="width:12px;height:12px;border-radius:3px;background:${colors[0]};border:1px solid ${colors[1]}44;flex-shrink:0;"></div>
+        <span style="font-size:13px;font-weight:700;background:${colors[0]};color:${colors[1]};padding:1px 8px;border-radius:4px;width:90px;display:inline-block;text-align:center;white-space:nowrap;">${subj}</span>
+        <span style="font-size:16px;font-weight:700;color:#1a2744;font-family:'Inter',sans-serif;width:52px;text-align:left;padding-left:10px;">${pct}%</span>
+      </div>`;
+    }
   });
   document.getElementById(legendId).innerHTML=legend;
 }
@@ -1281,65 +1302,88 @@ function showStats() {
   // 今週データ（棒グラフと同じ）
   const allSubj = thisWeek;
 
-  // ===== 左カラム：週集計 =====
-  let weekHtml = `<div style="font-size:15px;font-weight:700;color:#1a2744;margin-bottom:10px;">今週の集計</div>`;
-  weekHtml += `<div style="display:flex;gap:6px;align-items:center;margin-bottom:12px;background:#f4f6fb;border-radius:8px;padding:8px 12px;">
-    <div style="display:flex;align-items:baseline;gap:4px;">
-      <span style="font-size:11px;color:#888;">今週</span>
-      <span style="font-size:16px;font-weight:700;color:#1a2744;font-family:'Inter',sans-serif;">${fmtTime(thisWeekTotal)}</span>
-    </div>
-    <span style="color:#ccc;">／</span>
-    <div style="display:flex;align-items:baseline;gap:4px;">
-      <span style="font-size:11px;color:#888;">先週</span>
-      <span style="font-size:16px;font-weight:700;color:#888;font-family:'Inter',sans-serif;">${fmtTime(lastWeekTotal)}</span>
-    </div>
-    <span style="color:#ccc;">／</span>
-    <div style="display:flex;align-items:baseline;gap:4px;">
-      <span style="font-size:11px;color:#888;">差</span>
-      <span style="font-size:16px;font-weight:700;color:${weekDiffColor};font-family:'Inter',sans-serif;">${weekDiffStr}</span>
-    </div>
-  </div>`;
-  weekHtml += `<div style="font-size:13px;color:#888;margin-bottom:8px;font-weight:500;">今週の学習時間</div>`;
+
+
+  const sm = isPhone();
+  const pieSize = sm ? 100 : 160;
+
+  function makeSummaryBar(weekLabel, thisTotal, lastTotal) {
+    const diff = thisTotal - lastTotal;
+    const diffStr = (diff>=0?'+':'-')+fmtTime(Math.abs(diff));
+    const diffColor = diff>=0?'#2a7a2a':'#c0392b';
+    return `<div style="display:flex;gap:6px;align-items:center;margin-bottom:12px;background:#f4f6fb;border-radius:8px;padding:8px 12px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:baseline;gap:4px;">
+        <span style="font-size:11px;color:#888;">${weekLabel}</span>
+        <span style="font-size:${sm?14:16}px;font-weight:700;color:#1a2744;font-family:'Inter',sans-serif;">${fmtTime(thisTotal)}</span>
+      </div>
+      <span style="color:#ccc;">／</span>
+      <div style="display:flex;align-items:baseline;gap:4px;">
+        <span style="font-size:11px;color:#888;">先週</span>
+        <span style="font-size:${sm?14:16}px;font-weight:700;color:#888;font-family:'Inter',sans-serif;">${fmtTime(lastTotal)}</span>
+      </div>
+      <span style="color:#ccc;">／</span>
+      <div style="display:flex;align-items:baseline;gap:4px;">
+        <span style="font-size:11px;color:#888;">差</span>
+        <span style="font-size:${sm?14:16}px;font-weight:700;color:${diffColor};font-family:'Inter',sans-serif;">${diffStr}</span>
+      </div>
+    </div>`;
+  }
+
+  function makePieSection(canvasId, legendId) {
+    return `<div style="display:flex;align-items:center;gap:${sm?8:14}px;margin-top:10px;">
+      <canvas id="${canvasId}" width="${pieSize}" height="${pieSize}" style="flex-shrink:0;"></canvas>
+      <div id="${legendId}" style="flex:1;min-width:0;"></div>
+    </div>`;
+  }
+
+  // 週集計HTML
+  let weekHtml = `<div style="font-size:${sm?13:15}px;font-weight:700;color:#1a2744;margin-bottom:10px;">今週の集計</div>`;
+  weekHtml += makeSummaryBar('今週', thisWeekTotal, lastWeekTotal);
+  weekHtml += `<div style="font-size:12px;color:#888;margin-bottom:6px;font-weight:500;">今週の学習時間</div>`;
   weekHtml += renderBarChart(null, thisWeek, null);
-  weekHtml += `<div style="font-size:13px;color:#888;margin:14px 0 8px;font-weight:500;">今週の各教科の割合</div>
-  <div style="display:flex;align-items:center;gap:14px;">
-    <canvas id="pieChart" width="160" height="160"></canvas>
-    <div id="pieLegend" style="flex:1;"></div>
-  </div>`;
+  weekHtml += `<div style="font-size:12px;color:#888;margin:10px 0 4px;font-weight:500;">今週の割合</div>`;
+  weekHtml += makePieSection('pieChart','pieLegend');
 
-  // ===== 右カラム：月集計 =====
-  let monthHtml = `<div style="font-size:15px;font-weight:700;color:#1a2744;margin-bottom:10px;">${monthNames[thisMonth-1]}の集計</div>`;
-  monthHtml += `<div style="display:flex;gap:6px;align-items:center;margin-bottom:12px;background:#f4f6fb;border-radius:8px;padding:8px 12px;">
-    <div style="display:flex;align-items:baseline;gap:4px;">
-      <span style="font-size:11px;color:#888;">今月</span>
-      <span style="font-size:16px;font-weight:700;color:#1a2744;font-family:'Inter',sans-serif;">${fmtTime(thisMonthTotal)}</span>
-    </div>
-    <span style="color:#ccc;">／</span>
-    <div style="display:flex;align-items:baseline;gap:4px;">
-      <span style="font-size:11px;color:#888;">先月</span>
-      <span style="font-size:16px;font-weight:700;color:#888;font-family:'Inter',sans-serif;">${fmtTime(lastMonthTotal)}</span>
-    </div>
-    <span style="color:#ccc;">／</span>
-    <div style="display:flex;align-items:baseline;gap:4px;">
-      <span style="font-size:11px;color:#888;">差</span>
-      <span style="font-size:16px;font-weight:700;color:${monthDiffColor};font-family:'Inter',sans-serif;">${monthDiffStr}</span>
-    </div>
-  </div>`;
-  monthHtml += `<div style="font-size:13px;color:#888;margin-bottom:8px;font-weight:500;">${monthNames[thisMonth-1]}の学習時間</div>`;
+  // 月集計HTML
+  let monthHtml = `<div style="font-size:${sm?13:15}px;font-weight:700;color:#1a2744;margin-bottom:10px;">${monthNames[thisMonth-1]}の集計</div>`;
+  monthHtml += makeSummaryBar('今月', thisMonthTotal, lastMonthTotal);
+  monthHtml += `<div style="font-size:12px;color:#888;margin-bottom:6px;font-weight:500;">${monthNames[thisMonth-1]}の学習時間</div>`;
   monthHtml += renderBarChart(null, thisMonthData, null);
-  monthHtml += `<div style="font-size:13px;color:#888;margin:14px 0 8px;font-weight:500;">今月の各教科の割合</div>
-  <div style="display:flex;align-items:center;gap:14px;">
-    <canvas id="pieChartMonth" width="160" height="160"></canvas>
-    <div id="pieLegendMonth" style="flex:1;"></div>
-  </div>`;
+  monthHtml += `<div style="font-size:12px;color:#888;margin:10px 0 4px;font-weight:500;">今月の割合</div>`;
+  monthHtml += makePieSection('pieChartMonth','pieLegendMonth');
 
-  document.getElementById('statsWeek').innerHTML = weekHtml;
-  document.getElementById('statsMonth').innerHTML = monthHtml;
+  // スマホ：縦1列タブ切り替え、iPad：横2列
+  if (sm) {
+    document.getElementById('statsInner').innerHTML = `
+      <div style="display:flex;border-bottom:2px solid #eee;margin-bottom:0;">
+        <button id="statsTabWeek" onclick="switchStatsTab('week')"
+          style="flex:1;padding:10px;font-size:13px;font-weight:700;border:none;background:white;color:#1a2744;border-bottom:3px solid #1a2744;cursor:pointer;">今週</button>
+        <button id="statsTabMonth" onclick="switchStatsTab('month')"
+          style="flex:1;padding:10px;font-size:13px;font-weight:700;border:none;background:white;color:#aaa;border-bottom:3px solid transparent;cursor:pointer;">今月</button>
+      </div>
+      <div id="statsWeek" style="padding:14px 14px;">${weekHtml}</div>
+      <div id="statsMonth" style="padding:14px 14px;display:none;">${monthHtml}</div>`;
+  } else {
+    document.getElementById('statsInner').innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;min-height:0;">
+        <div id="statsWeek" style="padding:16px 18px;border-right:1px solid #eee;">${weekHtml}</div>
+        <div id="statsMonth" style="padding:16px 18px;">${monthHtml}</div>
+      </div>`;
+  }
 
-  renderPieChart('pieChart', 'pieLegend', allSubj);
+  renderPieChart('pieChart', 'pieLegend', thisWeek);
   renderPieChart('pieChartMonth', 'pieLegendMonth', thisMonthData);
 
   document.getElementById('statsModal').classList.add('open');
+}
+
+function switchStatsTab(tab) {
+  document.getElementById('statsWeek').style.display = tab==='week' ? 'block' : 'none';
+  document.getElementById('statsMonth').style.display = tab==='month' ? 'block' : 'none';
+  document.getElementById('statsTabWeek').style.borderBottomColor = tab==='week' ? '#1a2744' : 'transparent';
+  document.getElementById('statsTabMonth').style.borderBottomColor = tab==='month' ? '#1a2744' : 'transparent';
+  document.getElementById('statsTabWeek').style.color = tab==='week' ? '#1a2744' : '#aaa';
+  document.getElementById('statsTabMonth').style.color = tab==='month' ? '#1a2744' : '#aaa';
 }
 function closeStats() { document.getElementById('statsModal').classList.remove('open'); }
 
