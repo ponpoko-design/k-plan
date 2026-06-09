@@ -592,28 +592,76 @@ function render() {
     span.style.cssText = 'pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;';
     span.textContent = name.length > 8 ? name.slice(0,8) : name;
     card.appendChild(span);
-    // タッチデバイスではdraggable無効（iOSの吹き出し防止）
+    // タッチデバイスではdraggable無効（iOSの吹き出し防止）、PCも独自D&Dを使うので無効
     const isTouch = ('ontouchstart' in window);
-    card.draggable = !isTouch;
+    card.draggable = false;
     card.setAttribute('data-key', t._dayIdx + '-' + t._slotIdx);
     card.setAttribute('data-id', t.id || t.uid || '');
     card.setAttribute('data-uid', t.uid || '');
     card.setAttribute('tabindex', '-1');
-    card.addEventListener('dragstart', e => {
-      dragInfo = {t, fromDay: t._dayIdx, fromSlot: t._slotIdx};
-      card.classList.add('dragging');
-      card._isDragging = true;
-      e.stopPropagation();
-    });
-    card.addEventListener('dragend', () => {
-      card.classList.remove('dragging');
-      setTimeout(() => { card._isDragging = false; }, 100);
-    });
-    // PCブラウザ（タッチなし）はclickで詳細を開く（ドラッグ中は除く）
+    // PCブラウザ（タッチなし）はclickで詳細、長押しでD&D
     if (!isTouch) {
+      let pcTimer = null, pcDragging = false, pcClone = null;
+      let pcStartX = 0, pcStartY = 0;
+
+      card.addEventListener('mousedown', e => {
+        if (e.button !== 0) return;
+        pcDragging = false;
+        pcStartX = e.clientX; pcStartY = e.clientY;
+        pcTimer = setTimeout(() => {
+          pcDragging = true;
+          // クローン作成
+          const rect = card.getBoundingClientRect();
+          pcClone = document.createElement('div');
+          pcClone.className = card.className;
+          pcClone.textContent = span.textContent;
+          Object.assign(pcClone.style, {
+            position:'fixed', left:rect.left+'px', top:rect.top+'px',
+            width:rect.width+'px', opacity:'0.85', pointerEvents:'none',
+            zIndex:'9999', transform:'scale(1.08)',
+            boxShadow:'0 6px 20px rgba(0,0,0,0.35)',
+            borderRadius:'4px', padding:'3px 5px',
+            fontSize:'13px', fontWeight:'700', textAlign:'center'
+          });
+          document.body.appendChild(pcClone);
+          card.style.opacity = '0.3';
+          document.body.style.userSelect = 'none';
+        }, 500);
+      });
+
+      document.addEventListener('mousemove', e => {
+        if (!pcDragging || !pcClone) return;
+        pcClone.style.left = (e.clientX - pcClone.offsetWidth/2) + 'px';
+        pcClone.style.top = (e.clientY - pcClone.offsetHeight/2) + 'px';
+        // ドロップ先ハイライト
+        document.querySelectorAll('.day-cell').forEach(c => c.classList.remove('drag-over'));
+        const el = document.elementFromPoint(e.clientX, e.clientY);
+        const cell = el?.closest('.day-cell');
+        if (cell) cell.classList.add('drag-over');
+      });
+
+      document.addEventListener('mouseup', e => {
+        if (pcTimer) { clearTimeout(pcTimer); pcTimer = null; }
+        document.querySelectorAll('.day-cell').forEach(c => c.classList.remove('drag-over'));
+        if (pcClone) { pcClone.remove(); pcClone = null; }
+        card.style.opacity = '';
+        document.body.style.userSelect = '';
+        if (pcDragging) {
+          pcDragging = false;
+          const el = document.elementFromPoint(e.clientX, e.clientY);
+          const cell = el?.closest('.day-cell');
+          if (cell) {
+            const m = cell.id.match(/^c(\d+)-(\d+)$/);
+            if (m) {
+              openMoveModal({key:t._dayIdx+'-'+t._slotIdx, uid:t.uid, id:t.id}, parseInt(m[1]), parseInt(m[2]));
+            }
+          }
+        }
+      });
+
       card.addEventListener('click', e => {
         e.stopPropagation();
-        if (!card._isDragging) openDetail(t);
+        if (!pcDragging) openDetail(t);
       });
     } else {
       card.addEventListener('click', e => { e.stopPropagation(); });
