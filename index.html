@@ -985,19 +985,43 @@ function confirmCopy(){
   const targetDayIdx=(targetDate.getDay()+6)%7;
   const targetSlot=document.getElementById('copySlot').value;
   const targetRepeat=document.getElementById('copyRepeat').value;
-  const wk=dateKey(targetMonday);
-  if(!localOverrides[wk]) localOverrides[wk]={added:[],hidden:{}};
-  if(!localOverrides[wk].added) localOverrides[wk].added=[];
-  localOverrides[wk].added.push({
-    ...t, uid:'copy_'+Date.now(),
-    display_type:targetRepeat, repeat_key:targetRepeat==='weekly'?'local_'+Date.now():null,
-    _dayIdx:targetDayIdx, slot:targetSlot, _slotIdx:SLOT_IDX[targetSlot]||0,
-    is_hidden:'no'
-  });
+  const newUid='copy_'+Date.now();
+
+  if(targetRepeat==='weekly'){
+    // 毎週くりかえす → weeklyAddedに追加（今週以降全週に表示）
+    if(!localOverrides.weeklyAdded) localOverrides.weeklyAdded=[];
+    localOverrides.weeklyAdded.push({
+      ...t, uid:newUid,
+      display_type:'weekly',
+      repeat_key:'wa_'+Date.now(),
+      fromDate:dateKey(targetMonday),
+      weekday_index:targetDayIdx,
+      _dayIdx:targetDayIdx,
+      slot:targetSlot,
+      _slotIdx:SLOT_IDX[targetSlot]||0,
+      is_hidden:'no',
+      order:t.order||99
+    });
+  } else {
+    // 今回だけ → 対象週のoverridesに追加
+    const wk=dateKey(targetMonday);
+    if(!localOverrides[wk]) localOverrides[wk]={added:[],hidden:{}};
+    if(!localOverrides[wk].added) localOverrides[wk].added=[];
+    localOverrides[wk].added.push({
+      ...t, uid:newUid,
+      display_type:'one_time',
+      repeat_key:null,
+      _dayIdx:targetDayIdx,
+      slot:targetSlot,
+      _slotIdx:SLOT_IDX[targetSlot]||0,
+      is_hidden:'no'
+    });
+  }
   saveLocal();
   document.getElementById('copyModal').classList.remove('open');
   closeDetail();
   render();
+  showToast('予定をコピーしました ✓');
 }
 function closeCopyModal(){
   document.getElementById('copyModal').classList.remove('open');
@@ -1024,6 +1048,7 @@ function toggleRepeat() {
     lo.hidden[t.uid + '_' + t._dayIdx] = true;
     lo.added.push({...t, uid:'once_'+Date.now(), display_type:'one_time', repeat_key:null, order:t.order||99});
     saveLocal(); closeDetail(); render();
+    showToast('今回だけの予定に変更しました ✓');
     return;
   }
   // 今週だけ → 毎週に変更（今週以降）
