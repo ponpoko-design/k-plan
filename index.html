@@ -1261,17 +1261,20 @@ function renderPieChart(canvasId, legendId, data) {
     if (sm) {
       legend+=`<div style="display:flex;align-items:center;gap:5px;margin-bottom:5px;">
         <div style="width:10px;height:10px;border-radius:2px;background:${colors[0]};flex-shrink:0;"></div>
-        <span style="font-size:11px;font-weight:700;color:${colors[1]};background:${colors[0]};padding:1px 5px;border-radius:3px;flex-shrink:0;min-width:52px;text-align:center;">${subj}</span>
+        <span style="font-size:11px;font-weight:700;color:${colors[1]};background:${colors[0]};padding:1px 5px;border-radius:3px;flex-shrink:0;width:72px;text-align:center;white-space:nowrap;overflow:hidden;">${subj}</span>
         <div style="flex:1;background:#eee;border-radius:3px;height:8px;min-width:0;">
           <div style="background:${colors[0]};height:8px;border-radius:3px;width:${pct}%;"></div>
         </div>
-        <span style="font-size:11px;font-weight:700;color:#1a2744;font-family:'Inter',sans-serif;flex-shrink:0;min-width:28px;text-align:right;">${pct}%</span>
+        <span style="font-size:11px;font-weight:700;color:#1a2744;font-family:'Inter',sans-serif;flex-shrink:0;min-width:30px;text-align:right;">${pct}%</span>
       </div>`;
     } else {
-      legend+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+      legend+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
         <div style="width:12px;height:12px;border-radius:3px;background:${colors[0]};border:1px solid ${colors[1]}44;flex-shrink:0;"></div>
-        <span style="font-size:13px;font-weight:700;background:${colors[0]};color:${colors[1]};padding:1px 8px;border-radius:4px;width:90px;display:inline-block;text-align:center;white-space:nowrap;">${subj}</span>
-        <span style="font-size:16px;font-weight:700;color:#1a2744;font-family:'Inter',sans-serif;width:52px;text-align:left;padding-left:10px;">${pct}%</span>
+        <span style="font-size:13px;font-weight:700;background:${colors[0]};color:${colors[1]};padding:1px 8px;border-radius:4px;flex-shrink:0;width:72px;text-align:center;white-space:nowrap;">${subj}</span>
+        <div style="flex:1;background:#eee;border-radius:3px;height:10px;min-width:0;">
+          <div style="background:${colors[0]};border:1px solid ${colors[1]}44;height:10px;border-radius:3px;width:${pct}%;"></div>
+        </div>
+        <span style="font-size:14px;font-weight:700;color:#1a2744;font-family:'Inter',sans-serif;flex-shrink:0;min-width:36px;text-align:right;">${pct}%</span>
       </div>`;
     }
   });
