@@ -86,7 +86,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 .btn-del{flex:1;background:white;border:2px solid #e24b4a;color:#e24b4a;border-radius:20px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;}
 .btn-sub{flex:1;background:white;border:2px solid var(--navy);color:var(--navy);border-radius:20px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;}
 .btn-save{flex:1;background:white;border:2px solid var(--navy);color:var(--navy);border-radius:20px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;}
-.modal-repeat{text-align:center;margin-top:12px;color:var(--navy);font-size:13px;text-decoration:underline;cursor:pointer;}
+.modal-repeat{text-align:center;margin-top:14px;color:var(--navy);font-size:16px;text-decoration:underline;cursor:pointer;font-weight:700;}
 
 /* ===== スマートフォン縦向き：3列表示 ===== */
 @media (max-width: 767px) and (orientation: portrait) {
@@ -112,7 +112,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 /* ===== スマートフォン横向き：7列・スクロール ===== */
 @media (max-width: 900px) and (orientation: landscape) {
   html,body{height:auto;overflow-y:auto;overflow-x:hidden;}
-  #app{min-height:100vh;height:auto;}
+  #app{min-height:100vh;height:auto;display:block;}
   .cal-wrap{min-height:500px;overflow:visible;}
   .cal-body{overflow:visible;}
   .hdr{height:34px;padding:3px 8px;}
@@ -123,9 +123,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
   .time-lbl{width:26px;font-size:9px;letter-spacing:1px;}
   .cal-hcell{font-size:10px;padding:3px 1px;}
   .card{font-size:9px;padding:2px 2px;line-height:1.4;}
-  .bnav{height:40px;padding:2px 0;}
+  /* ナビは画面下部に固定 */
+  .bnav{position:fixed;bottom:0;left:0;width:100%;height:40px;padding:2px 0;z-index:50;background:white;border-top:1px solid #ddd;}
   .bnav-btn{padding:2px 20px;}
   .bnav-btn svg{width:22px;height:22px;}
+  /* ナビ分のpadding */
+  #app{padding-bottom:40px;}
 }
 </style>
 </head>
@@ -217,9 +220,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
         <div class="field"><label>メモ</label><textarea id="dMemo"></textarea></div>
         <div class="field"><label>学習時間（分）</label><input id="dTime" type="text" inputmode="numeric" oninput="this.value=this.value.replace(/[０-９]/g,s=>String.fromCharCode(s.charCodeAt(0)-65248)).replace(/[^0-9]/g,'')"></div>
         <div class="modal-actions">
-          <button class="btn-del" onclick="deleteTask()">予定を削除する</button>
+          <button class="btn-del" onclick="deleteTask()">予定を削除</button>
           <button class="btn-sub" onclick="copyTask()">予定をコピー</button>
-          <button class="btn-save" onclick="saveTask()" style="background:white;border:2px solid var(--navy);color:var(--navy);border-radius:20px;">変更を保存する</button>
+          <button class="btn-save" onclick="saveTask()" style="background:white;border:2px solid var(--navy);color:var(--navy);border-radius:20px;">変更を保存</button>
         </div>
         <div class="modal-repeat" id="detailRepeatBtn" onclick="toggleRepeat()"></div>
       </div>
@@ -1500,7 +1503,7 @@ render();
 /* ===== スマートフォン横向き：7列・スクロール ===== */
 @media (max-width: 900px) and (orientation: landscape) {
   html,body{height:auto;overflow-y:auto;overflow-x:hidden;}
-  #app{min-height:100vh;height:auto;}
+  #app{min-height:100vh;height:auto;display:block;}
   .cal-wrap{min-height:500px;overflow:visible;}
   .cal-body{overflow:visible;}
   .hdr{height:34px;padding:3px 8px;}
@@ -1511,9 +1514,12 @@ render();
   .time-lbl{width:26px;font-size:9px;letter-spacing:1px;}
   .cal-hcell{font-size:10px;padding:3px 1px;}
   .card{font-size:9px;padding:2px 2px;line-height:1.4;}
-  .bnav{height:40px;padding:2px 0;}
+  /* ナビは画面下部に固定 */
+  .bnav{position:fixed;bottom:0;left:0;width:100%;height:40px;padding:2px 0;z-index:50;background:white;border-top:1px solid #ddd;}
   .bnav-btn{padding:2px 20px;}
   .bnav-btn svg{width:22px;height:22px;}
+  /* ナビ分のpadding */
+  #app{padding-bottom:40px;}
 }
 </style>
 
