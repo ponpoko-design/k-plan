@@ -131,7 +131,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 
 /* AI提案カード */
 .card.ai-suggest{
-  border-left:3px solid rgba(255,255,255,0.8) !important;
+  border-left:3px solid rgba(255,255,255,0.85) !important;
   border-radius:0 4px 4px 0 !important;
   opacity:0.92;
 }
@@ -145,15 +145,15 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 #multiDeleteBar{
   display:none;
   position:fixed;
-  bottom:52px;
+  bottom:60px;
   left:0;width:100%;
   background:#e24b4a;
   color:white;
-  padding:10px 16px;
+  padding:12px 16px;
   font-size:15px;
   font-weight:700;
   text-align:center;
-  z-index:500;
+  z-index:600;
   cursor:pointer;
   box-shadow:0 -2px 10px rgba(0,0,0,0.2);
 }
@@ -161,7 +161,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 #multiCancelBar{
   display:none;
   position:fixed;
-  bottom:52px;
+  bottom:108px;
   right:12px;
   background:white;
   border:2px solid #888;
@@ -170,13 +170,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
   font-size:13px;
   font-weight:700;
   border-radius:20px;
-  z-index:501;
+  z-index:601;
   cursor:pointer;
 }
 #multiCancelBar.show{display:block;}
 @media (max-width:767px) and (orientation:portrait){
-  #multiDeleteBar{bottom:36px;}
-  #multiCancelBar{bottom:36px;}
+  #multiDeleteBar{bottom:44px;}
+  #multiCancelBar{bottom:92px;}
 }
 </style>
 </head>
@@ -1949,13 +1949,6 @@ render();
   .bnav-btn svg{width:22px;height:22px;}
 }
 
-/* AI提案カード */
-.card.ai-suggest{
-  border-left:3px solid rgba(255,255,255,0.8) !important;
-  border-radius:0 4px 4px 0 !important;
-  opacity:0.92;
-}
-
 /* 複数選択モード */
 .card.selected{
   outline:2px solid #e24b4a !important;
@@ -1965,15 +1958,15 @@ render();
 #multiDeleteBar{
   display:none;
   position:fixed;
-  bottom:52px;
+  bottom:60px;
   left:0;width:100%;
   background:#e24b4a;
   color:white;
-  padding:10px 16px;
+  padding:12px 16px;
   font-size:15px;
   font-weight:700;
   text-align:center;
-  z-index:500;
+  z-index:600;
   cursor:pointer;
   box-shadow:0 -2px 10px rgba(0,0,0,0.2);
 }
@@ -1981,7 +1974,7 @@ render();
 #multiCancelBar{
   display:none;
   position:fixed;
-  bottom:52px;
+  bottom:108px;
   right:12px;
   background:white;
   border:2px solid #888;
@@ -1990,13 +1983,13 @@ render();
   font-size:13px;
   font-weight:700;
   border-radius:20px;
-  z-index:501;
+  z-index:601;
   cursor:pointer;
 }
 #multiCancelBar.show{display:block;}
 @media (max-width:767px) and (orientation:portrait){
-  #multiDeleteBar{bottom:36px;}
-  #multiCancelBar{bottom:36px;}
+  #multiDeleteBar{bottom:44px;}
+  #multiCancelBar{bottom:92px;}
 }
 </style>
 
