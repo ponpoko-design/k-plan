@@ -94,16 +94,21 @@ body{overflow-y:auto;overflow-x:hidden;}
 @media (max-width: 767px) and (orientation: portrait) {
   html,body{height:100%;overflow:hidden;}
   #app{min-height:unset;height:100%;}
-  .hdr-title{font-size:16px;}
-  .nav-btn{font-size:12px;padding:5px 10px;}
+  .hdr{height:36px;padding:4px 10px;}
+  .hdr-title{font-size:15px;}
+  .nav-btn{font-size:11px;padding:4px 8px;}
   /* 3列（ラベル+3日）*/
-  .cal-head{grid-template-columns:32px repeat(3,1fr)!important;}
-  .time-row{grid-template-columns:32px repeat(3,1fr)!important;}
-  /* スマホ縦向き非表示セル */
+  .cal-head{grid-template-columns:28px repeat(3,1fr)!important;}
+  .time-row{grid-template-columns:28px repeat(3,1fr)!important;}
   .day-cell.sp-hide,.cal-hcell.sp-hide{display:none!important;}
-  .time-lbl{width:32px;font-size:11px;}
-  .cal-hcell{font-size:13px;padding:5px 2px;}
-  .card{font-size:12px;padding:3px 4px;}
+  .time-lbl{width:28px;font-size:10px;letter-spacing:1px;}
+  .cal-hcell{font-size:12px;padding:4px 2px;}
+  .card{font-size:12px;padding:3px 4px;line-height:1.4;}
+  /* ナビを小さく → カレンダー領域を広げる */
+  .bnav{height:36px;padding:1px 0;}
+  .bnav-btn{padding:2px 16px;}
+  .bnav-btn svg{width:20px;height:20px;}
+  .cal-wrap{margin:4px;}
 }
 
 /* ===== スマートフォン横向き：7列・スクロール ===== */
@@ -1431,16 +1436,21 @@ render();
 @media (max-width: 767px) and (orientation: portrait) {
   html,body{height:100%;overflow:hidden;}
   #app{min-height:unset;height:100%;}
-  .hdr-title{font-size:16px;}
-  .nav-btn{font-size:12px;padding:5px 10px;}
+  .hdr{height:36px;padding:4px 10px;}
+  .hdr-title{font-size:15px;}
+  .nav-btn{font-size:11px;padding:4px 8px;}
   /* 3列（ラベル+3日）*/
-  .cal-head{grid-template-columns:32px repeat(3,1fr)!important;}
-  .time-row{grid-template-columns:32px repeat(3,1fr)!important;}
-  /* スマホ縦向き非表示セル */
+  .cal-head{grid-template-columns:28px repeat(3,1fr)!important;}
+  .time-row{grid-template-columns:28px repeat(3,1fr)!important;}
   .day-cell.sp-hide,.cal-hcell.sp-hide{display:none!important;}
-  .time-lbl{width:32px;font-size:11px;}
-  .cal-hcell{font-size:13px;padding:5px 2px;}
-  .card{font-size:12px;padding:3px 4px;}
+  .time-lbl{width:28px;font-size:10px;letter-spacing:1px;}
+  .cal-hcell{font-size:12px;padding:4px 2px;}
+  .card{font-size:12px;padding:3px 4px;line-height:1.4;}
+  /* ナビを小さく → カレンダー領域を広げる */
+  .bnav{height:36px;padding:1px 0;}
+  .bnav-btn{padding:2px 16px;}
+  .bnav-btn svg{width:20px;height:20px;}
+  .cal-wrap{margin:4px;}
 }
 
 /* ===== スマートフォン横向き：7列・スクロール ===== */
