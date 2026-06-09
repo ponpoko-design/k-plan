@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>K-study</title>
 <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&family=Inter:wght@700&display=swap" rel="stylesheet">
 <style>
@@ -19,7 +19,9 @@
   --c-test:#F104BA;--c-test-t:#fff;
   --c-holiday:#AB0000;--c-holiday-t:#fff;
 }
-html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
+html,body{width:100%;min-height:100%;background:#dde0ea;}
+body{overflow-y:auto;overflow-x:hidden;}
+#app{min-height:100vh;}
 #app{width:100%;height:100%;display:flex;flex-direction:column;position:relative;}
 
 /* ヘッダー */
@@ -29,7 +31,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 .nav-btn:hover{background:#f0f2f8;}
 
 /* カレンダー */
-.cal-wrap{flex:1;background:var(--navy);border-radius:10px;margin:8px;overflow:hidden;display:flex;flex-direction:column;min-height:0;}
+.cal-wrap{flex:1;background:var(--navy);border-radius:10px;margin:8px;overflow:hidden;display:flex;flex-direction:column;min-height:400px;}
 .cal-head{display:grid;grid-template-columns:40px repeat(7,1fr);background:var(--navy);flex-shrink:0;}
 .cal-hcell{padding:5px 3px;text-align:center;color:white;font-size:15px;font-weight:700;border-right:3px solid var(--sep);border-bottom:3px solid var(--sep);font-family:"Inter",sans-serif;}
 .cal-hcell.today{background:#f5d020;color:var(--navy);border-radius:5px;margin:2px;}
@@ -87,6 +89,32 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 .btn-sub{flex:1;background:white;border:2px solid var(--navy);color:var(--navy);border-radius:20px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;}
 .btn-save{flex:1;background:white;border:2px solid var(--navy);color:var(--navy);border-radius:20px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;}
 .modal-repeat{text-align:center;margin-top:12px;color:var(--navy);font-size:13px;text-decoration:underline;cursor:pointer;}
+
+/* iPhone SE横向き（高さが狭い）対応 */
+@media (max-height: 430px) {
+  .hdr{height:36px;padding:4px 10px;}
+  .hdr-title{font-size:15px;}
+  .nav-btn{font-size:12px;padding:4px 10px;}
+  .cal-hcell{font-size:11px;padding:3px 2px;}
+  .time-lbl{font-size:10px;letter-spacing:1px;width:28px;}
+  .time-row{grid-template-columns:28px repeat(7,1fr);}
+  .cal-head{grid-template-columns:28px repeat(7,1fr);}
+  .card{font-size:10px;padding:2px 3px;}
+  .bnav{height:44px;padding:4px 0;}
+  .bnav-btn svg{width:22px;height:22px;}
+  .cal-wrap{margin:4px;min-height:320px;}
+  #app{min-height:unset;}
+  html,body{height:100%;overflow:hidden;}
+}
+/* 小さい横幅（iPhone SE）対応 */
+@media (max-width: 420px) {
+  .hdr-title{font-size:14px;}
+  .cal-hcell{font-size:10px;}
+  .card{font-size:10px;padding:2px 3px;}
+  .time-lbl{font-size:10px;width:28px;}
+  .time-row{grid-template-columns:28px repeat(7,1fr);}
+  .cal-head{grid-template-columns:28px repeat(7,1fr);}
+}
 </style>
 </head>
 <body>
@@ -768,7 +796,7 @@ function renderCopyCal() {
     let style='font-size:13px;padding:5px 2px;border-radius:50%;cursor:pointer;';
     if(isSel) style+='background:#1a2744;color:white;';
     else if(isToday) style+='border:2px solid #1a2744;color:#1a2744;font-weight:700;';
-    else if(isPast) style+='color:#ccc;cursor:default;';
+    else if(isPast) style+='color:#888;';
     grid+=`<div style="${style}" onclick="selectCopyDate('${dtStr}',${d},${mo+1},${y})">${d}</div>`;
   }
   grid+='</div>';
@@ -780,7 +808,7 @@ function renderCopyCal() {
     </div>`+grid;
 }
 function selectCopyDate(str,d,m,y){
-  const dt=new Date(y,m-1,d); if(dt<new Date().setHours(0,0,0,0)) return;
+  const dt=new Date(y,m-1,d);
   document.getElementById('copyTargetDate').setAttribute('data-selected',str);
   document.getElementById('copyDateDisplay').textContent=m+'/'+d+'（'+DAYS_JP[(dt.getDay()+6)%7]+'）';
   document.getElementById('copyDateDisplay').style.color='#1a2744';
@@ -1283,6 +1311,34 @@ function showView(v) {}
 document.addEventListener('contextmenu', e => e.preventDefault());
 document.addEventListener('selectstart', e => e.preventDefault());
 
+// ===== スワイプで週切り替え =====
+(function() {
+  let swipeStartX = 0, swipeStartY = 0, swipeStartTime = 0;
+  const cal = document.getElementById('app');
+
+  cal.addEventListener('touchstart', e => {
+    // カード上のタッチは除外（_tStartが処理）
+    if (e.target.closest('.card')) return;
+    swipeStartX = e.touches[0].clientX;
+    swipeStartY = e.touches[0].clientY;
+    swipeStartTime = Date.now();
+  }, {passive: true});
+
+  cal.addEventListener('touchend', e => {
+    if (e.target.closest('.card')) return;
+    // モーダルが開いているときは無効
+    if (document.querySelector('.modal-bg.open')) return;
+    const dx = e.changedTouches[0].clientX - swipeStartX;
+    const dy = e.changedTouches[0].clientY - swipeStartY;
+    const dt = Date.now() - swipeStartTime;
+    // 横移動が縦の2倍以上、50px以上、500ms以内
+    if (Math.abs(dx) > Math.abs(dy) * 2 && Math.abs(dx) > 50 && dt < 500) {
+      if (dx < 0) changeWeek(1);  // 左スワイプ → 次の週
+      else changeWeek(-1);         // 右スワイプ → 前の週
+    }
+  }, {passive: true});
+})();
+
 function selectCopyDateToday(){
   const now=new Date();
   const y=now.getFullYear(),mo=now.getMonth()+1,d=now.getDate();
@@ -1305,6 +1361,32 @@ render();
 .move-btns button{flex:1;padding:11px;border-radius:20px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;}
 #moveCancelBtn{background:white;border:2px solid #888;color:#888;}
 #moveConfirmBtn{background:#1a2744;border:none;color:white;}
+
+/* iPhone SE横向き（高さが狭い）対応 */
+@media (max-height: 430px) {
+  .hdr{height:36px;padding:4px 10px;}
+  .hdr-title{font-size:15px;}
+  .nav-btn{font-size:12px;padding:4px 10px;}
+  .cal-hcell{font-size:11px;padding:3px 2px;}
+  .time-lbl{font-size:10px;letter-spacing:1px;width:28px;}
+  .time-row{grid-template-columns:28px repeat(7,1fr);}
+  .cal-head{grid-template-columns:28px repeat(7,1fr);}
+  .card{font-size:10px;padding:2px 3px;}
+  .bnav{height:44px;padding:4px 0;}
+  .bnav-btn svg{width:22px;height:22px;}
+  .cal-wrap{margin:4px;min-height:320px;}
+  #app{min-height:unset;}
+  html,body{height:100%;overflow:hidden;}
+}
+/* 小さい横幅（iPhone SE）対応 */
+@media (max-width: 420px) {
+  .hdr-title{font-size:14px;}
+  .cal-hcell{font-size:10px;}
+  .card{font-size:10px;padding:2px 3px;}
+  .time-lbl{font-size:10px;width:28px;}
+  .time-row{grid-template-columns:28px repeat(7,1fr);}
+  .cal-head{grid-template-columns:28px repeat(7,1fr);}
+}
 </style>
 
 <div id="moveModal">
