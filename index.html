@@ -42,8 +42,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 .day-cell.drag-over{background:#ddeeff;outline:2px dashed #378add;}
 
 /* タスクカード */
-.card{border-radius:4px;padding:3px 5px;font-size:13px;font-weight:700;cursor:grab;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;line-height:1.5;text-align:center;touch-action:none;-webkit-tap-highlight-color:rgba(0,0,0,0)!important;outline:none;}
+.card{border-radius:4px;padding:3px 5px;font-size:13px;font-weight:700;cursor:grab;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none !important;line-height:1.5;text-align:center;touch-action:none;-webkit-tap-highlight-color:rgba(0,0,0,0)!important;outline:none;}
 .card:active,.card:focus,.card:focus-visible{cursor:grabbing;outline:none!important;box-shadow:none!important;transform:none!important;opacity:1!important;}
+.card[draggable="true"]{-webkit-user-drag:none;}
 .card-ghost{opacity:0.3!important;background:#ccc!important;}
 .card-chosen{}
 .card-dragging{}
@@ -521,8 +522,9 @@ function render() {
     card.className = 'card ' + cls;
     const name = t.unit_name || '';
     card.textContent = name.length > 8 ? name.slice(0,8) : name;
-    card.title = name + (t.study_time ? ' ('+t.study_time+'分)' : '');
-    card.draggable = true;
+    // タッチデバイスではdraggable無効（iOSの吹き出し防止）
+    const isTouch = ('ontouchstart' in window);
+    card.draggable = !isTouch;
     card.setAttribute('data-key', t._dayIdx + '-' + t._slotIdx);
     card.setAttribute('data-id', t.id || t.uid || '');
     card.setAttribute('data-uid', t.uid || '');
