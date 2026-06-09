@@ -142,42 +142,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
   outline-offset:1px;
   opacity:0.85;
 }
-#multiDeleteBar{
-  display:none;
-  position:fixed;
-  bottom:60px;
-  left:0;width:100%;
-  background:#e24b4a;
-  color:white;
-  padding:12px 16px;
-  font-size:15px;
-  font-weight:700;
-  text-align:center;
-  z-index:600;
-  cursor:pointer;
-  box-shadow:0 -2px 10px rgba(0,0,0,0.2);
-}
-#multiDeleteBar.show{display:block;}
-#multiCancelBar{
-  display:none;
-  position:fixed;
-  bottom:108px;
-  right:12px;
-  background:white;
-  border:2px solid #888;
-  color:#888;
-  padding:8px 16px;
-  font-size:13px;
-  font-weight:700;
-  border-radius:20px;
-  z-index:601;
-  cursor:pointer;
-}
-#multiCancelBar.show{display:block;}
-@media (max-width:767px) and (orientation:portrait){
-  #multiDeleteBar{bottom:44px;}
-  #multiCancelBar{bottom:92px;}
-}
+#multiDeleteBar{display:none!important;}
+#multiCancelBar{display:none!important;}
 </style>
 </head>
 <body>
@@ -680,7 +646,7 @@ function render() {
     // 選択モード中はチェックボックスを表示
     if (_multiSelectMode) {
       const chk = document.createElement('span');
-      chk.style.cssText = 'position:absolute;top:1px;right:2px;font-size:9px;pointer-events:none;';
+      chk.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:16px;pointer-events:none;background:rgba(255,255,255,0.25);border-radius:inherit;';
       chk.textContent = '☐';
       chk.className = 'card-chk';
       card.style.position = 'relative';
@@ -1575,18 +1541,19 @@ let _selectedCards = new Map(); // uid+key → task
 
 function toggleMultiSelect() {
   if (_multiSelectMode) {
-    cancelMultiSelect();
+    // 「削除する」状態でクリック → 削除実行
+    if (_selectedCards.size > 0) {
+      confirmMultiDelete();
+    } else {
+      cancelMultiSelect();
+    }
   } else {
     _multiSelectMode = true;
-    document.getElementById('multiSelectToggle').textContent = '選択中';
-    document.getElementById('multiSelectToggle').style.background = '#e24b4a';
+    document.getElementById('multiSelectToggle').textContent = '複数選択中';
+    document.getElementById('multiSelectToggle').style.background = '#888';
     document.getElementById('multiSelectToggle').style.color = 'white';
-    document.getElementById('multiSelectToggle').style.borderColor = '#e24b4a';
-    document.getElementById('multiDeleteBar').classList.add('show');
-    document.getElementById('multiCancelBar').classList.add('show');
-    document.getElementById('multiDeleteCount').textContent = '0';
-    render(); // チェックボックスを表示するため再描画
-    showToast('カードをタップして選択してください', 2000);
+    document.getElementById('multiSelectToggle').style.borderColor = '#888';
+    render();
   }
 }
 
@@ -1612,9 +1579,19 @@ function _addToSelection(t, cardEl) {
     if (chk) chk.textContent = '☑';
   }
   const count = _selectedCards.size;
-  document.getElementById('multiDeleteCount').textContent = count;
-  if (count === 0 && _multiSelectMode) {
-    document.getElementById('multiDeleteCount').textContent = '0';
+  const btn = document.getElementById('multiSelectToggle');
+  if (btn) {
+    if (count > 0) {
+      btn.textContent = count + '件を削除する';
+      btn.style.background = '#e24b4a';
+      btn.style.color = 'white';
+      btn.style.borderColor = '#e24b4a';
+    } else {
+      btn.textContent = '複数選択中';
+      btn.style.background = '#888';
+      btn.style.color = 'white';
+      btn.style.borderColor = '#888';
+    }
   }
 }
 
@@ -1971,42 +1948,8 @@ render();
   outline-offset:1px;
   opacity:0.85;
 }
-#multiDeleteBar{
-  display:none;
-  position:fixed;
-  bottom:60px;
-  left:0;width:100%;
-  background:#e24b4a;
-  color:white;
-  padding:12px 16px;
-  font-size:15px;
-  font-weight:700;
-  text-align:center;
-  z-index:600;
-  cursor:pointer;
-  box-shadow:0 -2px 10px rgba(0,0,0,0.2);
-}
-#multiDeleteBar.show{display:block;}
-#multiCancelBar{
-  display:none;
-  position:fixed;
-  bottom:108px;
-  right:12px;
-  background:white;
-  border:2px solid #888;
-  color:#888;
-  padding:8px 16px;
-  font-size:13px;
-  font-weight:700;
-  border-radius:20px;
-  z-index:601;
-  cursor:pointer;
-}
-#multiCancelBar.show{display:block;}
-@media (max-width:767px) and (orientation:portrait){
-  #multiDeleteBar{bottom:44px;}
-  #multiCancelBar{bottom:92px;}
-}
+#multiDeleteBar{display:none!important;}
+#multiCancelBar{display:none!important;}
 </style>
 
 <div id="moveModal">
