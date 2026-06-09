@@ -201,6 +201,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
     <button class="bnav-btn" onclick="showStats()">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
     </button>
+    <button class="bnav-btn" onclick="openGnorevModal()">
+      <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+    </button>
     <button class="bnav-btn" onclick="openAddModal()">
       <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
     </button>
@@ -208,7 +211,31 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 
   <div id="toast"></div>
 
-  <!-- 削除確認モーダル -->
+  <!-- グノレブ予定モーダル -->
+  <div class="modal-bg" id="gnorevModal" style="z-index:200;">
+    <div class="modal" style="width:min(420px,96vw);">
+      <div class="modal-hdr" style="background:#9b59b6;">
+        <span>グノレブの予定を組む</span>
+        <button class="modal-close" ontouchend="event.preventDefault();closeGnorevModal();" onclick="closeGnorevModal()">×</button>
+      </div>
+      <div class="modal-body" style="padding:20px 18px;">
+        <div style="font-size:13px;color:#888;margin-bottom:14px;">グノレブの日付を入力すると、テストカードと前後の学習計画を自動で提案します。</div>
+        <div class="field">
+          <label>グノレブの日付</label>
+          <input type="date" id="gnorevDate" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;">
+        </div>
+        <div class="field">
+          <label>テストの範囲（例：単元12-15）</label>
+          <input type="text" id="gnorevRange" placeholder="例：単元12-15" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;">
+        </div>
+        <div id="gnorevPreview" style="display:none;background:#f8f0ff;border-radius:8px;padding:12px;margin-top:10px;font-size:13px;color:#6c3483;border:1.5px solid #d7bfef;"></div>
+        <div class="modal-actions" style="margin-top:16px;">
+          <button onclick="closeGnorevModal()" style="flex:1;background:white;border:2px solid #ccc;color:#888;border-radius:20px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;">やめる</button>
+          <button onclick="confirmGnorev()" style="flex:2;background:#9b59b6;border:none;color:white;border-radius:20px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;">予定を組む</button>
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="modal-bg" id="deleteConfirmModal" style="z-index:200;">
     <div class="modal" style="width:340px;">
       <div class="modal-hdr">
@@ -1500,6 +1527,200 @@ function changeWeek(dir) {
 
 function showView(v) {}
 
+// ===== グノレブ機能 =====
+function openGnorevModal() {
+  // デフォルト日付：今日から2週間後
+  const d = new Date(); d.setDate(d.getDate()+14);
+  document.getElementById('gnorevDate').value = d.toISOString().slice(0,10);
+  document.getElementById('gnorevRange').value = '';
+  document.getElementById('gnorevPreview').style.display = 'none';
+  document.getElementById('gnorevModal').classList.add('open');
+  document.getElementById('gnorevDate').addEventListener('change', updateGnorevPreview);
+}
+function closeGnorevModal() {
+  document.getElementById('gnorevModal').classList.remove('open');
+}
+function updateGnorevPreview() {
+  const dateStr = document.getElementById('gnorevDate').value;
+  if (!dateStr) return;
+  const [y,mo,d] = dateStr.split('-').map(Number);
+  const testDate = new Date(y, mo-1, d);
+  const dow = testDate.getDay(); // 0=日,1=月...
+  const dowLabel = ['日','月','火','水','木','金','土'][dow];
+  // 直前週の月曜
+  const prevMon = new Date(testDate);
+  prevMon.setDate(testDate.getDate() - (dow === 1 ? 7 : dow === 0 ? 6 : dow-1) - 7 + 7);
+  // 実際には当日の曜日に応じて前の週の月曜を計算
+  const daysToMon = dow === 0 ? 6 : dow - 1;
+  const thisMonday = new Date(testDate); thisMonday.setDate(testDate.getDate() - daysToMon);
+  const prevMonday = new Date(thisMonday); prevMonday.setDate(thisMonday.getDate() - 7);
+
+  const fmt = dt => `${dt.getMonth()+1}/${dt.getDate()}`;
+  const range = document.getElementById('gnorevRange').value || '範囲未入力';
+
+  // 翌授業日の計算
+  let nextClass;
+  if (dow === 1) { // 月曜グノレブ→翌々日水曜
+    nextClass = new Date(testDate); nextClass.setDate(testDate.getDate()+2);
+  } else { // 水曜グノレブ→翌週月曜
+    nextClass = new Date(testDate); nextClass.setDate(testDate.getDate()+5);
+  }
+
+  document.getElementById('gnorevPreview').style.display = 'block';
+  document.getElementById('gnorevPreview').innerHTML = `
+    <div style="font-weight:700;margin-bottom:6px;">📅 ${fmt(testDate)}（${dowLabel}）グノレブ [${range}]</div>
+    <div style="margin-bottom:3px;">📚 直前週（${fmt(prevMonday)}〜${fmt(new Date(prevMonday.getTime()+6*86400000))}）に学習計画を提案</div>
+    <div>📝 当日夜〜${fmt(nextClass)}（次回授業前）に振り返り計画を提案</div>
+  `;
+}
+document.addEventListener('DOMContentLoaded', () => {
+  const el = document.getElementById('gnorevDate');
+  if (el) el.addEventListener('change', updateGnorevPreview);
+});
+
+function confirmGnorev() {
+  const dateStr = document.getElementById('gnorevDate').value;
+  if (!dateStr) { alert('日付を入力してください'); return; }
+  const range = document.getElementById('gnorevRange').value || 'グノレブ';
+  const [y,mo,d] = dateStr.split('-').map(Number);
+  const testDate = new Date(y, mo-1, d); testDate.setHours(0,0,0,0);
+  const dow = testDate.getDay();
+
+  // ===== グノレブ当日のテストカードを登録 =====
+  function addTask(dt, slot, subject, unitName, studyTime, isAi) {
+    const dow2 = dt.getDay();
+    const daysToMon = dow2 === 0 ? 6 : dow2 - 1;
+    const monday = new Date(dt); monday.setDate(dt.getDate() - daysToMon); monday.setHours(0,0,0,0);
+    const wk = monday.toISOString().slice(0,10);
+    const dayIdx = dow2 === 0 ? 6 : dow2 - 1;
+    const SLOT_IDX2 = {plan:0,morning:1,am:2,pm:3,night:4};
+    const SUBJ_COLOR2 = {
+      '算数':['#C1E8FB','#1a2744'],'国語':['#F2B9E4','#1a2744'],
+      '理科':['#B6EBB0','#1a2744'],'社会':['#F9DB82','#1a2744'],
+      '学校の宿題':['#D3D3D3','#1a2744'],'習い事':['#D6C3AA','#1a2744'],
+      '予定':['#F5F4E4','#1a2744'],'テスト':['#F104BA','#fff']
+    };
+    const colors = SUBJ_COLOR2[subject] || ['#eee','#333'];
+    const uid = 'gnv_' + dt.toISOString().slice(0,10) + '_' + slot + '_' + subject + '_' + unitName.slice(0,4);
+    if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
+    if (!localOverrides[wk].added) localOverrides[wk].added = [];
+    if (localOverrides[wk].added.find(a => a.uid === uid)) return;
+    localOverrides[wk].added.push({
+      uid, color: colors[0],
+      weekday: ['月','火','水','木','金','土','日'][dayIdx],
+      weekday_index: dayIdx, slot, subject, unit_name: unitName,
+      study_time: studyTime, display_type: 'one_time',
+      repeat_key: null, is_hidden: 'no', order: 90,
+      note: isAi ? 'AI提案' : '',
+      _dayIdx: dayIdx, _slotIdx: SLOT_IDX2[slot]||0,
+      _aiSuggest: isAi
+    });
+  }
+
+  // テスト当日カード
+  addTask(testDate, 'plan', 'テスト', 'グノレブ（'+range+'）', null, false);
+
+  // ===== 直前週の学習提案 =====
+  const daysToMon = dow === 0 ? 6 : dow - 1;
+  const thisMonday = new Date(testDate); thisMonday.setDate(testDate.getDate() - daysToMon);
+  const prevMonday = new Date(thisMonday); prevMonday.setDate(thisMonday.getDate() - 7);
+
+  // 直前週の各日（月〜テスト前日）に提案
+  const plan = [
+    // 月曜
+    {offset:0, slot:'morning', subject:'算数', unit:'基礎力テスト', time:15},
+    {offset:0, slot:'morning', subject:'国語', unit:'漢字 間違い復習', time:15},
+    // 火曜
+    {offset:1, slot:'morning', subject:'算数', unit:'基礎力テスト', time:15},
+    {offset:1, slot:'morning', subject:'国語', unit:'漢字 間違い復習', time:15},
+    {offset:1, slot:'pm',      subject:'理科', unit:'確認問題 復習', time:40},
+    {offset:1, slot:'night',   subject:'国語', unit:'単元音読 復習', time:15},
+    {offset:1, slot:'night',   subject:'社会', unit:'単元音読 復習', time:10},
+    {offset:1, slot:'night',   subject:'国語', unit:'意味調べ 復習', time:20},
+    // 水曜（+2）
+    {offset:2, slot:'morning', subject:'算数', unit:'基礎力テスト', time:15},
+    {offset:2, slot:'morning', subject:'国語', unit:'漢字 間違い復習', time:15},
+    // 木曜（+3）
+    {offset:3, slot:'morning', subject:'算数', unit:'基礎力テスト', time:15},
+    {offset:3, slot:'morning', subject:'国語', unit:'漢字 間違い復習', time:15},
+    {offset:3, slot:'night',   subject:'算数', unit:'復習 後半', time:30},
+    {offset:3, slot:'night',   subject:'理科', unit:'確認問題 復習', time:30},
+    // 金曜（+4）
+    {offset:4, slot:'morning', subject:'算数', unit:'基礎力テスト', time:15},
+    {offset:4, slot:'morning', subject:'国語', unit:'言葉 復習', time:15},
+    {offset:4, slot:'pm',      subject:'社会', unit:'復習 前半', time:30},
+    {offset:4, slot:'pm',      subject:'理科', unit:'グノチェック', time:30},
+    {offset:4, slot:'night',   subject:'算数', unit:'復習 前半', time:40},
+    {offset:4, slot:'night',   subject:'算数', unit:'基礎力復習', time:20},
+    // 土曜（+5）
+    {offset:5, slot:'morning', subject:'算数', unit:'基礎力テスト', time:15},
+    {offset:5, slot:'morning', subject:'国語', unit:'言葉 復習', time:15},
+    {offset:5, slot:'am',      subject:'算数', unit:'計算マスタ', time:20},
+    {offset:5, slot:'night',   subject:'算数', unit:'復習 後半', time:40},
+    {offset:5, slot:'night',   subject:'社会', unit:'復習 後半', time:20},
+    // 日曜（+6）
+    {offset:6, slot:'morning', subject:'算数', unit:'基礎力テスト', time:15},
+    {offset:6, slot:'morning', subject:'国語', unit:'漢字総復習', time:15},
+    {offset:6, slot:'am',      subject:'算数', unit:'間違い総復習', time:30},
+    {offset:6, slot:'am',      subject:'理科', unit:'総復習', time:30},
+    {offset:6, slot:'night',   subject:'算数', unit:'計算マスタ', time:20},
+    {offset:6, slot:'night',   subject:'社会', unit:'基礎問題 復習', time:10},
+    {offset:6, slot:'night',   subject:'理科', unit:'基礎力テスト', time:15},
+  ];
+
+  plan.forEach(p => {
+    const dt = new Date(prevMonday); dt.setDate(prevMonday.getDate() + p.offset);
+    if (dt >= testDate) return; // テスト当日以降はスキップ
+    addTask(dt, p.slot, p.subject, p.unit, p.time, true);
+  });
+
+  // ===== グノレブ後の振り返り提案 =====
+  // 当日夜
+  addTask(testDate, 'night', '算数', 'テスト振り返り', 20, true);
+
+  // 翌授業日の計算
+  let daysToNextClass;
+  if (dow === 1) { daysToNextClass = 2; } // 月→水
+  else { daysToNextClass = (8 - dow) % 7 + 1; } // その他→翌月曜
+
+  // テスト翌日〜次回授業前日まで提案
+  const afterPlan = [
+    {dOff:2, slot:'morning', subject:'算数', unit:'基礎力テスト', time:15},
+    {dOff:2, slot:'morning', subject:'国語', unit:'漢字', time:15},
+    {dOff:2, slot:'night',   subject:'算数', unit:'Nテキスト', time:30},
+    {dOff:2, slot:'night',   subject:'国語', unit:'グノレブ振り返り', time:15},
+    {dOff:2, slot:'night',   subject:'社会', unit:'グノレブ振り返り', time:15},
+    {dOff:3, slot:'morning', subject:'算数', unit:'基礎力テスト', time:15},
+    {dOff:3, slot:'morning', subject:'国語', unit:'漢字', time:15},
+    {dOff:3, slot:'pm',      subject:'社会', unit:'用語/基礎力確認', time:30},
+    {dOff:3, slot:'pm',      subject:'理科', unit:'グノチェック', time:30},
+    {dOff:3, slot:'night',   subject:'算数', unit:'Nテキスト', time:30},
+    {dOff:3, slot:'night',   subject:'算数', unit:'N家庭学習', time:30},
+    {dOff:4, slot:'morning', subject:'算数', unit:'基礎力テスト', time:15},
+    {dOff:4, slot:'morning', subject:'国語', unit:'漢字', time:15},
+    {dOff:4, slot:'am',      subject:'算数', unit:'計算マスタ', time:20},
+    {dOff:4, slot:'night',   subject:'国語', unit:'塾前復習', time:20},
+    {dOff:4, slot:'night',   subject:'社会', unit:'塾前復習', time:20},
+    {dOff:4, slot:'night',   subject:'算数', unit:'N家庭学習', time:30},
+  ];
+
+  afterPlan.forEach(p => {
+    const dt = new Date(testDate); dt.setDate(testDate.getDate() + p.dOff);
+    if (p.dOff >= daysToNextClass) return; // 次回授業以降はスキップ
+    addTask(dt, p.slot, p.subject, p.unit, p.time, true);
+  });
+
+  saveLocal();
+  closeGnorevModal();
+
+  // テスト週に画面を移動
+  const daysToMon2 = dow === 0 ? 6 : dow - 1;
+  const testMonday = new Date(testDate); testMonday.setDate(testDate.getDate() - daysToMon2);
+  currentMonday = testMonday;
+  render();
+  showToast('グノレブの予定を登録しました ✓', 3000);
+}
+
 // iOS長押し吹き出しをページ全体で防止
 document.addEventListener('contextmenu', e => e.preventDefault());
 document.addEventListener('selectstart', e => e.preventDefault());
@@ -1866,110 +2087,6 @@ function fitModals() {
 window.addEventListener('resize', fitModals);
 
 
-// ===== AI提案データの投入 =====
-(function injectAiProposals() {
-  const SUBJ_COLOR_MAP = {
-    '算数':['#C1E8FB','#1a2744'],'国語':['#F2B9E4','#1a2744'],
-    '理科':['#B6EBB0','#1a2744'],'社会':['#F9DB82','#1a2744'],
-    '学校の宿題':['#D3D3D3','#1a2744'],'習い事':['#D6C3AA','#1a2744'],
-    '予定':['#F5F4E4','#1a2744'],'テスト':['#F104BA','#fff']
-  };
-  const DAYS_JP_AI = ['月','火','水','木','金','土','日'];
-  const SLOT_IDX_AI = {plan:0,morning:1,am:2,pm:3,night:4};
-  const proposals = [
-  {"date":"2026-06-22","slot":"morning","subject":"算数","unit_name":"基礎力テスト","study_time":15},
-  {"date":"2026-06-22","slot":"morning","subject":"国語","unit_name":"漢字12復習","study_time":15},
-  {"date":"2026-06-23","slot":"morning","subject":"算数","unit_name":"基礎力テスト","study_time":15},
-  {"date":"2026-06-23","slot":"morning","subject":"国語","unit_name":"漢字13復習","study_time":15},
-  {"date":"2026-06-23","slot":"pm","subject":"理科","unit_name":"確認問題12-13","study_time":40},
-  {"date":"2026-06-23","slot":"night","subject":"国語","unit_name":"単元音読12-13","study_time":15},
-  {"date":"2026-06-23","slot":"night","subject":"社会","unit_name":"単元音読12-13","study_time":10},
-  {"date":"2026-06-23","slot":"night","subject":"国語","unit_name":"意味調べ12","study_time":20},
-  {"date":"2026-06-25","slot":"morning","subject":"算数","unit_name":"基礎力テスト","study_time":15},
-  {"date":"2026-06-25","slot":"morning","subject":"国語","unit_name":"漢字14復習","study_time":15},
-  {"date":"2026-06-25","slot":"night","subject":"算数","unit_name":"単元14-15復習","study_time":30},
-  {"date":"2026-06-25","slot":"night","subject":"理科","unit_name":"確認問題14-15","study_time":30},
-  {"date":"2026-06-26","slot":"morning","subject":"算数","unit_name":"基礎力テスト","study_time":15},
-  {"date":"2026-06-26","slot":"morning","subject":"国語","unit_name":"言葉12-13","study_time":15},
-  {"date":"2026-06-26","slot":"pm","subject":"社会","unit_name":"復習12-13","study_time":30},
-  {"date":"2026-06-26","slot":"pm","subject":"理科","unit_name":"グノチェック12-15","study_time":30},
-  {"date":"2026-06-26","slot":"night","subject":"算数","unit_name":"復習12-13","study_time":40},
-  {"date":"2026-06-26","slot":"night","subject":"算数","unit_name":"基礎力復習12-15","study_time":20},
-  {"date":"2026-06-27","slot":"morning","subject":"算数","unit_name":"基礎力テスト","study_time":15},
-  {"date":"2026-06-27","slot":"morning","subject":"国語","unit_name":"言葉14-15","study_time":15},
-  {"date":"2026-06-27","slot":"am","subject":"算数","unit_name":"計算マスタ","study_time":20},
-  {"date":"2026-06-27","slot":"night","subject":"算数","unit_name":"復習14-15","study_time":40},
-  {"date":"2026-06-27","slot":"night","subject":"社会","unit_name":"復習14-15","study_time":20},
-  {"date":"2026-06-28","slot":"morning","subject":"算数","unit_name":"基礎力テスト","study_time":15},
-  {"date":"2026-06-28","slot":"morning","subject":"国語","unit_name":"漢字総復習12-15","study_time":15},
-  {"date":"2026-06-28","slot":"am","subject":"算数","unit_name":"間違い12-15","study_time":30},
-  {"date":"2026-06-28","slot":"am","subject":"理科","unit_name":"復習12-15","study_time":30},
-  {"date":"2026-06-28","slot":"night","subject":"算数","unit_name":"計算マスタ","study_time":20},
-  {"date":"2026-06-28","slot":"night","subject":"社会","unit_name":"基礎問題12-15","study_time":10},
-  {"date":"2026-06-28","slot":"night","subject":"理科","unit_name":"基礎力テスト","study_time":15},
-  {"date":"2026-07-01","slot":"night","subject":"算数","unit_name":"テスト振り返り","study_time":20},
-  {"date":"2026-07-03","slot":"morning","subject":"算数","unit_name":"基礎力テスト","study_time":15},
-  {"date":"2026-07-03","slot":"morning","subject":"国語","unit_name":"漢字","study_time":15},
-  {"date":"2026-07-03","slot":"night","subject":"算数","unit_name":"Nテキスト","study_time":30},
-  {"date":"2026-07-03","slot":"night","subject":"国語","unit_name":"グノレブ振り返り","study_time":15},
-  {"date":"2026-07-03","slot":"night","subject":"社会","unit_name":"グノレブ振り返り","study_time":15},
-  {"date":"2026-07-04","slot":"morning","subject":"算数","unit_name":"基礎力テスト","study_time":15},
-  {"date":"2026-07-04","slot":"morning","subject":"国語","unit_name":"漢字","study_time":15},
-  {"date":"2026-07-04","slot":"pm","subject":"社会","unit_name":"用語/基礎力確認","study_time":30},
-  {"date":"2026-07-04","slot":"pm","subject":"理科","unit_name":"グノチェック","study_time":30},
-  {"date":"2026-07-04","slot":"night","subject":"算数","unit_name":"Nテキスト","study_time":30},
-  {"date":"2026-07-04","slot":"night","subject":"算数","unit_name":"N家庭学習","study_time":30},
-  {"date":"2026-07-05","slot":"morning","subject":"算数","unit_name":"基礎力テスト","study_time":15},
-  {"date":"2026-07-05","slot":"morning","subject":"国語","unit_name":"漢字","study_time":15},
-  {"date":"2026-07-05","slot":"am","subject":"算数","unit_name":"計算マスタ","study_time":20},
-  {"date":"2026-07-05","slot":"night","subject":"国語","unit_name":"塾前復習12-15","study_time":20},
-  {"date":"2026-07-05","slot":"night","subject":"社会","unit_name":"塾前復習12-15","study_time":20},
-  {"date":"2026-07-05","slot":"night","subject":"算数","unit_name":"N家庭学習","study_time":30}
-];
-
-  proposals.forEach((p, i) => {
-    const [y,mo,d] = p.date.split('-').map(Number);
-    const dt = new Date(y, mo-1, d);
-    // 月曜日を計算
-    const dow = dt.getDay();
-    const mondayDiff = dow === 0 ? -6 : 1 - dow;
-    const monday = new Date(dt);
-    monday.setDate(dt.getDate() + mondayDiff);
-    monday.setHours(0,0,0,0);
-    const wk = monday.toISOString().slice(0,10);
-
-    if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
-    if (!localOverrides[wk].added) localOverrides[wk].added = [];
-
-    const dayIdx = dow === 0 ? 6 : dow - 1;
-    const colors = SUBJ_COLOR_MAP[p.subject] || ['#eee','#333'];
-    const uid = 'ai_' + p.date + '_' + i;
-
-    // 同じuidが既に入っていたらスキップ
-    if (localOverrides[wk].added.find(a => a.uid === uid)) return;
-
-    localOverrides[wk].added.push({
-      uid,
-      color: colors[0],
-      weekday: DAYS_JP_AI[dayIdx],
-      weekday_index: dayIdx,
-      slot: p.slot,
-      subject: p.subject,
-      unit_name: p.unit_name,
-      study_time: p.study_time,
-      display_type: 'one_time',
-      repeat_key: null,
-      is_hidden: 'no',
-      order: 99,
-      note: 'AI提案',
-      _dayIdx: dayIdx,
-      _slotIdx: SLOT_IDX_AI[p.slot] || 0,
-      _aiSuggest: true
-    });
-  });
-  saveLocal();
-  console.log('AI提案データを投入しました');
-})();
 
 // 初期表示：スマホ縦向きは今日を中央に
 initPhoneViewStart();
