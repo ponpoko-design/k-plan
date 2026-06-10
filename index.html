@@ -2063,64 +2063,59 @@ async function applyLessonDataToCalendar(parsed) {
       // 固定uid（日付ベース）で重複防止
       const newUid = 'juku_' + lesson.date;
 
-      // 既に同じ単元番号の「今回だけ」カードがあればスキップ
-      const alreadyExistsNight = existCards.some(t =>
-        t.display_type === 'one_time' && (t.unit_name || '') === newName && t.slot === 'night'
-      );
-
       const baseCard = existCards[0] || {
         color: '#D6C3AA', weekday: DAYS_JP[dayIdx], weekday_index: dayIdx,
         subject: '習い事', study_time: null, order: 1
       };
 
-      if (!alreadyExistsNight) {
-        // 既存の夜カードを非表示
-        existCards.forEach(t => {
-          if (t.display_type === 'weekly') lo.hidden[t.uid + '_' + dayIdx] = true;
-          else if (t.uid !== newUid) lo.hidden[t.uid] = true;
-        });
-        // 夜カードを追加
-        const existNightIdx = lo.added.findIndex(a => a.uid === newUid);
-        const nightCard = {
-          ...baseCard,
-          uid: newUid,
-          unit_name: newName,
-          note: noteStr,
-          slot: 'night',
-          display_type: 'one_time',
-          repeat_key: null,
-          is_hidden: 'no',
-          _dayIdx: dayIdx,
-          _slotIdx: 4
-        };
-        if (existNightIdx >= 0) lo.added[existNightIdx] = nightCard;
-        else lo.added.push(nightCard);
-      }
+      // 既存の夜カードを全て非表示（毎週・今回だけ問わず）
+      existCards.forEach(t => {
+        if (t.display_type === 'weekly') lo.hidden[t.uid + '_' + dayIdx] = true;
+        else lo.hidden[t.uid] = true;
+      });
 
-      // 予定欄にも同じカードを作成（既に同じ名前があればスキップ）
+      // 夜カードを上書き（uid固定なので重複しない）
+      const existNightIdx = lo.added.findIndex(a => a.uid === newUid);
+      const nightCard = {
+        ...baseCard,
+        uid: newUid,
+        unit_name: newName,
+        note: noteStr,
+        slot: 'night',
+        display_type: 'one_time',
+        repeat_key: null,
+        is_hidden: 'no',
+        _dayIdx: dayIdx,
+        _slotIdx: 4
+      };
+      if (existNightIdx >= 0) lo.added[existNightIdx] = nightCard;
+      else lo.added.push(nightCard);
+
+      // 予定欄も上書き（uid固定なので重複しない）
       const planUid = 'juku_plan_' + lesson.date;
-      const existPlanCards = getTasksOfWeek(monday).filter(t =>
+      // 既存の予定欄の塾カードを非表示
+      getTasksOfWeek(monday).filter(t =>
         t._dayIdx === dayIdx && t.slot === 'plan' &&
-        t.subject === '習い事' && (t.unit_name || '') === newName &&
-        t.display_type === 'one_time'
-      );
-      if (existPlanCards.length === 0) {
-        const existPlanIdx = lo.added.findIndex(a => a.uid === planUid);
-        const planCard = {
-          ...baseCard,
-          uid: planUid,
-          unit_name: newName,
-          note: noteStr,
-          slot: 'plan',
-          display_type: 'one_time',
-          repeat_key: null,
-          is_hidden: 'no',
-          _dayIdx: dayIdx,
-          _slotIdx: 0
-        };
-        if (existPlanIdx >= 0) lo.added[existPlanIdx] = planCard;
-        else lo.added.push(planCard);
-      }
+        t.subject === '習い事' && (t.unit_name || '').startsWith(isSanki ? '塾（算･理' : '塾（国･社')
+      ).forEach(t => {
+        if (t.display_type === 'weekly') lo.hidden[t.uid + '_' + dayIdx] = true;
+        else if (t.uid !== planUid) lo.hidden[t.uid] = true;
+      });
+      const existPlanIdx = lo.added.findIndex(a => a.uid === planUid);
+      const planCard = {
+        ...baseCard,
+        uid: planUid,
+        unit_name: newName,
+        note: noteStr,
+        slot: 'plan',
+        display_type: 'one_time',
+        repeat_key: null,
+        is_hidden: 'no',
+        _dayIdx: dayIdx,
+        _slotIdx: 0
+      };
+      if (existPlanIdx >= 0) lo.added[existPlanIdx] = planCard;
+      else lo.added.push(planCard);
       return;
     }
 
