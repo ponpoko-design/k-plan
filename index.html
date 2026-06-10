@@ -424,18 +424,14 @@ const OVERRIDE_DATA = [{"color": "#AB0000", "date": "Apr 29, 2026 12:00 am", "we
 
 // ===== JST（日本時間）ヘルパー =====
 function getNowJST() {
-  return new Date(new Date().getTime() + 9*60*60*1000);
+  const now = new Date();
+  return new Date(now.getTime() + 9*60*60*1000);
 }
 function getTodayJST() {
   const jst = getNowJST();
   const d = new Date(jst.getUTCFullYear(), jst.getUTCMonth(), jst.getUTCDate());
   d.setHours(0,0,0,0);
   return d;
-}
-function dateKeyJST(d) {
-  // JSTで正確な日付キーを返す
-  const jst = new Date(d.getTime() + 9*60*60*1000);
-  return jst.toISOString().slice(0,10);
 }
 
 // ===== State =====
@@ -874,6 +870,8 @@ function deleteTask() {
     saveLocal(); closeDetail(); render();
     showToast('予定を削除しました ✓');
     return;
+  }
+  // 毎週くりかえす予定 → グローバル変数に退避してからdetailを閉じ、削除選択モーダルを開く
   _deleteTarget = t;
   closeDetail();
   document.getElementById('deleteConfirmName').textContent = `「${t.unit_name || '予定'}」をどのように削除しますか？`;
@@ -945,9 +943,9 @@ function hideCopyCalendar() {
 }
 let copyCalYear, copyCalMonth;
 function showCopyCalendar() {
-  const now = getNowJST();
-  copyCalYear = now.getUTCFullYear();
-  copyCalMonth = now.getUTCMonth();
+  const now = new Date();
+  copyCalYear = now.getFullYear();
+  copyCalMonth = now.getMonth();
   renderCopyCal();
   document.getElementById('copyCalWrap').style.display='block';
 }
@@ -1153,7 +1151,7 @@ function renderAddCal() {
   const daysInMonth=new Date(y,mo+1,0).getDate();
   const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
   const startOffset=(firstDay+6)%7;
-  const today=getTodayJST();
+  const today=new Date(); today.setHours(0,0,0,0);
   const selectedStr=document.getElementById('addSelectedDate').value||'';
   let grid='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;">';
   ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(d=>{grid+=`<div style="font-size:11px;color:#888;padding:4px 0;">${d}</div>`;});
@@ -1267,8 +1265,9 @@ function confirmAdd() {
 
 // ===== Stats modal =====
 function getCompletedSlots() {
-  const nowJST = getNowJST();
-  const h = nowJST.getUTCHours() + nowJST.getUTCMinutes()/60;
+  // 朝:6-9, AM:9-12, PM:12-18, 夜:18-23
+  // 「その時間帯に入ったら完了とみなす」
+  const h = new Date().getHours() + new Date().getMinutes()/60;
   const done = [];
   if (h >= 6)  done.push('morning');
   if (h >= 9)  done.push('am');
@@ -1957,8 +1956,8 @@ function phoneSwiped(dir) {
 })();
 
 function selectCopyDateToday(){
-  const now=getNowJST();
-  const y=now.getUTCFullYear(),mo=now.getUTCMonth()+1,d=now.getUTCDate();
+  const now=new Date();
+  const y=now.getFullYear(),mo=now.getMonth()+1,d=now.getDate();
   const str=y+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0');
   selectCopyDate(str,d,mo,y);
 }
