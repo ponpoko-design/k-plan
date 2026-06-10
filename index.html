@@ -2004,18 +2004,6 @@ async function applyLessonDataToCalendar(parsed) {
   const mathUnits = parsed.math_units || {};
   const sciUnits = parsed.sci_units || {};
 
-  // 算理授業リストを日付順にソート（翌授業日の計算に使う）
-  const sankiLessons = lessons
-    .filter(l => l.type === '算理' && l.date)
-    .map(l => { const [y,mo,d]=l.date.split('-').map(Number); return {...l, _dt: new Date(y,mo-1,d)}; })
-    .sort((a,b) => a._dt - b._dt);
-
-  // 指定日から次の算理授業日を返す
-  function nextSankiDate(fromDt) {
-    const next = sankiLessons.find(l => l._dt > fromDt);
-    return next ? next._dt : null;
-  }
-
   // 指定週のタスクを取得するヘルパー
   function getTasksOfWeek(monday) {
     const saved = currentMonday;
@@ -2025,15 +2013,15 @@ async function applyLessonDataToCalendar(parsed) {
     return tasks;
   }
 
-  // カードを非表示にして更新版を追加するヘルパー（重複防止）
-  function replaceCard(lo, t, newProps, uidKey) {
+  // 塾カードを非表示→更新版を追加（重複防止）
+  function replaceJukuCard(lo, t, newName, newNote, dayIdx) {
     lo.hidden = lo.hidden || {};
     lo.added = lo.added || [];
-    // 既に同じuidKeyで追加済みなら更新
-    const existIdx = lo.added.findIndex(a => a.uid === uidKey);
-    if (t.display_type === 'weekly') lo.hidden[t.uid + '_' + t._dayIdx] = true;
+    if (t.display_type === 'weekly') lo.hidden[t.uid + '_' + dayIdx] = true;
     else lo.hidden[t.uid] = true;
-    const newCard = { ...t, uid: uidKey, display_type: 'one_time', repeat_key: null, ...newProps };
+    const uidKey = 'img_juku_' + newName.replace(/\s/g,'') + '_d' + dayIdx;
+    const existIdx = lo.added.findIndex(a => a.uid === uidKey);
+    const newCard = { ...t, uid: uidKey, unit_name: newName, note: newNote, display_type: 'one_time', repeat_key: null, _dayIdx: dayIdx };
     if (existIdx >= 0) lo.added[existIdx] = newCard;
     else lo.added.push(newCard);
   }
@@ -2049,10 +2037,11 @@ async function applyLessonDataToCalendar(parsed) {
 
     if (!localOverrides[wk]) localOverrides[wk] = { added: [], hidden: {} };
     const lo = localOverrides[wk];
+    const tasks = getTasksOfWeek(monday);
 
-    // ── 休講日：その日の塾カードを非表示 ──
+    // ── 休講日：塾カードを非表示 ──
     if (lesson.is_holiday || lesson.type === '休講日') {
-      getTasksOfWeek(monday).filter(t =>
+      tasks.filter(t =>
         t._dayIdx === dayIdx && t.subject === '習い事' && (t.unit_name || '').includes('塾')
       ).forEach(t => {
         lo.hidden = lo.hidden || {};
@@ -2062,86 +2051,28 @@ async function applyLessonDataToCalendar(parsed) {
       return;
     }
 
-    // ── 通常授業：塾カード単元番号更新 ──
-    if (lesson.type === '算理' || lesson.type === '国社') {
-      const tasks = getTasksOfWeek(monday);
-      const subjectLabel = lesson.type === '算理' ? '塾（算･理）' : '塾（国･社）';
+    // ── 算理授業：塾（算･理）カードに単元番号・内容を記入 ──
+    if (lesson.type === '算理') {
       const unitNum = lesson.unit_math;
-      const unitNameMath = lesson.unit_name_math || (unitNum ? mathUnits[String(unitNum)] : null);
-      const unitNameSci = lesson.unit_name_sci || (lesson.unit_sci ? sciUnits[String(lesson.unit_sci)] : null);
+      const unitSciNum = lesson.unit_sci;
+      const unitNameMath = lesson.unit_name_math || (unitNum ? mathUnits[String(unitNum)] : '');
+      const unitNameSci = lesson.unit_name_sci || (unitSciNum ? sciUnits[String(unitSciNum)] : '');
+      const newName = unitNum ? `塾（算･理${unitNum}）` : '塾（算･理）';
+      const noteStr = [unitNameMath ? `算: ${unitNameMath}` : '', unitNameSci ? `理: ${unitNameSci}` : ''].filter(Boolean).join(' / ');
+      tasks.filter(t => t._dayIdx === dayIdx && t.subject === '習い事' && (t.unit_name || '') === '塾（算･理）')
+        .forEach(t => replaceJukuCard(lo, t, newName, noteStr, dayIdx));
+      return;
+    }
 
-      // 塾カード：名前に単元番号追記
-      tasks.filter(t =>
-        t._dayIdx === dayIdx && t.subject === '習い事' && t.unit_name === subjectLabel
-      ).forEach(t => {
-        const newName = unitNum ? subjectLabel.replace('）', `${unitNum}）`) : subjectLabel;
-        const noteStr = unitNameMath
-          ? `算: ${unitNameMath}` + (unitNameSci ? ` / 理: ${unitNameSci}` : '')
-          : (t.note || '');
-        replaceCard(lo, t, { unit_name: newName, note: noteStr, _dayIdx: dayIdx }, 'img_juku_' + lesson.date + '_' + lesson.type);
-      });
-
-      // 算理の場合：当週〜次回算理授業前日までのNテキスト・N家庭学習・T確認テストに単元情報を追記
-      if (lesson.type === '算理' && unitNameMath) {
-        const nextSanki = nextSankiDate(dt);
-        // 対象期間（塾の日〜次の算理授業の前日）の全週を走査
-        let scanDt = new Date(dt);
-        while (true) {
-          const scanMonday = getMonday(new Date(scanDt));
-          const scanWk = dateKey(scanMonday);
-          if (!localOverrides[scanWk]) localOverrides[scanWk] = { added: [], hidden: {} };
-          const scanLo = localOverrides[scanWk];
-          const scanTasks = getTasksOfWeek(scanMonday);
-
-          // Nテキスト・N家庭学習に単元名をメモ・単元番号に追記
-          scanTasks.filter(t =>
-            t.subject === '算数' &&
-            ['Nテキスト', 'N家庭学習'].some(n => (t.unit_name || '').includes(n))
-          ).forEach(t => {
-            const taskDt = addDays(scanMonday, t._dayIdx);
-            taskDt.setHours(0,0,0,0);
-            // 塾の日より後、次の算理授業の前日まで
-            if (taskDt <= dt) return;
-            if (nextSanki && taskDt >= nextSanki) return;
-            replaceCard(scanLo, t,
-              { note: unitNameMath, hash: String(unitNum || ''), _dayIdx: t._dayIdx },
-              'img_n_' + lesson.date + '_' + t.uid
-            );
-          });
-
-          // T確認テスト：塾の日と同じ週のみ（当日）
-          if (scanWk === wk) {
-            scanTasks.filter(t =>
-              t._dayIdx === dayIdx && t.subject === '算数' &&
-              (t.unit_name || '').includes('T確認テスト')
-            ).forEach(t => {
-              replaceCard(scanLo, t,
-                { note: unitNameMath, hash: String(unitNum || ''), _dayIdx: dayIdx },
-                'img_ttest_' + lesson.date + '_' + t.uid
-              );
-            });
-          }
-
-          // 理科カード：塾の日と同じ週のみ
-          if (scanWk === wk && unitNameSci) {
-            scanTasks.filter(t =>
-              t._dayIdx === dayIdx && t.subject === '理科' &&
-              ['確認問題', '基本のまとめ', 'グノチェック', 'テスト振り返り'].some(n => (t.unit_name || '').includes(n))
-            ).forEach(t => {
-              replaceCard(scanLo, t,
-                { note: unitNameSci, hash: String(lesson.unit_sci || ''), _dayIdx: dayIdx },
-                'img_sci_' + lesson.date + '_' + t.uid
-              );
-            });
-          }
-
-          // 次の週へ
-          scanDt = addDays(scanMonday, 7);
-          // 次の算理授業の週を超えたら終了
-          if (nextSanki && scanDt > nextSanki) break;
-          if (!nextSanki && scanDt > addDays(dt, 14)) break;
-        }
-      }
+    // ── 国社授業：塾（国･社）カードに単元番号・内容を記入 ──
+    if (lesson.type === '国社') {
+      const unitNum = lesson.unit_math; // JSONでは国社もunit_mathに国語単元番号が入る想定
+      const unitNameKoku = lesson.unit_name_math || '';
+      const unitNameSoc = lesson.unit_name_sci || '';
+      const newName = unitNum ? `塾（国･社${unitNum}）` : '塾（国･社）';
+      const noteStr = [unitNameKoku ? `国: ${unitNameKoku}` : '', unitNameSoc ? `社: ${unitNameSoc}` : ''].filter(Boolean).join(' / ');
+      tasks.filter(t => t._dayIdx === dayIdx && t.subject === '習い事' && (t.unit_name || '') === '塾（国･社）')
+        .forEach(t => replaceJukuCard(lo, t, newName, noteStr, dayIdx));
       return;
     }
 
@@ -2163,6 +2094,7 @@ async function applyLessonDataToCalendar(parsed) {
           _dayIdx: dayIdx, _slotIdx: 2
         });
       }
+      return;
     }
   });
 
