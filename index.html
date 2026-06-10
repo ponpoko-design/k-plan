@@ -423,6 +423,32 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
               <option value="3">木</option><option value="4">金</option><option value="5">土</option><option value="6">日</option>
             </select>
           </div>
+          <div style="display:flex;gap:8px;margin-bottom:8px;">
+            <div style="flex:1;">
+              <label style="font-size:13px;color:#888;display:block;margin-bottom:3px;">いつから</label>
+              <div id="weeklyFromDisplay" onclick="toggleWeeklyFromCal()" style="border:1.5px solid #ccc;border-radius:8px;padding:10px 12px;font-size:14px;font-weight:700;color:#1a2744;cursor:pointer;background:white;">今日から</div>
+              <input type="hidden" id="weeklyFromDate">
+            </div>
+            <div style="flex:1;">
+              <label style="font-size:13px;color:#888;display:block;margin-bottom:3px;">いつまで <span style="font-weight:400;">（任意）</span></label>
+              <div id="weeklyToDisplay" onclick="toggleWeeklyToCal()" style="border:1.5px solid #ccc;border-radius:8px;padding:10px 12px;font-size:14px;font-weight:700;color:#aaa;cursor:pointer;background:white;">ずっと</div>
+              <input type="hidden" id="weeklyToDate">
+            </div>
+          </div>
+          <div id="weeklyFromCalWrap" style="display:none;background:white;border:1.5px solid #ddd;border-radius:10px;padding:12px;margin-bottom:10px;box-shadow:0 2px 12px rgba(0,0,0,.1);">
+            <div id="weeklyFromCalGrid"></div>
+            <div style="display:flex;justify-content:space-around;margin-top:8px;border-top:1px solid #eee;padding-top:8px;">
+              <span onclick="selectWeeklyFromToday()" style="font-size:12px;color:#378add;cursor:pointer;">▶ Today</span>
+              <span onclick="document.getElementById('weeklyFromCalWrap').style.display='none'" style="font-size:12px;color:#888;cursor:pointer;">× Close</span>
+            </div>
+          </div>
+          <div id="weeklyToCalWrap" style="display:none;background:white;border:1.5px solid #ddd;border-radius:10px;padding:12px;margin-bottom:10px;box-shadow:0 2px 12px rgba(0,0,0,.1);">
+            <div id="weeklyToCalGrid"></div>
+            <div style="display:flex;justify-content:space-around;margin-top:8px;border-top:1px solid #eee;padding-top:8px;">
+              <span onclick="clearWeeklyToDate()" style="font-size:12px;color:#e24b4a;cursor:pointer;">— ずっと（終了日なし）</span>
+              <span onclick="document.getElementById('weeklyToCalWrap').style.display='none'" style="font-size:12px;color:#888;cursor:pointer;">× Close</span>
+            </div>
+          </div>
         </div>
         <div class="field"><label>時間帯</label>
           <select id="aSlot">
@@ -492,6 +518,49 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
         <div style="display:flex;gap:10px;">
           <button onclick="closeCopyModal()" style="flex:1;background:white;border:2px solid #888;color:#888;border-radius:20px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;">やめる</button>
           <button onclick="confirmCopy()" style="flex:1;background:white;border:2px solid var(--navy);color:var(--navy);border-radius:20px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;">コピーする</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 繰り返し期間選択モーダル -->
+  <div class="modal-bg" id="repeatRangeModal" style="z-index:210;">
+    <div class="modal" style="width:min(380px,96vw);">
+      <div class="modal-hdr">
+        <span>毎週くりかえす期間を選ぶ</span>
+        <button class="modal-close" onclick="closeRepeatRangeModal()">×</button>
+      </div>
+      <div class="modal-body" style="padding:18px;">
+        <div style="font-size:13px;color:#888;margin-bottom:16px;">いつからいつまで毎週くりかえしますか？</div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <div style="flex:1;">
+            <label style="font-size:13px;color:#888;display:block;margin-bottom:3px;">いつから</label>
+            <div id="repeatFromDisplay" onclick="toggleRepeatFromCal()" style="border:1.5px solid #ccc;border-radius:8px;padding:10px 12px;font-size:14px;font-weight:700;color:#1a2744;cursor:pointer;background:white;">今日から</div>
+            <input type="hidden" id="repeatFromDate">
+          </div>
+          <div style="flex:1;">
+            <label style="font-size:13px;color:#888;display:block;margin-bottom:3px;">いつまで <span style="font-weight:400;">（任意）</span></label>
+            <div id="repeatToDisplay" onclick="toggleRepeatToCal()" style="border:1.5px solid #ccc;border-radius:8px;padding:10px 12px;font-size:14px;font-weight:700;color:#aaa;cursor:pointer;background:white;">ずっと</div>
+            <input type="hidden" id="repeatToDate">
+          </div>
+        </div>
+        <div id="repeatFromCalWrap" style="display:none;background:white;border:1.5px solid #ddd;border-radius:10px;padding:12px;margin-bottom:10px;box-shadow:0 2px 12px rgba(0,0,0,.1);">
+          <div id="repeatFromCalGrid"></div>
+          <div style="display:flex;justify-content:space-around;margin-top:8px;border-top:1px solid #eee;padding-top:8px;">
+            <span onclick="selectRepeatFrom('{{today}}',{{td}},{{tm}},{{ty}})" style="font-size:12px;color:#378add;cursor:pointer;" id="repeatFromTodayBtn">▶ Today</span>
+            <span onclick="document.getElementById('repeatFromCalWrap').style.display='none'" style="font-size:12px;color:#888;cursor:pointer;">× Close</span>
+          </div>
+        </div>
+        <div id="repeatToCalWrap" style="display:none;background:white;border:1.5px solid #ddd;border-radius:10px;padding:12px;margin-bottom:10px;box-shadow:0 2px 12px rgba(0,0,0,.1);">
+          <div id="repeatToCalGrid"></div>
+          <div style="display:flex;justify-content:space-around;margin-top:8px;border-top:1px solid #eee;padding-top:8px;">
+            <span onclick="clearRepeatToDate()" style="font-size:12px;color:#e24b4a;cursor:pointer;">— ずっと（終了日なし）</span>
+            <span onclick="document.getElementById('repeatToCalWrap').style.display='none'" style="font-size:12px;color:#888;cursor:pointer;">× Close</span>
+          </div>
+        </div>
+        <div class="modal-actions" style="margin-top:8px;">
+          <button onclick="closeRepeatRangeModal()" style="flex:1;background:white;border:2px solid #ccc;color:#888;border-radius:20px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">やめる</button>
+          <button onclick="confirmRepeatRange()" style="flex:2;background:var(--navy);border:none;color:white;border-radius:20px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">毎週くりかえすに変更</button>
         </div>
       </div>
     </div>
@@ -683,6 +752,12 @@ function getTasksForWeek() {
   // 5. weeklyAdded（one_time→weeklyに変換されたタスク）
   (localOverrides.weeklyAdded || []).forEach(t => {
     if (t.fromDate && thisWeekMonday < t.fromDate) return;
+    // toDate チェック：その週の月曜がtoDateを超えていたらスキップ
+    if (t.toDate) {
+      const [ty,tm,td] = t.toDate.split('-').map(Number);
+      const toDt = new Date(ty, tm-1, td); toDt.setHours(0,0,0,0);
+      if (new Date(thisWeekMonday) > toDt) return;
+    }
     const wi = t.weekday_index;
     if (allHidden[t.uid + '_' + wi]) return;
     if (weeklyDeletedSet.has(t.uid + '_' + wi)) return;
@@ -1206,24 +1281,108 @@ function toggleRepeat() {
     showToast('今回だけの予定に変更しました ✓');
     return;
   }
-  // 今週だけ → 毎週に変更（今週以降）
+  // 今週だけ → 毎週に変更（いつから・いつまで選択モーダルを開く）
   if (t.display_type === 'one_time') {
-    if (!localOverrides.weeklyAdded) localOverrides.weeklyAdded = [];
-    const wk = getWeekKey();
-    if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
-    const lo = localOverrides[wk];
-    lo.hidden = lo.hidden || {};
-    lo.hidden[t.uid] = true;
-    if (lo.added) lo.added = lo.added.filter(a => a.uid !== t.uid);
-    localOverrides.weeklyAdded.push({
-      ...t, uid:'wa_'+Date.now(), display_type:'weekly',
-      repeat_key:'wa_'+Date.now(), fromDate:dateKey(currentMonday),
-      weekday_index:t._dayIdx, order:t.order||99
-    });
-    saveLocal(); closeDetail(); render();
-    showToast('毎週くりかえす予定に変更しました ✓');
+    closeDetail();
+    openRepeatRangeModal(t);
     return;
   }
+}
+
+// ===== 繰り返し期間選択モーダル（今回だけ→毎週変換用）=====
+let _repeatRangeTask = null;
+let repeatFromCalYear, repeatFromCalMonth, repeatToCalYear, repeatToCalMonth;
+
+function openRepeatRangeModal(t) {
+  _repeatRangeTask = t;
+  // デフォルト：いつから＝今日、いつまで＝なし
+  const now = getNowJST();
+  const todayStr = now.getUTCFullYear()+'-'+String(now.getUTCMonth()+1).padStart(2,'0')+'-'+String(now.getUTCDate()).padStart(2,'0');
+  document.getElementById('repeatFromDate').value = todayStr;
+  document.getElementById('repeatFromDisplay').textContent = '今日から';
+  document.getElementById('repeatFromDisplay').style.color = '#1a2744';
+  document.getElementById('repeatToDate').value = '';
+  document.getElementById('repeatToDisplay').textContent = 'ずっと';
+  document.getElementById('repeatToDisplay').style.color = '#aaa';
+  document.getElementById('repeatFromCalWrap').style.display = 'none';
+  document.getElementById('repeatToCalWrap').style.display = 'none';
+  document.getElementById('repeatRangeModal').classList.add('open');
+}
+function closeRepeatRangeModal() {
+  document.getElementById('repeatRangeModal').classList.remove('open');
+  _repeatRangeTask = null;
+}
+function confirmRepeatRange() {
+  const t = _repeatRangeTask;
+  if (!t) return;
+  const fromStr = document.getElementById('repeatFromDate').value;
+  const toStr = document.getElementById('repeatToDate').value || null;
+  const fromDt = fromStr ? new Date(fromStr) : new Date();
+  const fromMonday = getMonday(fromDt);
+  if (!localOverrides.weeklyAdded) localOverrides.weeklyAdded = [];
+  const wk = getWeekKey();
+  if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
+  const lo = localOverrides[wk];
+  lo.hidden = lo.hidden || {};
+  lo.hidden[t.uid] = true;
+  if (lo.added) lo.added = lo.added.filter(a => a.uid !== t.uid);
+  const newUid = 'wa_'+Date.now();
+  localOverrides.weeklyAdded.push({
+    ...t, uid: newUid, display_type: 'weekly',
+    repeat_key: newUid, fromDate: dateKey(fromMonday),
+    toDate: toStr || null,
+    weekday_index: t._dayIdx, order: t.order||99
+  });
+  saveLocal(); closeRepeatRangeModal(); render();
+  showToast('毎週くりかえす予定に変更しました ✓');
+}
+
+// From/Toカレンダー（繰り返し期間モーダル用）
+function toggleRepeatFromCal() {
+  const wrap = document.getElementById('repeatFromCalWrap');
+  document.getElementById('repeatToCalWrap').style.display = 'none';
+  if (wrap.style.display === 'none') {
+    const now = new Date();
+    repeatFromCalYear = now.getFullYear(); repeatFromCalMonth = now.getMonth();
+    renderRepeatFromCal(); wrap.style.display = 'block';
+  } else { wrap.style.display = 'none'; }
+}
+function toggleRepeatToCal() {
+  const wrap = document.getElementById('repeatToCalWrap');
+  document.getElementById('repeatFromCalWrap').style.display = 'none';
+  if (wrap.style.display === 'none') {
+    const now = new Date();
+    repeatToCalYear = now.getFullYear(); repeatToCalMonth = now.getMonth();
+    renderRepeatToCal(); wrap.style.display = 'block';
+  } else { wrap.style.display = 'none'; }
+}
+function renderRepeatFromCal() {
+  _renderWeeklyCal('repeatFromCalGrid', document.getElementById('repeatFromDate').value, 'selectRepeatFrom', 'repeatFromPrev', 'repeatFromNext', repeatFromCalYear, repeatFromCalMonth);
+}
+function repeatFromPrev() { repeatFromCalYear-=(repeatFromCalMonth===0?1:0); repeatFromCalMonth=(repeatFromCalMonth+11)%12; renderRepeatFromCal(); }
+function repeatFromNext() { repeatFromCalYear+=(repeatFromCalMonth===11?1:0); repeatFromCalMonth=(repeatFromCalMonth+1)%12; renderRepeatFromCal(); }
+function selectRepeatFrom(str,d,m,y) {
+  document.getElementById('repeatFromDate').value = str;
+  document.getElementById('repeatFromDisplay').textContent = m+'/'+d+'から';
+  document.getElementById('repeatFromDisplay').style.color = '#1a2744';
+  document.getElementById('repeatFromCalWrap').style.display = 'none';
+}
+function renderRepeatToCal() {
+  _renderWeeklyCal('repeatToCalGrid', document.getElementById('repeatToDate').value, 'selectRepeatTo', 'repeatToPrev', 'repeatToNext', repeatToCalYear, repeatToCalMonth);
+}
+function repeatToPrev() { repeatToCalYear-=(repeatToCalMonth===0?1:0); repeatToCalMonth=(repeatToCalMonth+11)%12; renderRepeatToCal(); }
+function repeatToNext() { repeatToCalYear+=(repeatToCalMonth===11?1:0); repeatToCalMonth=(repeatToCalMonth+1)%12; renderRepeatToCal(); }
+function selectRepeatTo(str,d,m,y) {
+  document.getElementById('repeatToDate').value = str;
+  document.getElementById('repeatToDisplay').textContent = m+'/'+d+'まで';
+  document.getElementById('repeatToDisplay').style.color = '#1a2744';
+  document.getElementById('repeatToCalWrap').style.display = 'none';
+}
+function clearRepeatToDate() {
+  document.getElementById('repeatToDate').value = '';
+  document.getElementById('repeatToDisplay').textContent = 'ずっと';
+  document.getElementById('repeatToDisplay').style.color = '#aaa';
+  document.getElementById('repeatToCalWrap').style.display = 'none';
 }
 
 // ===== Add modal =====
@@ -1276,6 +1435,17 @@ function toggleAddDate() {
   const isWeekly = document.querySelector('input[name="addType"]:checked').value === 'weekly';
   document.getElementById('addDateSection').style.display = isWeekly ? 'none' : 'block';
   document.getElementById('addWeeklySection').style.display = isWeekly ? 'block' : 'none';
+  if (isWeekly) {
+    // いつからのデフォルト = 今日
+    const now = getNowJST();
+    const todayStr = now.getUTCFullYear()+'-'+String(now.getUTCMonth()+1).padStart(2,'0')+'-'+String(now.getUTCDate()).padStart(2,'0');
+    document.getElementById('weeklyFromDate').value = todayStr;
+    document.getElementById('weeklyFromDisplay').textContent = '今日から';
+    document.getElementById('weeklyFromDisplay').style.color = '#1a2744';
+    document.getElementById('weeklyToDate').value = '';
+    document.getElementById('weeklyToDisplay').textContent = 'ずっと';
+    document.getElementById('weeklyToDisplay').style.color = '#aaa';
+  }
 }
 function toggleAddCal() {
   const wrap = document.getElementById('addCalWrap');
@@ -1338,6 +1508,95 @@ function selectAddDateToday() {
   selectAddDate(now.getUTCFullYear()+'-'+String(now.getUTCMonth()+1).padStart(2,'0')+'-'+String(now.getUTCDate()).padStart(2,'0'));
 }
 function clearAddDate() { _setAddDate(''); document.getElementById('addCalWrap').style.display='none'; }
+
+// ===== 毎週くりかえし From/Toカレンダー =====
+let weeklyFromCalYear, weeklyFromCalMonth, weeklyToCalYear, weeklyToCalMonth;
+
+function toggleWeeklyFromCal() {
+  const wrap = document.getElementById('weeklyFromCalWrap');
+  const toWrap = document.getElementById('weeklyToCalWrap');
+  toWrap.style.display = 'none';
+  if (wrap.style.display === 'none') {
+    const now = new Date();
+    weeklyFromCalYear = now.getFullYear(); weeklyFromCalMonth = now.getMonth();
+    renderWeeklyFromCal(); wrap.style.display = 'block';
+  } else { wrap.style.display = 'none'; }
+}
+function toggleWeeklyToCal() {
+  const wrap = document.getElementById('weeklyToCalWrap');
+  const fromWrap = document.getElementById('weeklyFromCalWrap');
+  fromWrap.style.display = 'none';
+  if (wrap.style.display === 'none') {
+    const now = new Date();
+    weeklyToCalYear = now.getFullYear(); weeklyToCalMonth = now.getMonth();
+    renderWeeklyToCal(); wrap.style.display = 'block';
+  } else { wrap.style.display = 'none'; }
+}
+
+function _renderWeeklyCal(gridId, selectedStr, onSelectFn, prevFn, nextFn, y, mo) {
+  const firstDay = new Date(y,mo,1).getDay();
+  const daysInMonth = new Date(y,mo+1,0).getDate();
+  const monthNames=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  const startOffset=(firstDay+6)%7;
+  const today=new Date(); today.setHours(0,0,0,0);
+  let grid='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;">';
+  ['月','火','水','木','金','土','日'].forEach(d=>{grid+=`<div style="font-size:11px;color:#888;padding:3px 0;">${d}</div>`;});
+  for(let i=0;i<startOffset;i++) grid+='<div></div>';
+  for(let d=1;d<=daysInMonth;d++){
+    const dt=new Date(y,mo,d); dt.setHours(0,0,0,0);
+    const dtStr=y+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const isToday=dt.getTime()===today.getTime();
+    const isSel=dtStr===selectedStr;
+    let style='font-size:13px;padding:5px 2px;border-radius:50%;cursor:pointer;';
+    if(isSel) style+='background:#1a2744;color:white;';
+    else if(isToday) style+='border:2px solid #1a2744;color:#1a2744;font-weight:700;';
+    grid+=`<div style="${style}" onclick="${onSelectFn}('${dtStr}',${d},${mo+1},${y})">${d}</div>`;
+  }
+  grid+='</div>';
+  document.getElementById(gridId).innerHTML=
+    `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <button onclick="${prevFn}()" style="background:none;border:none;font-size:18px;cursor:pointer;">◀</button>
+      <span style="font-weight:700;font-size:14px;">${monthNames[mo]}</span>
+      <button onclick="${nextFn}()" style="background:none;border:none;font-size:18px;cursor:pointer;">▶</button>
+    </div>`+grid;
+}
+
+function renderWeeklyFromCal() {
+  const sel = document.getElementById('weeklyFromDate').value;
+  _renderWeeklyCal('weeklyFromCalGrid', sel, 'selectWeeklyFrom', 'weeklyFromPrev', 'weeklyFromNext', weeklyFromCalYear, weeklyFromCalMonth);
+}
+function weeklyFromPrev() { weeklyFromCalYear-=(weeklyFromCalMonth===0?1:0); weeklyFromCalMonth=(weeklyFromCalMonth+11)%12; renderWeeklyFromCal(); }
+function weeklyFromNext() { weeklyFromCalYear+=(weeklyFromCalMonth===11?1:0); weeklyFromCalMonth=(weeklyFromCalMonth+1)%12; renderWeeklyFromCal(); }
+function selectWeeklyFrom(str,d,m,y) {
+  document.getElementById('weeklyFromDate').value = str;
+  document.getElementById('weeklyFromDisplay').textContent = m+'/'+d+'から';
+  document.getElementById('weeklyFromDisplay').style.color = '#1a2744';
+  document.getElementById('weeklyFromCalWrap').style.display = 'none';
+}
+function selectWeeklyFromToday() {
+  const now=getNowJST();
+  const str=now.getUTCFullYear()+'-'+String(now.getUTCMonth()+1).padStart(2,'0')+'-'+String(now.getUTCDate()).padStart(2,'0');
+  selectWeeklyFrom(str, now.getUTCDate(), now.getUTCMonth()+1, now.getUTCFullYear());
+}
+
+function renderWeeklyToCal() {
+  const sel = document.getElementById('weeklyToDate').value;
+  _renderWeeklyCal('weeklyToCalGrid', sel, 'selectWeeklyTo', 'weeklyToPrev', 'weeklyToNext', weeklyToCalYear, weeklyToCalMonth);
+}
+function weeklyToPrev() { weeklyToCalYear-=(weeklyToCalMonth===0?1:0); weeklyToCalMonth=(weeklyToCalMonth+11)%12; renderWeeklyToCal(); }
+function weeklyToNext() { weeklyToCalYear+=(weeklyToCalMonth===11?1:0); weeklyToCalMonth=(weeklyToCalMonth+1)%12; renderWeeklyToCal(); }
+function selectWeeklyTo(str,d,m,y) {
+  document.getElementById('weeklyToDate').value = str;
+  document.getElementById('weeklyToDisplay').textContent = m+'/'+d+'まで';
+  document.getElementById('weeklyToDisplay').style.color = '#1a2744';
+  document.getElementById('weeklyToCalWrap').style.display = 'none';
+}
+function clearWeeklyToDate() {
+  document.getElementById('weeklyToDate').value = '';
+  document.getElementById('weeklyToDisplay').textContent = 'ずっと';
+  document.getElementById('weeklyToDisplay').style.color = '#aaa';
+  document.getElementById('weeklyToCalWrap').style.display = 'none';
+}
 function updateSubjectColor() {
   const sel = document.getElementById('aSubject');
   const subj = sel.value;
@@ -1385,11 +1644,18 @@ function confirmAdd() {
     _dayIdx:wi, _slotIdx:SLOT_IDX[slot]||0
   };
   if (type==='weekly') {
-    // 毎週くりかえす → weeklyAddedに追加（今週以降全週に表示）
+    // fromDate（いつから）
+    const fromStr = document.getElementById('weeklyFromDate').value;
+    const fromDt = fromStr ? new Date(fromStr.split('-').map(Number).reduce((acc,v,i)=>i===0?new Date(v,0,1):i===1?(acc.setMonth(v-1),acc):(acc.setDate(v),acc), new Date())) : new Date();
+    const fromMonday = getMonday(fromDt);
+    // toDate（いつまで）
+    const toStr = document.getElementById('weeklyToDate').value;
+    // 毎週くりかえす → weeklyAddedに追加
     if (!localOverrides.weeklyAdded) localOverrides.weeklyAdded=[];
     localOverrides.weeklyAdded.push({
       ...newTask,
-      fromDate: dateKey(currentMonday)
+      fromDate: dateKey(fromMonday),
+      toDate: toStr || null
     });
   } else {
     // 今週だけ → 対象週のoverridesに追加
