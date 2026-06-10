@@ -2059,7 +2059,7 @@ async function applyLessonDataToCalendar(parsed) {
       const unitNameSci = lesson.unit_name_sci || (unitSciNum ? sciUnits[String(unitSciNum)] : '');
       const newName = unitNum ? `塾（算･理${unitNum}）` : '塾（算･理）';
       const noteStr = [unitNameMath ? `算: ${unitNameMath}` : '', unitNameSci ? `理: ${unitNameSci}` : ''].filter(Boolean).join(' / ');
-      tasks.filter(t => t._dayIdx === dayIdx && t.subject === '習い事' && (t.unit_name || '') === '塾（算･理）')
+      tasks.filter(t => t._dayIdx === dayIdx && t.slot === 'night' && t.subject === '習い事' && (t.unit_name || '') === '塾（算･理）')
         .forEach(t => replaceJukuCard(lo, t, newName, noteStr, dayIdx));
       return;
     }
@@ -2071,7 +2071,7 @@ async function applyLessonDataToCalendar(parsed) {
       const unitNameSoc = lesson.unit_name_sci || '';
       const newName = unitNum ? `塾（国･社${unitNum}）` : '塾（国･社）';
       const noteStr = [unitNameKoku ? `国: ${unitNameKoku}` : '', unitNameSoc ? `社: ${unitNameSoc}` : ''].filter(Boolean).join(' / ');
-      tasks.filter(t => t._dayIdx === dayIdx && t.subject === '習い事' && (t.unit_name || '') === '塾（国･社）')
+      tasks.filter(t => t._dayIdx === dayIdx && t.slot === 'night' && t.subject === '習い事' && (t.unit_name || '') === '塾（国･社）')
         .forEach(t => replaceJukuCard(lo, t, newName, noteStr, dayIdx));
       return;
     }
