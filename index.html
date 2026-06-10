@@ -266,39 +266,39 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
         <button class="modal-close" onclick="closeImageImportModal()">×</button>
       </div>
       <div class="modal-body" style="padding:20px 18px;">
-        <div style="font-size:13px;color:#666;margin-bottom:16px;line-height:1.6;">授業カレンダー画像と算数の単元表画像を選んでください。AIが読み取って塾の予定・単元名を自動で入力します。</div>
+        <div style="font-size:13px;color:#666;margin-bottom:16px;line-height:1.6;">複数枚まとめて選べます。AIが読み取って塾の予定・単元名を自動で入力します。</div>
 
-        <!-- 授業カレンダー画像 -->
+        <!-- 授業カレンダー画像（複数可） -->
         <div style="margin-bottom:14px;">
-          <div style="font-size:13px;font-weight:700;color:#1a2744;margin-bottom:8px;">① 授業カレンダー画像</div>
-          <label id="calImgLabel" style="display:flex;align-items:center;justify-content:center;gap:8px;border:2px dashed #ddd;border-radius:10px;padding:16px;cursor:pointer;background:#fafafa;transition:border-color .2s;" onmouseover="this.style.borderColor='#378add'" onmouseout="this.style.borderColor='#ddd'">
+          <div style="font-size:13px;font-weight:700;color:#1a2744;margin-bottom:8px;">① 授業カレンダー画像 <span style="font-weight:400;color:#888;">（複数枚OK）</span></div>
+          <label style="display:flex;align-items:center;justify-content:center;gap:8px;border:2px dashed #ddd;border-radius:10px;padding:14px;cursor:pointer;background:#fafafa;transition:border-color .2s;" onmouseover="this.style.borderColor='#378add'" onmouseout="this.style.borderColor='#ddd'">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            <span id="calImgTxt" style="font-size:13px;color:#888;">タップして画像を選択</span>
-            <input type="file" id="calImgInput" accept="image/*" style="display:none;" onchange="previewImg(this,'calImgTxt','calImgPreview')">
+            <span style="font-size:13px;color:#888;">タップして選択（複数選択可）</span>
+            <input type="file" id="calImgInput" accept="image/*" multiple style="display:none;" onchange="previewImgMulti(this,'calPreviews')">
           </label>
-          <img id="calImgPreview" style="display:none;width:100%;border-radius:8px;margin-top:8px;max-height:160px;object-fit:contain;border:1px solid #eee;">
+          <div id="calPreviews" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
         </div>
 
-        <!-- 算数単元表 -->
+        <!-- 算数単元表（複数可） -->
         <div style="margin-bottom:14px;">
-          <div style="font-size:13px;font-weight:700;color:#1a2744;margin-bottom:8px;">② 算数の単元表画像</div>
-          <label id="mathImgLabel" style="display:flex;align-items:center;justify-content:center;gap:8px;border:2px dashed #ddd;border-radius:10px;padding:16px;cursor:pointer;background:#fafafa;transition:border-color .2s;" onmouseover="this.style.borderColor='#C1E8FB'" onmouseout="this.style.borderColor='#ddd'">
+          <div style="font-size:13px;font-weight:700;color:#1a2744;margin-bottom:8px;">② 算数の単元表画像 <span style="font-weight:400;color:#888;">（複数枚OK）</span></div>
+          <label style="display:flex;align-items:center;justify-content:center;gap:8px;border:2px dashed #ddd;border-radius:10px;padding:14px;cursor:pointer;background:#fafafa;transition:border-color .2s;" onmouseover="this.style.borderColor='#C1E8FB'" onmouseout="this.style.borderColor='#ddd'">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            <span id="mathImgTxt" style="font-size:13px;color:#888;">タップして画像を選択</span>
-            <input type="file" id="mathImgInput" accept="image/*" style="display:none;" onchange="previewImg(this,'mathImgTxt','mathImgPreview')">
+            <span style="font-size:13px;color:#888;">タップして選択（複数選択可）</span>
+            <input type="file" id="mathImgInput" accept="image/*" multiple style="display:none;" onchange="previewImgMulti(this,'mathPreviews')">
           </label>
-          <img id="mathImgPreview" style="display:none;width:100%;border-radius:8px;margin-top:8px;max-height:160px;object-fit:contain;border:1px solid #eee;">
+          <div id="mathPreviews" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
         </div>
 
-        <!-- 理科単元表 -->
+        <!-- 理科単元表（複数可） -->
         <div style="margin-bottom:20px;">
-          <div style="font-size:13px;font-weight:700;color:#1a2744;margin-bottom:8px;">③ 理科の単元表画像</div>
-          <label id="sciImgLabel" style="display:flex;align-items:center;justify-content:center;gap:8px;border:2px dashed #ddd;border-radius:10px;padding:16px;cursor:pointer;background:#fafafa;transition:border-color .2s;" onmouseover="this.style.borderColor='#B6EBB0'" onmouseout="this.style.borderColor='#ddd'">
+          <div style="font-size:13px;font-weight:700;color:#1a2744;margin-bottom:8px;">③ 理科の単元表画像 <span style="font-weight:400;color:#888;">（任意・複数枚OK）</span></div>
+          <label style="display:flex;align-items:center;justify-content:center;gap:8px;border:2px dashed #ddd;border-radius:10px;padding:14px;cursor:pointer;background:#fafafa;transition:border-color .2s;" onmouseover="this.style.borderColor='#B6EBB0'" onmouseout="this.style.borderColor='#ddd'">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            <span id="sciImgTxt" style="font-size:13px;color:#888;">タップして画像を選択（任意）</span>
-            <input type="file" id="sciImgInput" accept="image/*" style="display:none;" onchange="previewImg(this,'sciImgTxt','sciImgPreview')">
+            <span style="font-size:13px;color:#888;">タップして選択（複数選択可）</span>
+            <input type="file" id="sciImgInput" accept="image/*" multiple style="display:none;" onchange="previewImgMulti(this,'sciPreviews')">
           </label>
-          <img id="sciImgPreview" style="display:none;width:100%;border-radius:8px;margin-top:8px;max-height:160px;object-fit:contain;border:1px solid #eee;">
+          <div id="sciPreviews" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
         </div>
 
         <!-- 解析中インジケーター -->
@@ -1836,13 +1836,9 @@ function openImageImportModal() {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
-  ['calImgTxt','mathImgTxt','sciImgTxt'].forEach((id, i) => {
+  ['calPreviews','mathPreviews','sciPreviews'].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.textContent = i === 2 ? 'タップして画像を選択（任意）' : 'タップして画像を選択';
-  });
-  ['calImgPreview','mathImgPreview','sciImgPreview'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) { el.style.display = 'none'; el.src = ''; }
+    if (el) el.innerHTML = '';
   });
   document.getElementById('imgAnalyzing').style.display = 'none';
   document.getElementById('imgAnalyzeBtn').style.display = '';
@@ -1852,17 +1848,27 @@ function closeImageImportModal() {
   document.getElementById('imageImportModal').classList.remove('open');
 }
 
-function previewImg(input, txtId, previewId) {
-  const file = input.files[0];
-  if (!file) return;
-  const txt = document.getElementById(txtId);
-  const preview = document.getElementById(previewId);
-  if (txt) txt.textContent = '✓ ' + file.name;
-  if (preview) {
+function previewImgMulti(input, containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  Array.from(input.files).forEach((file, i) => {
     const reader = new FileReader();
-    reader.onload = e => { preview.src = e.target.result; preview.style.display = 'block'; };
+    reader.onload = e => {
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'position:relative;display:inline-block;';
+      const img = document.createElement('img');
+      img.src = e.target.result;
+      img.style.cssText = 'height:70px;width:auto;border-radius:6px;border:1.5px solid #ddd;object-fit:cover;display:block;';
+      const lbl = document.createElement('div');
+      lbl.style.cssText = 'font-size:10px;color:#888;text-align:center;margin-top:2px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+      lbl.textContent = file.name;
+      wrap.appendChild(img);
+      wrap.appendChild(lbl);
+      container.appendChild(wrap);
+    };
     reader.readAsDataURL(file);
-  }
+  });
 }
 
 async function fileToBase64(file) {
@@ -1875,9 +1881,9 @@ async function fileToBase64(file) {
 }
 
 async function runImageAnalysis() {
-  const calFile = document.getElementById('calImgInput').files[0];
-  const mathFile = document.getElementById('mathImgInput').files[0];
-  if (!calFile || !mathFile) {
+  const calFiles2 = document.getElementById('calImgInput').files;
+  const mathFiles2 = document.getElementById('mathImgInput').files;
+  if (!calFiles2.length || !mathFiles2.length) {
     showToast('① 授業カレンダーと ② 算数単元表の画像を選んでください', 3000);
     return;
   }
@@ -1889,37 +1895,40 @@ async function runImageAnalysis() {
   setTimeout(() => { if (bar) bar.style.width = '70%'; }, 100);
 
   try {
-    // 画像をbase64に変換
-    const calB64 = await fileToBase64(calFile);
-    const mathB64 = await fileToBase64(mathFile);
-    const sciFile = document.getElementById('sciImgInput').files[0];
-    const sciB64 = sciFile ? await fileToBase64(sciFile) : null;
+    // 全画像をbase64に変換
+    const calFiles = Array.from(document.getElementById('calImgInput').files);
+    const mathFiles = Array.from(document.getElementById('mathImgInput').files);
+    const sciFiles = Array.from(document.getElementById('sciImgInput').files);
 
-    const calType = calFile.type || 'image/jpeg';
-    const mathType = mathFile.type || 'image/jpeg';
-    const sciType = sciFile ? (sciFile.type || 'image/jpeg') : null;
+    async function filesToB64(files) {
+      return Promise.all(files.map(async f => ({ b64: await fileToBase64(f), type: f.type || 'image/jpeg' })));
+    }
+    const calImgs = await filesToB64(calFiles);
+    const mathImgs = await filesToB64(mathFiles);
+    const sciImgs = await filesToB64(sciFiles);
 
-    // 現在の週のFirestoreデータ構造を説明するため、既存の塾カードUID一覧を取得
-    const allTasks = getTasksForWeek();
-    const jukuCards = allTasks.filter(t =>
-      t.subject === '習い事' && (t.unit_name || '').includes('塾')
-    ).map(t => ({ uid: t.uid, unit_name: t.unit_name, weekday: DAYS_JP[t._dayIdx], slot: t.slot, display_type: t.display_type, repeat_key: t.repeat_key }));
-
-    // Claude API へのプロンプト構築
-    const imageContent = [
-      { type: 'image', source: { type: 'base64', media_type: calType, data: calB64 } },
-      { type: 'image', source: { type: 'base64', media_type: mathType, data: mathB64 } },
-    ];
-    if (sciB64) {
-      imageContent.push({ type: 'image', source: { type: 'base64', media_type: sciType, data: sciB64 } });
+    // Claude API へのプロンプト構築（全画像を順番に追加）
+    const imageContent = [];
+    if (calImgs.length) {
+      imageContent.push({ type: 'text', text: `【授業カレンダー画像 ${calImgs.length}枚】` });
+      calImgs.forEach(img => imageContent.push({ type: 'image', source: { type: 'base64', media_type: img.type, data: img.b64 } }));
+    }
+    if (mathImgs.length) {
+      imageContent.push({ type: 'text', text: `【算数単元表 ${mathImgs.length}枚】` });
+      mathImgs.forEach(img => imageContent.push({ type: 'image', source: { type: 'base64', media_type: img.type, data: img.b64 } }));
+    }
+    if (sciImgs.length) {
+      imageContent.push({ type: 'text', text: `【理科単元表 ${sciImgs.length}枚】` });
+      sciImgs.forEach(img => imageContent.push({ type: 'image', source: { type: 'base64', media_type: img.type, data: img.b64 } }));
     }
     imageContent.push({
       type: 'text',
       text: `あなたは中学受験塾グノーブルの授業カレンダーと単元表を読み取るAIです。
 
-画像1: 授業カレンダー（月ごとの授業日程）
-画像2: 算数の単元表（単元番号→単元名の対応表）
-${sciB64 ? '画像3: 理科の単元表（単元番号→単元名の対応表）' : ''}
+送った画像の構成:
+- 授業カレンダー: ${calImgs.length}枚（月ごとの授業日程）
+- 算数単元表: ${mathImgs.length}枚（単元番号→単元名の対応表）
+${sciImgs.length ? `- 理科単元表: ${sciImgs.length}枚（単元番号→単元名の対応表）` : ''}
 
 以下のJSONのみを返してください（説明文・マークダウン不要）：
 
