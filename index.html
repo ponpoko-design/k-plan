@@ -2014,21 +2014,6 @@ async function applyLessonDataToCalendar(parsed) {
     return tasks;
   }
 
-  // 塾カードを非表示→更新版を追加（重複防止）
-  function replaceJukuCard(lo, t, newName, newNote, dayIdx) {
-    lo.hidden = lo.hidden || {};
-    lo.added = lo.added || [];
-    // スロットも含めたキーで非表示にする（他スロットの同名カードを巻き込まない）
-    const slotIdx = SLOT_IDX[t.slot] ?? 0;
-    if (t.display_type === 'weekly') lo.hidden[t.uid + '_' + dayIdx + '_s' + slotIdx] = true;
-    else lo.hidden[t.uid + '_s' + slotIdx] = true;
-    const uidKey = 'img_juku_' + newName.replace(/\s/g,'') + '_d' + dayIdx + '_s' + slotIdx;
-    const existIdx = lo.added.findIndex(a => a.uid === uidKey);
-    const newCard = { ...t, uid: uidKey, unit_name: newName, note: newNote, display_type: 'one_time', repeat_key: null, _dayIdx: dayIdx };
-    if (existIdx >= 0) lo.added[existIdx] = newCard;
-    else lo.added.push(newCard);
-  }
-
   lessons.forEach(lesson => {
     if (!lesson.date) return;
     const [y, mo, d] = lesson.date.split('-').map(Number);
@@ -2040,50 +2025,79 @@ async function applyLessonDataToCalendar(parsed) {
 
     if (!localOverrides[wk]) localOverrides[wk] = { added: [], hidden: {} };
     const lo = localOverrides[wk];
-    const tasks = getTasksOfWeek(monday);
+    lo.hidden = lo.hidden || {};
+    lo.added = lo.added || [];
 
-    // ── 休講日：塾カードを非表示 ──
+    // ── 休講日：夜の塾カードを非表示 ──
     if (lesson.is_holiday || lesson.type === '休講日') {
-      tasks.filter(t =>
-        t._dayIdx === dayIdx && t.subject === '習い事' && (t.unit_name || '').includes('塾')
+      getTasksOfWeek(monday).filter(t =>
+        t._dayIdx === dayIdx && t.slot === 'night' &&
+        t.subject === '習い事' && (t.unit_name || '').includes('塾')
       ).forEach(t => {
-        lo.hidden = lo.hidden || {};
-        if (t.display_type === 'weekly') lo.hidden[t.uid + '_' + t._dayIdx] = true;
+        if (t.display_type === 'weekly') lo.hidden[t.uid + '_' + dayIdx] = true;
         else lo.hidden[t.uid] = true;
       });
       return;
     }
 
-    // ── 算理授業：塾（算･理）カードに単元番号・内容を記入 ──
-    if (lesson.type === '算理') {
+    // ── 算理（水曜）・国社（月曜）：夜の塾カードを今回だけで更新 or 新規作成 ──
+    if (lesson.type === '算理' || lesson.type === '国社') {
+      const isSanki = lesson.type === '算理';
       const unitNum = lesson.unit_math;
       const unitSciNum = lesson.unit_sci;
-      const unitNameMath = lesson.unit_name_math || (unitNum ? mathUnits[String(unitNum)] : '');
-      const unitNameSci = lesson.unit_name_sci || (unitSciNum ? sciUnits[String(unitSciNum)] : '');
-      const newName = unitNum ? `塾（算･理${unitNum}）` : '塾（算･理）';
-      const noteStr = [unitNameMath ? `算: ${unitNameMath}` : '', unitNameSci ? `理: ${unitNameSci}` : ''].filter(Boolean).join(' / ');
-      tasks.filter(t => t._dayIdx === dayIdx && t.slot === 'night' && t.subject === '習い事' && (t.unit_name || '') === '塾（算･理）')
-        .forEach(t => replaceJukuCard(lo, t, newName, noteStr, dayIdx));
+      const unitNameA = lesson.unit_name_math || (unitNum ? mathUnits[String(unitNum)] : '');
+      const unitNameB = lesson.unit_name_sci || (unitSciNum ? sciUnits[String(unitSciNum)] : '');
+      const labelBase = isSanki ? '塾（算･理）' : '塾（国･社）';
+      const newName = unitNum ? (isSanki ? `塾（算･理${unitNum}）` : `塾（国･社${unitNum}）`) : labelBase;
+      const labelA = isSanki ? '算' : '国';
+      const labelB = isSanki ? '理' : '社';
+      const noteStr = [unitNameA ? `${labelA}: ${unitNameA}` : '', unitNameB ? `${labelB}: ${unitNameB}` : ''].filter(Boolean).join(' / ');
+
+      // 既存の夜の塾カード（同名）を探す
+      const tasks = getTasksOfWeek(monday);
+      const existCards = tasks.filter(t =>
+        t._dayIdx === dayIdx && t.slot === 'night' &&
+        t.subject === '習い事' && (t.unit_name || '').startsWith(isSanki ? '塾（算･理' : '塾（国･社')
+      );
+
+      // 固定uid（日付ベース）で重複防止
+      const newUid = 'juku_' + lesson.date;
+
+      if (existCards.length > 0) {
+        // 既存カードを非表示にして今回だけ版に置き換え
+        existCards.forEach(t => {
+          if (t.display_type === 'weekly') lo.hidden[t.uid + '_' + dayIdx] = true;
+          else if (t.uid !== newUid) lo.hidden[t.uid] = true;
+        });
+      }
+
+      // 既に同じuidで追加済みなら更新、なければ追加
+      const existIdx = lo.added.findIndex(a => a.uid === newUid);
+      const baseCard = existCards[0] || {
+        color: '#D6C3AA', weekday: DAYS_JP[dayIdx], weekday_index: dayIdx,
+        subject: '習い事', study_time: null, order: 1
+      };
+      const newCard = {
+        ...baseCard,
+        uid: newUid,
+        unit_name: newName,
+        note: noteStr,
+        slot: 'night',
+        display_type: 'one_time',
+        repeat_key: null,
+        is_hidden: 'no',
+        _dayIdx: dayIdx,
+        _slotIdx: 4
+      };
+      if (existIdx >= 0) lo.added[existIdx] = newCard;
+      else lo.added.push(newCard);
       return;
     }
 
-    // ── 国社授業：塾（国･社）カードに単元番号・内容を記入 ──
-    if (lesson.type === '国社') {
-      const unitNum = lesson.unit_math; // JSONでは国社もunit_mathに国語単元番号が入る想定
-      const unitNameKoku = lesson.unit_name_math || '';
-      const unitNameSoc = lesson.unit_name_sci || '';
-      const newName = unitNum ? `塾（国･社${unitNum}）` : '塾（国･社）';
-      const noteStr = [unitNameKoku ? `国: ${unitNameKoku}` : '', unitNameSoc ? `社: ${unitNameSoc}` : ''].filter(Boolean).join(' / ');
-      tasks.filter(t => t._dayIdx === dayIdx && t.slot === 'night' && t.subject === '習い事' && (t.unit_name || '') === '塾（国･社）')
-        .forEach(t => replaceJukuCard(lo, t, newName, noteStr, dayIdx));
-      return;
-    }
-
-    // ── GW講習・夏期講習：塾カードを新規作成 ──
+    // ── GW講習・夏期講習：午前に塾カードを新規作成 ──
     if (lesson.type === 'GW講習' || lesson.type === '夏期講習') {
       const unitNum = lesson.unit_math;
       const unitNameMath = lesson.unit_name_math || (unitNum ? mathUnits[String(unitNum)] : '');
-      lo.added = lo.added || [];
       const uid = 'img_special_' + lesson.date;
       if (!lo.added.find(a => a.uid === uid)) {
         lo.added.push({
