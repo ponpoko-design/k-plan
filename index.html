@@ -872,9 +872,8 @@ function deleteTask() {
     const idx = (lo.added||[]).findIndex(a => a.uid === t.uid);
     if (idx >= 0) lo.added.splice(idx, 1);
     saveLocal(); closeDetail(); render();
+    showToast('予定を削除しました ✓');
     return;
-  }
-  // 毎週くりかえす予定 → グローバル変数に退避してからdetailを閉じ、削除選択モーダルを開く
   _deleteTarget = t;
   closeDetail();
   document.getElementById('deleteConfirmName').textContent = `「${t.unit_name || '予定'}」をどのように削除しますか？`;
