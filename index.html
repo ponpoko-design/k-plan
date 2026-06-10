@@ -194,7 +194,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
     <button class="bnav-btn" onclick="showToast('現在作成中です 🚧', 2000)">
       <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
     </button>
-    <button class="bnav-btn" onclick="openGnorevModal()">
+    <button class="bnav-btn" onclick="openAIModal()">
       <svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M12 2v4M8 2h8"/><circle cx="9" cy="13" r="1.5" fill="currentColor" stroke="none"/><circle cx="15" cy="13" r="1.5" fill="currentColor" stroke="none"/><line x1="9" y1="17" x2="15" y2="17"/><line x1="7" y1="8" x2="7" y2="6"/><line x1="17" y1="8" x2="17" y2="6"/></svg>
     </button>
     <button class="bnav-btn" onclick="showStats()">
@@ -207,8 +207,54 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 
   <div id="toast"></div>
 
-  <!-- グノレブ予定モーダル -->
-  <div class="modal-bg" id="gnorevModal" style="z-index:200;">
+  <!-- AI ラクラク機能モーダル -->
+  <div class="modal-bg" id="aiModal" style="z-index:200;">
+    <div class="modal" style="width:min(400px,96vw);">
+      <div class="modal-hdr" style="background:#1a2744;padding:16px 20px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M12 2v4M8 2h8"/><circle cx="9" cy="13" r="1.5" fill="white" stroke="none"/><circle cx="15" cy="13" r="1.5" fill="white" stroke="none"/><line x1="9" y1="17" x2="15" y2="17"/><line x1="7" y1="8" x2="7" y2="6"/><line x1="17" y1="8" x2="17" y2="6"/></svg>
+          <span style="font-size:17px;font-weight:700;">AI ラクラク機能</span>
+        </div>
+        <button class="modal-close" onclick="closeAIModal()">×</button>
+      </div>
+      <div class="modal-body" style="padding:20px 18px;display:flex;flex-direction:column;gap:12px;">
+        <button onclick="closeAIModal();openGnorevModal();" style="display:flex;align-items:center;gap:14px;width:100%;background:white;border:2px solid #eee;border-radius:12px;padding:16px 18px;cursor:pointer;text-align:left;transition:border-color .15s,box-shadow .15s;font-family:inherit;" onmouseover="this.style.borderColor='#9b59b6';this.style.boxShadow='0 2px 12px rgba(155,89,182,0.15)'" onmouseout="this.style.borderColor='#eee';this.style.boxShadow='none'">
+          <div style="width:44px;height:44px;border-radius:10px;background:#f0e6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9b59b6" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+          </div>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:#1a2744;margin-bottom:3px;">グノレブ前後の勉強提案</div>
+            <div style="font-size:12px;color:#888;">テスト日を入れると前後の学習計画を自動で組む</div>
+          </div>
+          <svg style="margin-left:auto;flex-shrink:0;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+
+        <button onclick="closeAIModal();showToast('塾お休み期間の提案は近日公開予定です 🚧',2500);" style="display:flex;align-items:center;gap:14px;width:100%;background:white;border:2px solid #eee;border-radius:12px;padding:16px 18px;cursor:pointer;text-align:left;transition:border-color .15s,box-shadow .15s;font-family:inherit;" onmouseover="this.style.borderColor='#378add';this.style.boxShadow='0 2px 12px rgba(55,138,221,0.15)'" onmouseout="this.style.borderColor='#eee';this.style.boxShadow='none'">
+          <div style="width:44px;height:44px;border-radius:10px;background:#e8f4ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#378add" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+          </div>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:#1a2744;margin-bottom:3px;">塾お休み期間の提案</div>
+            <div style="font-size:12px;color:#888;">塾がない期間の勉強スケジュールを自動で組む</div>
+          </div>
+          <svg style="margin-left:auto;flex-shrink:0;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+
+        <button onclick="closeAIModal();showToast('画像からの自動入力は近日公開予定です 🚧',2500);" style="display:flex;align-items:center;gap:14px;width:100%;background:white;border:2px solid #eee;border-radius:12px;padding:16px 18px;cursor:pointer;text-align:left;transition:border-color .15s,box-shadow .15s;font-family:inherit;" onmouseover="this.style.borderColor='#2ecc71';this.style.boxShadow='0 2px 12px rgba(46,204,113,0.15)'" onmouseout="this.style.borderColor='#eee';this.style.boxShadow='none'">
+          <div style="width:44px;height:44px;border-radius:10px;background:#e8fff2;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          </div>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:#1a2744;margin-bottom:3px;">画像から予定を自動入力</div>
+            <div style="font-size:12px;color:#888;">授業カレンダー画像を送ると予定を自動で登録</div>
+          </div>
+          <svg style="margin-left:auto;flex-shrink:0;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- グノレブ予定モーダル -->  <div class="modal-bg" id="gnorevModal" style="z-index:200;">
     <div class="modal" style="width:min(420px,96vw);">
       <div class="modal-hdr" style="background:#9b59b6;">
         <span>グノレブの予定を組む</span>
@@ -1710,6 +1756,14 @@ function confirmMultiDelete() {
   cancelMultiSelect();
   render();
   showToast(`${count}件を今週だけ削除しました`, 2500);
+}
+
+// ===== AI ラクラク機能モーダル =====
+function openAIModal() {
+  document.getElementById('aiModal').classList.add('open');
+}
+function closeAIModal() {
+  document.getElementById('aiModal').classList.remove('open');
 }
 
 // ===== グノレブ機能 =====
