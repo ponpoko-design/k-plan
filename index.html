@@ -1572,11 +1572,18 @@ function selectWeeklyFrom(str,d,m,y) {
   document.getElementById('weeklyFromDisplay').textContent = m+'/'+d+'から';
   document.getElementById('weeklyFromDisplay').style.color = '#1a2744';
   document.getElementById('weeklyFromCalWrap').style.display = 'none';
+  // 曜日を自動更新
+  const dt = new Date(y,m-1,d);
+  const wi = (dt.getDay()+6)%7;
+  document.getElementById('aWeekday').value = wi;
 }
 function selectWeeklyFromToday() {
   const now=getNowJST();
   const str=now.getUTCFullYear()+'-'+String(now.getUTCMonth()+1).padStart(2,'0')+'-'+String(now.getUTCDate()).padStart(2,'0');
   selectWeeklyFrom(str, now.getUTCDate(), now.getUTCMonth()+1, now.getUTCFullYear());
+  // 曜日を自動更新
+  const wi = (new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()).getDay()+6)%7;
+  document.getElementById('aWeekday').value = wi;
 }
 
 function renderWeeklyToCal() {
