@@ -2051,7 +2051,7 @@ async function applyLessonDataToCalendar(parsed) {
       const newName = unitNum ? (isSanki ? `塾（算･理${unitNum}）` : `塾（国･社${unitNum}）`) : labelBase;
       const labelA = isSanki ? '算' : '国';
       const labelB = isSanki ? '理' : '社';
-      const noteStr = [unitNameA ? `${labelA}: ${unitNameA}` : '', unitNameB ? `${labelB}: ${unitNameB}` : ''].filter(Boolean).join(' / ');
+      const noteStr = [unitNameA ? `${labelA}: ${unitNameA}` : '', unitNameB ? `${labelB}: ${unitNameB}` : ''].filter(Boolean).join('\n');
 
       // 既存の夜の塾カード（同名）を探す
       const tasks = getTasksOfWeek(monday);
