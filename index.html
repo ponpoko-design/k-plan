@@ -671,6 +671,7 @@ function getTasksForWeek() {
     const dayIdx = dates.findIndex(d => sameDateStr(d, tDate));
     if (dayIdx < 0) return;
     if (allHidden[t.uid]) return;
+    if (allHidden[t.uid + '_s' + (SLOT_IDX[t.slot] ?? 0)]) return;
     result.push({...t, _dayIdx: dayIdx, _slotIdx: SLOT_IDX[t.slot] ?? 0});
   });
 
@@ -2017,9 +2018,11 @@ async function applyLessonDataToCalendar(parsed) {
   function replaceJukuCard(lo, t, newName, newNote, dayIdx) {
     lo.hidden = lo.hidden || {};
     lo.added = lo.added || [];
-    if (t.display_type === 'weekly') lo.hidden[t.uid + '_' + dayIdx] = true;
-    else lo.hidden[t.uid] = true;
-    const uidKey = 'img_juku_' + newName.replace(/\s/g,'') + '_d' + dayIdx;
+    // スロットも含めたキーで非表示にする（他スロットの同名カードを巻き込まない）
+    const slotIdx = SLOT_IDX[t.slot] ?? 0;
+    if (t.display_type === 'weekly') lo.hidden[t.uid + '_' + dayIdx + '_s' + slotIdx] = true;
+    else lo.hidden[t.uid + '_s' + slotIdx] = true;
+    const uidKey = 'img_juku_' + newName.replace(/\s/g,'') + '_d' + dayIdx + '_s' + slotIdx;
     const existIdx = lo.added.findIndex(a => a.uid === uidKey);
     const newCard = { ...t, uid: uidKey, unit_name: newName, note: newNote, display_type: 'one_time', repeat_key: null, _dayIdx: dayIdx };
     if (existIdx >= 0) lo.added[existIdx] = newCard;
