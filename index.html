@@ -817,28 +817,56 @@ function closeDetail() {
 function saveTask() {
   const t = document.getElementById('detailModal')._task;
   if (!t) return;
-  const wk = getWeekKey();
-  if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
-  const lo = localOverrides[wk];
-  const idx = (lo.added||[]).findIndex(a => a.uid === t.uid);
   const newSubject = document.getElementById('dSubject').value;
   const newUnit = document.getElementById('dUnit').value;
   const newHash = document.getElementById('dHash').value;
   const newMemo = document.getElementById('dMemo').value;
   const newTime = parseInt(document.getElementById('dTime').value)||null;
   const newColors = SUBJ_COLOR[newSubject] || ['#eee','#333'];
-  if (idx >= 0) {
-    lo.added[idx].subject = newSubject;
-    lo.added[idx].unit_name = newUnit;
-    lo.added[idx].hash = newHash;
-    lo.added[idx].note = newMemo;
-    lo.added[idx].study_time = newTime;
-    lo.added[idx].color = newColors[0];
+  if (t.display_type === 'weekly' && !t._isWeeklyMoved) {
+    // 毎週タスク → 今週以降すべて変更
+    if (!localOverrides.weeklyDeleted) localOverrides.weeklyDeleted = [];
+    const existIdx = localOverrides.weeklyDeleted.findIndex(
+      function(d) { return d.uid === t.uid && d.dayIdx === t._dayIdx; }
+    );
+    const entry = {uid: t.uid, dayIdx: t._dayIdx, fromDate: dateKey(currentMonday)};
+    if (existIdx >= 0) localOverrides.weeklyDeleted[existIdx] = entry;
+    else localOverrides.weeklyDeleted.push(entry);
+    if (!localOverrides.weeklyAdded) localOverrides.weeklyAdded = [];
+    localOverrides.weeklyAdded = localOverrides.weeklyAdded.filter(
+      function(a) { return !(a._origUid === t.uid && a._dayIdx === t._dayIdx); }
+    );
+    const newUid = 'edit_' + t.uid + '_' + Date.now();
+    localOverrides.weeklyAdded.push(Object.assign({}, t, {
+      uid: newUid, _origUid: t.uid,
+      subject: newSubject, unit_name: newUnit, hash: newHash,
+      note: newMemo, study_time: newTime, color: newColors[0],
+      display_type: 'weekly', fromDate: dateKey(currentMonday),
+      weekday_index: t._dayIdx
+    }));
   } else {
-    const hkey = t.display_type === 'weekly' ? t.uid+'_'+t._dayIdx : t.uid;
-    lo.hidden[hkey] = true;
-    if (!lo.added) lo.added = [];
-    lo.added.push({...t, subject: newSubject, unit_name: newUnit, hash: newHash, note: newMemo, study_time: newTime, color: newColors[0], uid: t.uid+'_edit_'+Date.now()});
+    // 今週だけタスク → その週のみ更新
+    const wk = getWeekKey();
+    if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
+    const lo = localOverrides[wk];
+    const idx = (lo.added||[]).findIndex(function(a) { return a.uid === t.uid; });
+    if (idx >= 0) {
+      lo.added[idx].subject = newSubject;
+      lo.added[idx].unit_name = newUnit;
+      lo.added[idx].hash = newHash;
+      lo.added[idx].note = newMemo;
+      lo.added[idx].study_time = newTime;
+      lo.added[idx].color = newColors[0];
+    } else {
+      lo.hidden = lo.hidden || {};
+      lo.hidden[t.uid] = true;
+      if (!lo.added) lo.added = [];
+      lo.added.push(Object.assign({}, t, {
+        subject: newSubject, unit_name: newUnit, hash: newHash,
+        note: newMemo, study_time: newTime, color: newColors[0],
+        uid: t.uid+'_edit_'+Date.now()
+      }));
+    }
   }
   saveLocal(); closeDetail(); render();
   showToast('変更を保存しました ✓');
