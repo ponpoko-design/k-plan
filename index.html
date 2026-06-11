@@ -351,7 +351,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
         <div id="deleteConfirmName" style="font-size:15px;font-weight:700;color:#1a2744;text-align:center;margin-bottom:18px;"></div>
         <div style="display:flex;flex-direction:column;gap:10px;">
           <button onclick="confirmDeleteOnce()" style="width:100%;background:white;border:2px solid #e24b4a;color:#e24b4a;border-radius:20px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;">今週だけ削除する</button>
-          <button onclick="confirmDeleteAll()" style="width:100%;background:#e24b4a;border:none;color:white;border-radius:20px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;">今週以降すべて削除する</button>
+          <button onclick="confirmDeleteFrom()" style="width:100%;background:white;border:2px solid #e24b4a;color:#e24b4a;border-radius:20px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;">これ以降の予定を削除する</button>
+          <button onclick="confirmDeleteAll()" style="width:100%;background:#e24b4a;border:none;color:white;border-radius:20px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;">すべての予定を削除する</button>
           <button onclick="closeDeleteConfirm()" style="width:100%;background:white;border:2px solid #ccc;color:#888;border-radius:20px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;">やめる</button>
         </div>
       </div>
@@ -1111,7 +1112,8 @@ function confirmDeleteOnce() {
   showToast('予定を削除しました ✓');
 }
 
-function confirmDeleteAll() {
+// これ以降削除（今週以降）
+function confirmDeleteFrom() {
   const t = _deleteTarget;
   if (!t) return;
   if (t._isWeeklyMoved) {
@@ -1120,7 +1122,7 @@ function confirmDeleteAll() {
     }
   } else {
     if (!localOverrides.weeklyDeleted) localOverrides.weeklyDeleted = [];
-    const existIdx = localOverrides.weeklyDeleted.findIndex(d => d.uid === t.uid);
+    const existIdx = localOverrides.weeklyDeleted.findIndex(d => d.uid === t.uid && d.dayIdx === t._dayIdx);
     const entry = {uid: t.uid, dayIdx: t._dayIdx, fromDate: dateKey(currentMonday)};
     if (existIdx >= 0) localOverrides.weeklyDeleted[existIdx] = entry;
     else localOverrides.weeklyDeleted.push(entry);
@@ -1129,7 +1131,32 @@ function confirmDeleteAll() {
     }
   }
   saveLocal(); closeDeleteConfirm(); render();
-  showToast('予定を削除しました ✓');
+  showToast('これ以降の予定を削除しました ✓');
+}
+
+// すべて削除（過去も含む全期間）
+function confirmDeleteAll() {
+  const t = _deleteTarget;
+  if (!t) return;
+  if (t._isWeeklyMoved) {
+    if (localOverrides.weeklyMoves) {
+      localOverrides.weeklyMoves = localOverrides.weeklyMoves.filter(mv => mv.moveUid !== t.uid);
+    }
+  } else {
+    // fromDateなしで登録 → 全週に適用
+    if (!localOverrides.weeklyDeleted) localOverrides.weeklyDeleted = [];
+    const existIdx = localOverrides.weeklyDeleted.findIndex(d => d.uid === t.uid && d.dayIdx === t._dayIdx);
+    const entry = {uid: t.uid, dayIdx: t._dayIdx, fromDate: null};
+    if (existIdx >= 0) localOverrides.weeklyDeleted[existIdx] = entry;
+    else localOverrides.weeklyDeleted.push(entry);
+    if (localOverrides.weeklyAdded) {
+      localOverrides.weeklyAdded = localOverrides.weeklyAdded.filter(a => a.uid !== t.uid);
+    }
+    // RAW_DATAの元タスクも全週非表示にするため各週overridesにhiddenを追加
+    // （fromDate:nullのweeklyDeletedで対応済み）
+  }
+  saveLocal(); closeDeleteConfirm(); render();
+  showToast('すべての予定を削除しました ✓');
 }
 
 function copyTask() {
