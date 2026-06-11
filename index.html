@@ -524,6 +524,25 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
     </div>
   </div>
 
+  <!-- 保存範囲選択モーダル -->
+  <div class="modal-bg" id="saveRangeModal" style="z-index:210;">
+    <div class="modal" style="width:340px;">
+      <div class="modal-hdr">
+        <span>変更を保存する</span>
+        <button class="modal-close" onclick="closeSaveRangeModal()">×</button>
+      </div>
+      <div class="modal-body" style="padding:20px 18px;">
+        <div id="saveRangeConfirmName" style="font-size:15px;font-weight:700;color:#1a2744;text-align:center;margin-bottom:18px;"></div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <button onclick="confirmSaveRange('once')" style="width:100%;background:white;border:2px solid var(--navy);color:var(--navy);border-radius:20px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;">今週だけ変更する</button>
+          <button onclick="confirmSaveRange('from')" style="width:100%;background:white;border:2px solid var(--navy);color:var(--navy);border-radius:20px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;">これ以降の予定を変更する</button>
+          <button onclick="confirmSaveRange('all')" style="width:100%;background:var(--navy);border:none;color:white;border-radius:20px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;">すべての予定を変更する</button>
+          <button onclick="closeSaveRangeModal()" style="width:100%;background:white;border:2px solid #ccc;color:#888;border-radius:20px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;">やめる</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- 繰り返し期間選択モーダル -->
   <div class="modal-bg" id="repeatRangeModal" style="z-index:210;">
     <div class="modal" style="width:min(380px,96vw);">
@@ -647,7 +666,7 @@ function getTasksForWeek() {
   const dates = getWeekDates();
   const wk = getWeekKey();
   const local = localOverrides[wk] || {added:[], hidden:{}};
-  const thisWeekMonday = getWeekKey();
+  const thisWeekMonday = getWeekKey(); // 'YYYY-MM-DD'形式の文字列
 
   // 曜日→日付マップ
   const dayToDate = {};
@@ -665,10 +684,14 @@ function getTasksForWeek() {
     }
   });
 
-  // weeklyDeleted: 今週以降削除されたタスク
+  // weeklyDeleted: 削除されたタスク
+  // fromDate=null → 全週削除 / fromDate指定 → その週以降のみ削除
   const weeklyDeletedSet = new Set();
   (localOverrides.weeklyDeleted || []).forEach(d => {
-    if (!d.fromDate || thisWeekMonday >= d.fromDate) {
+    const applies = d.fromDate === null || d.fromDate === undefined
+      ? true  // null = すべて削除
+      : thisWeekMonday >= d.fromDate; // 文字列比較: 'YYYY-MM-DD' >= 'YYYY-MM-DD'
+    if (applies) {
       weeklyDeletedSet.add(d.uid + '_' + d.dayIdx);
     }
   });
@@ -1001,6 +1024,8 @@ function closeDetail() {
   document.getElementById('detailModal').classList.remove('open');
 }
 
+let _saveTaskData = null; // 保存範囲選択モーダル用
+
 function saveTask() {
   const t = document.getElementById('detailModal')._task;
   if (!t) return;
@@ -1009,54 +1034,82 @@ function saveTask() {
   const newHash = document.getElementById('dHash').value;
   const newMemo = document.getElementById('dMemo').value;
   const newTime = parseInt(document.getElementById('dTime').value)||null;
-  const newColors = SUBJ_COLOR[newSubject] || ['#eee','#333'];
+
   if (t.display_type === 'weekly' && !t._isWeeklyMoved) {
-    // 毎週タスク → 今週以降すべて変更
-    if (!localOverrides.weeklyDeleted) localOverrides.weeklyDeleted = [];
-    const existIdx = localOverrides.weeklyDeleted.findIndex(
-      function(d) { return d.uid === t.uid && d.dayIdx === t._dayIdx; }
-    );
-    const entry = {uid: t.uid, dayIdx: t._dayIdx, fromDate: dateKey(currentMonday)};
-    if (existIdx >= 0) localOverrides.weeklyDeleted[existIdx] = entry;
-    else localOverrides.weeklyDeleted.push(entry);
-    if (!localOverrides.weeklyAdded) localOverrides.weeklyAdded = [];
-    localOverrides.weeklyAdded = localOverrides.weeklyAdded.filter(
-      function(a) { return !(a._origUid === t.uid && a._dayIdx === t._dayIdx); }
-    );
-    const newUid = 'edit_' + t.uid + '_' + Date.now();
-    localOverrides.weeklyAdded.push(Object.assign({}, t, {
-      uid: newUid, _origUid: t.uid,
-      subject: newSubject, unit_name: newUnit, hash: newHash,
-      note: newMemo, study_time: newTime, color: newColors[0],
-      display_type: 'weekly', fromDate: dateKey(currentMonday),
-      weekday_index: t._dayIdx
-    }));
+    // 毎週タスク → 保存範囲選択モーダルを開く
+    _saveTaskData = {t, newSubject, newUnit, newHash, newMemo, newTime};
+    closeDetail();
+    document.getElementById('saveRangeConfirmName').textContent = `「${newUnit || t.unit_name}」の変更をどの範囲で保存しますか？`;
+    document.getElementById('saveRangeModal').classList.add('open');
   } else {
-    // 今週だけタスク → その週のみ更新
+    // 今回だけタスク → 即保存
+    _doSaveTask(t, newSubject, newUnit, newHash, newMemo, newTime, 'once');
+    saveLocal(); closeDetail(); render();
+    showToast('変更を保存しました ✓');
+  }
+}
+
+function closeSaveRangeModal() {
+  document.getElementById('saveRangeModal').classList.remove('open');
+  _saveTaskData = null;
+}
+
+function confirmSaveRange(range) {
+  if (!_saveTaskData) return;
+  const {t, newSubject, newUnit, newHash, newMemo, newTime} = _saveTaskData;
+  _doSaveTask(t, newSubject, newUnit, newHash, newMemo, newTime, range);
+  saveLocal(); closeSaveRangeModal(); render();
+  showToast('変更を保存しました ✓');
+}
+
+function _doSaveTask(t, newSubject, newUnit, newHash, newMemo, newTime, range) {
+  const newColors = SUBJ_COLOR[newSubject] || ['#eee','#333'];
+
+  if (range === 'once') {
+    // 今週だけ変更
     const wk = getWeekKey();
     if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
     const lo = localOverrides[wk];
-    const idx = (lo.added||[]).findIndex(function(a) { return a.uid === t.uid; });
+    lo.hidden = lo.hidden || {};
+    lo.added = lo.added || [];
+    // 既にaddedにあれば更新、なければ元を非表示にして追加
+    const idx = lo.added.findIndex(a => a.uid === t.uid);
     if (idx >= 0) {
-      lo.added[idx].subject = newSubject;
-      lo.added[idx].unit_name = newUnit;
-      lo.added[idx].hash = newHash;
-      lo.added[idx].note = newMemo;
-      lo.added[idx].study_time = newTime;
-      lo.added[idx].color = newColors[0];
+      Object.assign(lo.added[idx], {subject:newSubject, unit_name:newUnit, hash:newHash, note:newMemo, study_time:newTime, color:newColors[0]});
     } else {
-      lo.hidden = lo.hidden || {};
-      lo.hidden[t.uid] = true;
-      if (!lo.added) lo.added = [];
+      if (t.display_type === 'weekly') lo.hidden[t.uid + '_' + t._dayIdx] = true;
+      else lo.hidden[t.uid] = true;
       lo.added.push(Object.assign({}, t, {
-        subject: newSubject, unit_name: newUnit, hash: newHash,
-        note: newMemo, study_time: newTime, color: newColors[0],
-        uid: t.uid+'_edit_'+Date.now()
+        subject:newSubject, unit_name:newUnit, hash:newHash,
+        note:newMemo, study_time:newTime, color:newColors[0],
+        uid: t.uid+'_edit_'+Date.now(), display_type:'one_time', repeat_key:null
       }));
     }
+  } else if (range === 'from') {
+    // これ以降変更（今週以降）
+    _doDeleteWeekly(t, dateKey(currentMonday));
+    if (!localOverrides.weeklyAdded) localOverrides.weeklyAdded = [];
+    const newUid = 'edit_' + t.uid + '_' + Date.now();
+    localOverrides.weeklyAdded.push(Object.assign({}, t, {
+      uid: newUid, _origUid: t._origUid || t.uid,
+      subject:newSubject, unit_name:newUnit, hash:newHash,
+      note:newMemo, study_time:newTime, color:newColors[0],
+      display_type:'weekly', fromDate:dateKey(currentMonday),
+      weekday_index:t._dayIdx
+    }));
+  } else if (range === 'all') {
+    // すべて変更（全期間）
+    _doDeleteWeekly(t, null);
+    if (!localOverrides.weeklyAdded) localOverrides.weeklyAdded = [];
+    const newUid = 'edit_all_' + t.uid + '_' + Date.now();
+    localOverrides.weeklyAdded.push(Object.assign({}, t, {
+      uid: newUid, _origUid: t._origUid || t.uid,
+      subject:newSubject, unit_name:newUnit, hash:newHash,
+      note:newMemo, study_time:newTime, color:newColors[0],
+      display_type:'weekly', fromDate: null,
+      weekday_index:t._dayIdx
+    }));
   }
-  saveLocal(); closeDetail(); render();
-  showToast('変更を保存しました ✓');
 }
 
 function showToast(msg, duration) {
@@ -1113,23 +1166,11 @@ function confirmDeleteOnce() {
 }
 
 // これ以降削除（今週以降）
+// これ以降削除（今週以降）
 function confirmDeleteFrom() {
   const t = _deleteTarget;
   if (!t) return;
-  if (t._isWeeklyMoved) {
-    if (localOverrides.weeklyMoves) {
-      localOverrides.weeklyMoves = localOverrides.weeklyMoves.filter(mv => mv.moveUid !== t.uid);
-    }
-  } else {
-    if (!localOverrides.weeklyDeleted) localOverrides.weeklyDeleted = [];
-    const existIdx = localOverrides.weeklyDeleted.findIndex(d => d.uid === t.uid && d.dayIdx === t._dayIdx);
-    const entry = {uid: t.uid, dayIdx: t._dayIdx, fromDate: dateKey(currentMonday)};
-    if (existIdx >= 0) localOverrides.weeklyDeleted[existIdx] = entry;
-    else localOverrides.weeklyDeleted.push(entry);
-    if (localOverrides.weeklyAdded) {
-      localOverrides.weeklyAdded = localOverrides.weeklyAdded.filter(a => a.uid !== t.uid);
-    }
-  }
+  _doDeleteWeekly(t, dateKey(currentMonday));
   saveLocal(); closeDeleteConfirm(); render();
   showToast('これ以降の予定を削除しました ✓');
 }
@@ -1138,25 +1179,38 @@ function confirmDeleteFrom() {
 function confirmDeleteAll() {
   const t = _deleteTarget;
   if (!t) return;
+  _doDeleteWeekly(t, null);
+  saveLocal(); closeDeleteConfirm(); render();
+  showToast('すべての予定を削除しました ✓');
+}
+
+// 毎週タスク削除の共通処理
+// fromDate: 文字列 → その週以降を削除 / null → 全週削除
+function _doDeleteWeekly(t, fromDate) {
   if (t._isWeeklyMoved) {
     if (localOverrides.weeklyMoves) {
       localOverrides.weeklyMoves = localOverrides.weeklyMoves.filter(mv => mv.moveUid !== t.uid);
     }
-  } else {
-    // fromDateなしで登録 → 全週に適用
-    if (!localOverrides.weeklyDeleted) localOverrides.weeklyDeleted = [];
-    const existIdx = localOverrides.weeklyDeleted.findIndex(d => d.uid === t.uid && d.dayIdx === t._dayIdx);
-    const entry = {uid: t.uid, dayIdx: t._dayIdx, fromDate: null};
-    if (existIdx >= 0) localOverrides.weeklyDeleted[existIdx] = entry;
-    else localOverrides.weeklyDeleted.push(entry);
-    if (localOverrides.weeklyAdded) {
-      localOverrides.weeklyAdded = localOverrides.weeklyAdded.filter(a => a.uid !== t.uid);
-    }
-    // RAW_DATAの元タスクも全週非表示にするため各週overridesにhiddenを追加
-    // （fromDate:nullのweeklyDeletedで対応済み）
+    return;
   }
-  saveLocal(); closeDeleteConfirm(); render();
-  showToast('すべての予定を削除しました ✓');
+  const origUid = t._origUid || t.uid;
+  if (!localOverrides.weeklyDeleted) localOverrides.weeklyDeleted = [];
+  // 同じuid+dayIdxのエントリを上書き
+  const existIdx = localOverrides.weeklyDeleted.findIndex(d => d.uid === origUid && d.dayIdx === t._dayIdx);
+  const entry = {uid: origUid, dayIdx: t._dayIdx, fromDate: fromDate};
+  if (existIdx >= 0) localOverrides.weeklyDeleted[existIdx] = entry;
+  else localOverrides.weeklyDeleted.push(entry);
+  // weeklyAddedの当該タスクにもtoDate/fromDateを設定して非表示化
+  if (localOverrides.weeklyAdded) {
+    localOverrides.weeklyAdded = localOverrides.weeklyAdded.map(a => {
+      if (a.uid !== t.uid && a._origUid !== origUid) return a;
+      if (fromDate === null) return null; // 全削除はnullで除去
+      // これ以降削除：toDateをfromDateの前日に設定
+      const fromDt = new Date(fromDate);
+      fromDt.setDate(fromDt.getDate() - 1);
+      return {...a, toDate: dateKey(fromDt)};
+    }).filter(Boolean);
+  }
 }
 
 function copyTask() {
