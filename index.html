@@ -452,13 +452,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
         <!-- 今週だけセクション -->
         <div id="addDateSection">
           <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">
-            <div style="flex:1;">
+            <div style="flex:2;">
               <label style="font-size:13px;color:#888;display:block;margin-bottom:3px;">日付</label>
               <div id="addDateDisplay" onclick="toggleAddCal()" style="border:1.5px solid #ccc;border-radius:8px;padding:10px 12px;font-size:15px;font-weight:700;color:#aaa;cursor:pointer;background:white;">選択してください</div>
             </div>
             <div style="flex:1;">
-              <label style="font-size:13px;color:#888;display:block;margin-bottom:3px;">曜日（自動）</label>
-              <div id="addWeekdayDisplay" style="border:1.5px solid #eee;border-radius:8px;padding:10px 12px;font-size:15px;font-weight:700;color:#888;background:#f8f8f8;">—</div>
+              <label style="font-size:13px;color:#888;display:block;margin-bottom:3px;">曜日</label>
+              <div id="addWeekdayDisplay" style="border:1.5px solid #eee;border-radius:8px;padding:10px 12px;font-size:15px;font-weight:700;color:#888;background:#f8f8f8;text-align:center;">—</div>
             </div>
           </div>
           <div id="addCalWrap" style="display:none;background:white;border:1.5px solid #ddd;border-radius:10px;padding:12px;margin-bottom:10px;box-shadow:0 2px 12px rgba(0,0,0,.1);">
@@ -536,20 +536,22 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 
         <!-- 共通：時間帯・種類・内容 -->
         <div style="height:1px;background:#f0f0f0;margin:4px -18px;"></div>
-        <div class="field"><label>時間帯</label>
-          <select id="aSlot">
-            <option value="plan">予定</option><option value="morning">朝</option>
-            <option value="am">午前</option><option value="pm">午後</option><option value="night">夜</option>
-          </select>
-        </div>
-        <div class="field"><label>予定の種類</label>
-          <select id="aSubject" onchange="updateSubjectColor()" style="font-weight:700;transition:background .2s,color .2s;">
-            <option value="算数">算数</option><option value="国語">国語</option>
-            <option value="理科">理科</option><option value="社会">社会</option>
-            <option value="学校の宿題">学校の宿題</option><option value="習い事">習い事</option>
-            <option value="予定">予定</option><option value="テスト">テスト</option>
-            <option value="祝日">祝日</option>
-          </select>
+        <div style="display:flex;gap:8px;">
+          <div class="field" style="flex:1;"><label>時間帯</label>
+            <select id="aSlot">
+              <option value="plan">予定</option><option value="morning">朝</option>
+              <option value="am">午前</option><option value="pm">午後</option><option value="night">夜</option>
+            </select>
+          </div>
+          <div class="field" style="flex:2;"><label>予定の種類</label>
+            <select id="aSubject" onchange="updateSubjectColor()" style="font-weight:700;transition:background .2s,color .2s;">
+              <option value="算数">算数</option><option value="国語">国語</option>
+              <option value="理科">理科</option><option value="社会">社会</option>
+              <option value="学校の宿題">学校の宿題</option><option value="習い事">習い事</option>
+              <option value="予定">予定</option><option value="テスト">テスト</option>
+              <option value="祝日">祝日</option>
+            </select>
+          </div>
         </div>
         <div class="field"><label>学習内容（表示名・7文字まで）</label><input id="aUnit" type="text" maxlength="7" placeholder="例：基礎力テスト" oninput="if(this.value.length>7)this.value=this.value.slice(0,7)"></div>
         <div class="field"><label># 単元番号（任意）</label><input id="aHash" type="text" placeholder="入れなくてもOK"></div>
@@ -2035,7 +2037,9 @@ function rFromPrev() { rFromCalYear-=(rFromCalMonth===0?1:0); rFromCalMonth=(rFr
 function rFromNext() { rFromCalYear+=(rFromCalMonth===11?1:0); rFromCalMonth=(rFromCalMonth+1)%12; renderRFromCal(); }
 function selectRFrom(str,d,m,y) {
   document.getElementById('rFromDate').value = str;
-  document.getElementById('rFromDisplay').textContent = m+'/'+d+'から';
+  const dtR = new Date(y,m-1,d);
+  const wiR = (dtR.getDay()+6)%7;
+  document.getElementById('rFromDisplay').textContent = m+'/'+d+'（'+DAYS_JP[wiR]+'）から';
   document.getElementById('rFromDisplay').style.color = '#1a2744';
   document.getElementById('rFromCalWrap').style.display = 'none';
   // 毎週の場合、選んだ日の曜日をデフォルト選択
@@ -2059,7 +2063,9 @@ function rToPrev() { rToCalYear-=(rToCalMonth===0?1:0); rToCalMonth=(rToCalMonth
 function rToNext() { rToCalYear+=(rToCalMonth===11?1:0); rToCalMonth=(rToCalMonth+1)%12; renderRToCal(); }
 function selectRTo(str,d,m,y) {
   document.getElementById('rToDate').value = str;
-  document.getElementById('rToDisplay').textContent = m+'/'+d+'まで';
+  const dtRT = new Date(y,m-1,d);
+  const wiRT = (dtRT.getDay()+6)%7;
+  document.getElementById('rToDisplay').textContent = m+'/'+d+'（'+DAYS_JP[wiRT]+'）まで';
   document.getElementById('rToDisplay').style.color = '#1a2744';
   document.getElementById('rToCalWrap').style.display = 'none';
 }
@@ -2163,7 +2169,7 @@ function _setAddDate(str) {
   const dayIdx=(dt.getDay()+6)%7;
   document.getElementById('addDateDisplay').textContent=mo+'/'+String(d).padStart(2,'0')+'/'+y;
   document.getElementById('addDateDisplay').style.color='#1a2744';
-  document.getElementById('addWeekdayDisplay').textContent=DAYS_JP[dayIdx]+'曜日';
+  document.getElementById('addWeekdayDisplay').textContent=DAYS_JP[dayIdx];
   document.getElementById('aWeekday').value=dayIdx;
 }
 function selectAddDate(str) {
@@ -2236,12 +2242,11 @@ function weeklyFromPrev() { weeklyFromCalYear-=(weeklyFromCalMonth===0?1:0); wee
 function weeklyFromNext() { weeklyFromCalYear+=(weeklyFromCalMonth===11?1:0); weeklyFromCalMonth=(weeklyFromCalMonth+1)%12; renderWeeklyFromCal(); }
 function selectWeeklyFrom(str,d,m,y) {
   document.getElementById('weeklyFromDate').value = str;
-  document.getElementById('weeklyFromDisplay').textContent = m+'/'+d+'から';
-  document.getElementById('weeklyFromDisplay').style.color = '#1a2744';
-  document.getElementById('weeklyFromCalWrap').style.display = 'none';
-  // 曜日を自動更新
   const dt = new Date(y,m-1,d);
   const wi = (dt.getDay()+6)%7;
+  document.getElementById('weeklyFromDisplay').textContent = m+'/'+d+'（'+DAYS_JP[wi]+'）から';
+  document.getElementById('weeklyFromDisplay').style.color = '#1a2744';
+  document.getElementById('weeklyFromCalWrap').style.display = 'none';
   document.getElementById('aWeekday').value = wi;
 }
 function selectWeeklyFromToday() {
@@ -2261,7 +2266,9 @@ function weeklyToPrev() { weeklyToCalYear-=(weeklyToCalMonth===0?1:0); weeklyToC
 function weeklyToNext() { weeklyToCalYear+=(weeklyToCalMonth===11?1:0); weeklyToCalMonth=(weeklyToCalMonth+1)%12; renderWeeklyToCal(); }
 function selectWeeklyTo(str,d,m,y) {
   document.getElementById('weeklyToDate').value = str;
-  document.getElementById('weeklyToDisplay').textContent = m+'/'+d+'まで';
+  const dt = new Date(y,m-1,d);
+  const wi = (dt.getDay()+6)%7;
+  document.getElementById('weeklyToDisplay').textContent = m+'/'+d+'（'+DAYS_JP[wi]+'）まで';
   document.getElementById('weeklyToDisplay').style.color = '#1a2744';
   document.getElementById('weeklyToCalWrap').style.display = 'none';
 }
