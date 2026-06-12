@@ -2127,22 +2127,24 @@ function openAdd(dayIdx, slotIdx, defaultDate) {
   document.getElementById('addModal').classList.add('open');
   setTimeout(() => {
     _setAddDate(str);
-    // まずsetAddTypeで今週だけモードに
     setAddType('once');
-    // 時間帯
     const slotEl = document.getElementById('aSlot');
     if (slotEl) slotEl.value = SLOTS[slotIdx] || 'pm';
-    // 算数をデフォルトにして水色を確実に適用
-    const sel = document.getElementById('aSubject');
-    if (sel) {
-      sel.value = '算数';
-      sel.style.cssText = 'font-weight:700;transition:background .2s,color .2s;background:#C1E8FB;color:#1a2744;border-color:#1a274455;';
-      // 学習内容もリセット
-      const unitEl = document.getElementById('aUnit');
-      if (unitEl) unitEl.value = '';
-    }
+    const unitEl = document.getElementById('aUnit');
+    if (unitEl) unitEl.value = '';
     const calWrap = document.getElementById('addCalWrap');
     if (calWrap) calWrap.style.display = 'none';
+    // 色の適用を一番最後に（他の処理で上書きされないよう）
+    setTimeout(() => {
+      const sel = document.getElementById('aSubject');
+      if (sel) {
+        sel.value = '算数';
+        sel.style.background = '#C1E8FB';
+        sel.style.color = '#1a2744';
+        sel.style.borderColor = '#1a274455';
+        sel.style.fontWeight = '700';
+      }
+    }, 50);
   }, 10);
 }
 function openAddModal() {
