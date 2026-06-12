@@ -899,12 +899,24 @@ function getTasksForWeek() {
   // 5. weeklyAdded（one_time→weeklyに変換されたタスク）
   (localOverrides.weeklyAdded || []).forEach(t => {
     if (t.fromDate && thisWeekMonday < t.fromDate) return;
-    // toDate チェック：その週の月曜がtoDateを超えていたらスキップ
+    // toDate チェック
     if (t.toDate) {
       const [ty,tm,td] = t.toDate.split('-').map(Number);
       const toDt = new Date(ty, tm-1, td); toDt.setHours(0,0,0,0);
       if (new Date(thisWeekMonday) > toDt) return;
     }
+
+    // 毎月（_rrKind:'monthly'）：その週の中に_monthDayが含まれる場合のみ表示
+    if (t._rrKind === 'monthly' && t._monthDay) {
+      const found = dates.findIndex(d => d.getDate() === t._monthDay);
+      if (found < 0) return; // その週に該当日がない
+      const wi2 = found;
+      if (allHidden[t.uid + '_' + wi2]) return;
+      if (weeklyDeletedSet.has(t.uid + '_' + wi2)) return;
+      result.push({...t, _dayIdx: wi2, _slotIdx: SLOT_IDX[t.slot] ?? 0, display_type: 'weekly'});
+      return;
+    }
+
     const wi = t.weekday_index;
     if (allHidden[t.uid + '_' + wi]) return;
     if (weeklyDeletedSet.has(t.uid + '_' + wi)) return;
@@ -2407,51 +2419,41 @@ function confirmAdd() {
       }
 
     } else if (kind === 'weekly') {
-      // 選択した曜日ごとに追加
+      // 毎週：weeklyAddedに登録、fromDateをいつからの週の月曜に設定
       const selectedWds = [...document.querySelectorAll('.r-wd')]
         .filter(el => el.getAttribute('data-active') === '1')
         .map(el => parseInt(el.getAttribute('data-wi')));
       if (selectedWds.length === 0) { alert('曜日を選んでください'); return; }
+      const fromMondayStr = dateKey(getMonday(new Date(fromDt)));
       selectedWds.forEach(wi => {
         const uid = 'new_weekly_'+Date.now()+'_'+wi;
         localOverrides.weeklyAdded.push({
           ...baseTask, uid, repeat_key: uid,
           weekday: DAYS_JP[wi], weekday_index: wi,
-          _dayIdx: wi, _slotIdx: SLOT_IDX[slot]||0
+          _dayIdx: wi, _slotIdx: SLOT_IDX[slot]||0,
+          _rrKind: 'weekly',
+          fromDate: fromMondayStr,
+          toDate: toStr || null
         });
       });
 
     } else if (kind === 'monthly') {
-      // 毎月：選択した日付ごとにone_timeカードを各週に追加
+      // 毎月：weeklyAddedに_monthDayで管理（くりかえす予定として扱う）
       const selectedDays = [...document.querySelectorAll('#rMonthdayGrid div')]
         .filter(el => el.getAttribute('data-active') === '1')
         .map(el => parseInt(el.getAttribute('data-day')));
       if (selectedDays.length === 0) { alert('日付を選んでください'); return; }
-      // fromからtoまで月ごとに該当日のカードをone_timeで生成
-      const endDt = toStr ? new Date(toStr) : addDays(new Date(fromDt), 365);
-      let scanDt = new Date(fromDt);
-      scanDt.setDate(1); // 月初から走査
-      while (scanDt <= endDt) {
-        const y = scanDt.getFullYear(), mo = scanDt.getMonth();
-        selectedDays.forEach(day => {
-          const daysInMo = new Date(y, mo+1, 0).getDate();
-          if (day > daysInMo) return;
-          const dt = new Date(y, mo, day); dt.setHours(0,0,0,0);
-          if (dt < fromDt || dt > endDt) return;
-          const wi = (dt.getDay()+6)%7;
-          const wk = dateKey(getMonday(dt));
-          if (!localOverrides[wk]) localOverrides[wk] = {added:[],hidden:{}};
-          const uid = 'new_monthly_'+y+String(mo+1).padStart(2,'0')+String(day).padStart(2,'0');
-          if (!localOverrides[wk].added.find(a => a.uid === uid)) {
-            localOverrides[wk].added.push({
-              ...baseTask, uid, repeat_key: null, display_type:'one_time',
-              weekday: DAYS_JP[wi], weekday_index: wi,
-              _dayIdx: wi, _slotIdx: SLOT_IDX[slot]||0
-            });
-          }
+      const fromMondayStr2 = dateKey(getMonday(new Date(fromDt)));
+      selectedDays.forEach(day => {
+        const uid = 'new_monthly_'+Date.now()+'_d'+day;
+        localOverrides.weeklyAdded.push({
+          ...baseTask, uid, repeat_key: uid,
+          _rrKind: 'monthly', _monthDay: day,
+          fromDate: fromMondayStr2,
+          toDate: toStr || null,
+          display_type: 'weekly'
         });
-        scanDt.setMonth(scanDt.getMonth()+1);
-      }
+      });
     }
 
     saveLocal(); closeAdd(); render();
