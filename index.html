@@ -913,6 +913,19 @@ function getTasksForWeek() {
       const wi2 = found;
       if (allHidden[t.uid + '_' + wi2]) return;
       if (weeklyDeletedSet.has(t.uid + '_' + wi2)) return;
+      // fromDateExact：開始日より前はスキップ
+      if (t._fromDateExact) {
+        const taskDt = new Date(dates[wi2]); taskDt.setHours(0,0,0,0);
+        const exactFrom = new Date(t._fromDateExact); exactFrom.setHours(0,0,0,0);
+        if (taskDt < exactFrom) return;
+      }
+      // toDate：終了日より後はスキップ
+      if (t.toDate) {
+        const taskDt = new Date(dates[wi2]); taskDt.setHours(0,0,0,0);
+        const [ty,tm,td] = t.toDate.split('-').map(Number);
+        const toDt = new Date(ty,tm-1,td); toDt.setHours(0,0,0,0);
+        if (taskDt > toDt) return;
+      }
       result.push({...t, _dayIdx: wi2, _slotIdx: SLOT_IDX[t.slot] ?? 0, display_type: 'weekly'});
       return;
     }
@@ -920,12 +933,20 @@ function getTasksForWeek() {
     const wi = t.weekday_index;
     if (allHidden[t.uid + '_' + wi]) return;
     if (weeklyDeletedSet.has(t.uid + '_' + wi)) return;
-    // fromDateが実際の「いつから」日付の場合、その週内でも日付チェック
+    // fromDateExact：その週内でも実際の開始日より前はスキップ
     if (t._fromDateExact) {
-      const taskDt = addDays(dates[0], wi); // その週のwi曜日の日付
+      const taskDt = addDays(dates[0], wi);
       taskDt.setHours(0,0,0,0);
       const exactFrom = new Date(t._fromDateExact); exactFrom.setHours(0,0,0,0);
       if (taskDt < exactFrom) return;
+    }
+    // toDate：実際の終了日より後はスキップ（週単位チェックに加えて日単位チェック）
+    if (t.toDate) {
+      const taskDt2 = addDays(dates[0], wi);
+      taskDt2.setHours(0,0,0,0);
+      const [ty2,tm2,td2] = t.toDate.split('-').map(Number);
+      const toDt2 = new Date(ty2,tm2-1,td2); toDt2.setHours(0,0,0,0);
+      if (taskDt2 > toDt2) return;
     }
     result.push({...t, _dayIdx: wi, _slotIdx: SLOT_IDX[t.slot] ?? 0, display_type: 'weekly'});
   });
@@ -2415,13 +2436,17 @@ function confirmAdd() {
     if (kind === 'daily') {
       // 毎日 → 7曜日分をweeklyAddedに登録（くりかえす予定方式）
       if (!localOverrides.weeklyAdded) localOverrides.weeklyAdded = [];
+      const fromMondayStrD = dateKey(getMonday(new Date(fromDt)));
       for (let wi = 0; wi < 7; wi++) {
         const uid = 'new_daily_'+Date.now()+'_'+wi;
         localOverrides.weeklyAdded.push({
           ...baseTask, uid, repeat_key: uid,
           weekday: DAYS_JP[wi], weekday_index: wi,
           _dayIdx: wi, _slotIdx: SLOT_IDX[slot]||0,
-          _rrKind: 'daily'
+          _rrKind: 'daily',
+          fromDate: fromMondayStrD,
+          _fromDateExact: fromStr,
+          toDate: toStr || null
         });
       }
 
@@ -2459,6 +2484,7 @@ function confirmAdd() {
           ...baseTask, uid, repeat_key: uid,
           _rrKind: 'monthly', _monthDay: day,
           fromDate: fromMondayStr2,
+          _fromDateExact: fromStr,
           toDate: toStr || null,
           display_type: 'weekly'
         });
