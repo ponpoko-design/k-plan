@@ -920,6 +920,13 @@ function getTasksForWeek() {
     const wi = t.weekday_index;
     if (allHidden[t.uid + '_' + wi]) return;
     if (weeklyDeletedSet.has(t.uid + '_' + wi)) return;
+    // fromDateが実際の「いつから」日付の場合、その週内でも日付チェック
+    if (t._fromDateExact) {
+      const taskDt = addDays(dates[0], wi); // その週のwi曜日の日付
+      taskDt.setHours(0,0,0,0);
+      const exactFrom = new Date(t._fromDateExact); exactFrom.setHours(0,0,0,0);
+      if (taskDt < exactFrom) return;
+    }
     result.push({...t, _dayIdx: wi, _slotIdx: SLOT_IDX[t.slot] ?? 0, display_type: 'weekly'});
   });
 
@@ -2425,6 +2432,7 @@ function confirmAdd() {
         .map(el => parseInt(el.getAttribute('data-wi')));
       if (selectedWds.length === 0) { alert('曜日を選んでください'); return; }
       const fromMondayStr = dateKey(getMonday(new Date(fromDt)));
+      const fromExact = fromStr; // 実際のいつからの日付
       selectedWds.forEach(wi => {
         const uid = 'new_weekly_'+Date.now()+'_'+wi;
         localOverrides.weeklyAdded.push({
@@ -2433,6 +2441,7 @@ function confirmAdd() {
           _dayIdx: wi, _slotIdx: SLOT_IDX[slot]||0,
           _rrKind: 'weekly',
           fromDate: fromMondayStr,
+          _fromDateExact: fromExact,
           toDate: toStr || null
         });
       });
