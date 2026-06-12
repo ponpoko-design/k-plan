@@ -2271,8 +2271,12 @@ function updateSubjectColor() {
   sel.style.borderColor = colors[1] + '55';
   // 教科別デフォルト学習内容
   const defaults = {'学校の宿題':'学校の宿題', '予定':'母出社', 'テスト':'グノレブ', '祝日':'祝日'};
-  // 祝日・予定・テストは時間帯を「予定」にデフォルト設定
-  const slotDefaults = {'祝日':'plan', '予定':'plan', 'テスト':'plan'};
+  // 時間帯デフォルト設定
+  const slotDefaults = {
+    '祝日':'plan', '予定':'plan', 'テスト':'plan',
+    '算数':'pm', '国語':'pm', '理科':'pm', '社会':'pm',
+    '学校の宿題':'pm', '習い事':'pm'
+  };
   if (slotDefaults[subj]) document.getElementById('aSlot').value = slotDefaults[subj];
   if (defaults[subj]) {
     document.getElementById('aUnit').value = defaults[subj];
