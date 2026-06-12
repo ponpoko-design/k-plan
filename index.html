@@ -1591,13 +1591,13 @@ function renderCopyCal() {
   const y=copyCalYear, mo=copyCalMonth;
   const firstDay = new Date(y,mo,1).getDay(); // 0=Sun
   const daysInMonth = new Date(y,mo+1,0).getDate();
-  const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const monthNames=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
   // 月曜始まりに変換
   const startOffset = (firstDay+6)%7;
   const today = new Date(); today.setHours(0,0,0,0);
   const selectedStr = document.getElementById('copyTargetDate').getAttribute('data-selected')||'';
   let grid = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;">';
-  ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(d=>{
+  ['月','火','水','木','金','土','日'].forEach(d=>{
     grid+=`<div style="font-size:11px;color:#888;padding:4px 0;">${d}</div>`;
   });
   for(let i=0;i<startOffset;i++) grid+='<div></div>';
@@ -2128,7 +2128,14 @@ function openAdd(dayIdx, slotIdx, defaultDate) {
     document.getElementById('aSlot').value = SLOTS[slotIdx] || 'pm';
     setAddType('once');
     const sel = document.getElementById('aSubject');
-    if (sel) { sel.value = '算数'; updateSubjectColor(); }
+    if (sel) {
+      sel.value = '算数';
+      // 算数のデフォルト色（水色）を直接適用
+      sel.style.background = '#C1E8FB';
+      sel.style.color = '#1a2744';
+      sel.style.borderColor = '#1a274455';
+      updateSubjectColor();
+    }
     const calWrap = document.getElementById('addCalWrap');
     if (calWrap) calWrap.style.display = 'none';
   }, 0);
@@ -2149,7 +2156,15 @@ function toggleAddDate() { /* 旧関数・互換性のため残す */ }
 function toggleAddCal() {
   const wrap = document.getElementById('addCalWrap');
   if (wrap.style.display==='none') {
-    addCalYear=new Date().getFullYear(); addCalMonth=new Date().getMonth();
+    // 選択済み日付があればその月、なければ今見ている週の水曜日の月
+    const selStr = document.getElementById('addSelectedDate').value;
+    if (selStr) {
+      const [y,m] = selStr.split('-').map(Number);
+      addCalYear = y; addCalMonth = m - 1;
+    } else {
+      const wed = addDays(currentMonday, 2);
+      addCalYear = wed.getFullYear(); addCalMonth = wed.getMonth();
+    }
     renderAddCal(); wrap.style.display='block';
   } else { wrap.style.display='none'; }
 }
@@ -2157,7 +2172,7 @@ function renderAddCal() {
   const y=addCalYear, mo=addCalMonth;
   const firstDay=new Date(y,mo,1).getDay();
   const daysInMonth=new Date(y,mo+1,0).getDate();
-  const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const monthNames=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
   const startOffset=(firstDay+6)%7;
   const today=new Date(); today.setHours(0,0,0,0);
   const selectedStr=document.getElementById('addSelectedDate').value||'';
