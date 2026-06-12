@@ -1314,21 +1314,14 @@ function saveDetailRepeatSettings() {
   const baseTask = { ...t, display_type:'weekly', fromDate: fromDateStr, toDate: toStr, order: t.order||99, _rrKind: _detailRRKind };
 
   if (_detailRRKind === 'daily') {
-    const endDt3 = toStr ? new Date(toStr) : addDays(new Date(fromDt), 365);
-    let scanDt3 = new Date(fromDt);
-    while (scanDt3 <= endDt3) {
-      const wi3 = (scanDt3.getDay()+6)%7;
-      const wkk3 = dateKey(getMonday(new Date(scanDt3)));
-      if (!localOverrides[wkk3]) localOverrides[wkk3] = {added:[],hidden:{}};
-      const uid3 = 'drr_daily_'+scanDt3.toISOString().slice(0,10);
-      if (!localOverrides[wkk3].added.find(a => a.uid === uid3)) {
-        localOverrides[wkk3].added.push({
-          ...t, uid:uid3, display_type:'one_time', repeat_key:null,
-          weekday:DAYS_JP[wi3], weekday_index:wi3, _dayIdx:wi3,
-          fromDate:null, toDate:null
-        });
-      }
-      scanDt3 = addDays(scanDt3, 1);
+    if (!localOverrides.weeklyAdded) localOverrides.weeklyAdded = [];
+    for (let wi = 0; wi < 7; wi++) {
+      const uid = 'drr_daily_'+Date.now()+'_'+wi;
+      localOverrides.weeklyAdded.push({
+        ...baseTask, uid, repeat_key: uid,
+        weekday: DAYS_JP[wi], weekday_index: wi,
+        _dayIdx: wi, _rrKind: 'daily'
+      });
     }
   } else if (_detailRRKind === 'weekly') {
     const selectedWds = [...document.querySelectorAll('.d-rr-wd')]
@@ -1827,21 +1820,14 @@ function confirmRepeatRange() {
   const baseTask = { ...t, display_type:'weekly', fromDate: fromDateStr, toDate: toStr, order: t.order||99, _rrKind: _rrKind };
 
   if (_rrKind === 'daily') {
-    const endDt2 = toStr ? new Date(toStr) : addDays(new Date(fromDt), 365);
-    let scanDt2 = new Date(fromDt);
-    while (scanDt2 <= endDt2) {
-      const wi = (scanDt2.getDay()+6)%7;
-      const wkk = dateKey(getMonday(new Date(scanDt2)));
-      if (!localOverrides[wkk]) localOverrides[wkk] = {added:[],hidden:{}};
-      const uid = 'rr_daily_'+scanDt2.toISOString().slice(0,10);
-      if (!localOverrides[wkk].added.find(a => a.uid === uid)) {
-        localOverrides[wkk].added.push({
-          ...t, uid, display_type:'one_time', repeat_key:null,
-          weekday:DAYS_JP[wi], weekday_index:wi, _dayIdx:wi,
-          slot: t.slot, _slotIdx: SLOT_IDX[t.slot]||0
-        });
-      }
-      scanDt2 = addDays(scanDt2, 1);
+    if (!localOverrides.weeklyAdded) localOverrides.weeklyAdded = [];
+    for (let wi = 0; wi < 7; wi++) {
+      const uid = 'rr_daily_'+Date.now()+'_'+wi;
+      localOverrides.weeklyAdded.push({
+        ...baseTask, uid, repeat_key: uid,
+        weekday: DAYS_JP[wi], weekday_index: wi,
+        _dayIdx: wi, _rrKind: 'daily'
+      });
     }
   } else if (_rrKind === 'weekly') {
     const selectedWds = [...document.querySelectorAll('.rr-wd')]
@@ -2353,23 +2339,16 @@ function confirmAdd() {
     };
 
     if (kind === 'daily') {
-      // 毎日 → fromからtoまで1日ずつone_timeカードを生成
-      const endDtD = toStr ? new Date(toStr) : addDays(new Date(fromDt), 365);
-      let scanDtD = new Date(fromDt);
-      while (scanDtD <= endDtD) {
-        const wiD = (scanDtD.getDay()+6)%7;
-        const wkkD = dateKey(getMonday(new Date(scanDtD)));
-        if (!localOverrides[wkkD]) localOverrides[wkkD] = {added:[],hidden:{}};
-        const uidD = 'new_daily_'+scanDtD.toISOString().slice(0,10);
-        if (!localOverrides[wkkD].added.find(a => a.uid === uidD)) {
-          localOverrides[wkkD].added.push({
-            color:colors[0], slot, subject:subj, unit_name:unit, note:memo, study_time:st,
-            hash, is_hidden:'no', order:99, display_type:'one_time', repeat_key:null,
-            uid:uidD, weekday:DAYS_JP[wiD], weekday_index:wiD,
-            _dayIdx:wiD, _slotIdx:SLOT_IDX[slot]||0
-          });
-        }
-        scanDtD = addDays(scanDtD, 1);
+      // 毎日 → 7曜日分をweeklyAddedに登録（くりかえす予定方式）
+      if (!localOverrides.weeklyAdded) localOverrides.weeklyAdded = [];
+      for (let wi = 0; wi < 7; wi++) {
+        const uid = 'new_daily_'+Date.now()+'_'+wi;
+        localOverrides.weeklyAdded.push({
+          ...baseTask, uid, repeat_key: uid,
+          weekday: DAYS_JP[wi], weekday_index: wi,
+          _dayIdx: wi, _slotIdx: SLOT_IDX[slot]||0,
+          _rrKind: 'daily'
+        });
       }
 
     } else if (kind === 'weekly') {
