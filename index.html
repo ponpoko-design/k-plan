@@ -2085,7 +2085,7 @@ function openAdd(dayIdx, slotIdx, defaultDate) {
   document.getElementById('addModal').classList.add('open');
   setTimeout(() => {
     _setAddDate(str);
-    document.getElementById('aSlot').value = SLOTS[slotIdx] || 'night';
+    document.getElementById('aSlot').value = SLOTS[slotIdx] || 'pm';
     setAddType('once');
     const sel = document.getElementById('aSubject');
     if (sel) { sel.value = '算数'; updateSubjectColor(); }
