@@ -398,6 +398,34 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
             <div class="d-rr-wd" data-wi="5" onclick="toggleDRRWd(this)" style="flex:1;aspect-ratio:1;border-radius:50%;border:2px solid #ddd;background:white;font-size:12px;font-weight:700;color:#378add;cursor:pointer;display:flex;align-items:center;justify-content:center;">土</div>
             <div class="d-rr-wd" data-wi="6" onclick="toggleDRRWd(this)" style="flex:1;aspect-ratio:1;border-radius:50%;border:2px solid #ddd;background:white;font-size:12px;font-weight:700;color:#e24b4a;cursor:pointer;display:flex;align-items:center;justify-content:center;">日</div>
           </div>
+          <!-- 期間 -->
+          <div style="display:flex;gap:8px;margin-bottom:8px;">
+            <div style="flex:1;">
+              <div style="font-size:11px;color:#888;margin-bottom:3px;">いつから</div>
+              <div id="dRrFromDisplay" onclick="toggleDRRFromCal()" style="border:1.5px solid #ccc;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:700;color:#aaa;cursor:pointer;background:white;">設定なし</div>
+              <input type="hidden" id="dRrFromDate">
+            </div>
+            <div style="flex:1;">
+              <div style="font-size:11px;color:#888;margin-bottom:3px;">いつまで</div>
+              <div id="dRrToDisplay" onclick="toggleDRRToCal()" style="border:1.5px solid #ccc;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:700;color:#aaa;cursor:pointer;background:white;">設定なし</div>
+              <input type="hidden" id="dRrToDate">
+            </div>
+          </div>
+          <div id="dRrFromCalWrap" style="display:none;background:white;border:1.5px solid #ddd;border-radius:10px;padding:10px;margin-bottom:8px;box-shadow:0 2px 12px rgba(0,0,0,.1);">
+            <div id="dRrFromCalGrid"></div>
+            <div style="display:flex;justify-content:space-around;margin-top:6px;border-top:1px solid #eee;padding-top:6px;">
+              <span onclick="selectDRRFrom('{{today}}')" style="font-size:11px;color:#378add;cursor:pointer;" id="dRrFromTodayBtn">▶ Today</span>
+              <span onclick="clearDRRFrom()" style="font-size:11px;color:#e24b4a;cursor:pointer;">— クリア</span>
+              <span onclick="document.getElementById('dRrFromCalWrap').style.display='none'" style="font-size:11px;color:#888;cursor:pointer;">× 閉じる</span>
+            </div>
+          </div>
+          <div id="dRrToCalWrap" style="display:none;background:white;border:1.5px solid #ddd;border-radius:10px;padding:10px;margin-bottom:8px;box-shadow:0 2px 12px rgba(0,0,0,.1);">
+            <div id="dRrToCalGrid"></div>
+            <div style="display:flex;justify-content:space-around;margin-top:6px;border-top:1px solid #eee;padding-top:6px;">
+              <span onclick="clearDRRTo()" style="font-size:11px;color:#e24b4a;cursor:pointer;">— クリア</span>
+              <span onclick="document.getElementById('dRrToCalWrap').style.display='none'" style="font-size:11px;color:#888;cursor:pointer;">× 閉じる</span>
+            </div>
+          </div>
           <!-- 保存ボタン -->
           <button onclick="saveDetailRepeatSettings()" style="width:100%;background:var(--navy);border:none;color:white;border-radius:20px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">繰り返し設定を変更して保存</button>
         </div>
@@ -1128,6 +1156,43 @@ function openDetail(t) {
         el.style.color = wi===5?'#378add':wi===6?'#e24b4a':'#888';
       }
     });
+
+    // fromDate / toDate の表示
+    const fromStr = t.fromDate || null;
+    const toStr = t.toDate || null;
+    const fromDisp = document.getElementById('dRrFromDisplay');
+    const toDisp = document.getElementById('dRrToDisplay');
+    const fromInp = document.getElementById('dRrFromDate');
+    const toInp = document.getElementById('dRrToDate');
+    if (fromDisp && fromInp) {
+      if (fromStr) {
+        const [fy,fm,fd] = fromStr.split('-').map(Number);
+        fromDisp.textContent = fm+'/'+fd+'から';
+        fromDisp.style.color = '#1a2744';
+        fromInp.value = fromStr;
+      } else {
+        fromDisp.textContent = '設定なし';
+        fromDisp.style.color = '#aaa';
+        fromInp.value = '';
+      }
+    }
+    if (toDisp && toInp) {
+      if (toStr) {
+        const [ty2,tm2,td2] = toStr.split('-').map(Number);
+        toDisp.textContent = tm2+'/'+td2+'まで';
+        toDisp.style.color = '#1a2744';
+        toInp.value = toStr;
+      } else {
+        toDisp.textContent = '設定なし';
+        toDisp.style.color = '#aaa';
+        toInp.value = '';
+      }
+    }
+    const fcw = document.getElementById('dRrFromCalWrap');
+    const tcw = document.getElementById('dRrToCalWrap');
+    if (fcw) fcw.style.display = 'none';
+    if (tcw) tcw.style.display = 'none';
+
   } else {
     infoPanel.style.display = 'none';
   }
@@ -1161,23 +1226,86 @@ function toggleDRRWd(el) {
   }
 }
 
+// ===== 詳細モーダル 繰り返し期間カレンダー =====
+let dRrFromCalY, dRrFromCalM, dRrToCalY, dRrToCalM;
+
+function toggleDRRFromCal() {
+  const wrap = document.getElementById('dRrFromCalWrap');
+  document.getElementById('dRrToCalWrap').style.display = 'none';
+  if (wrap.style.display === 'none') {
+    const now = new Date(); dRrFromCalY = now.getFullYear(); dRrFromCalM = now.getMonth();
+    _renderWeeklyCal('dRrFromCalGrid', document.getElementById('dRrFromDate').value, 'selectDRRFromDate', 'dRrFromPrev', 'dRrFromNext', dRrFromCalY, dRrFromCalM);
+    wrap.style.display = 'block';
+  } else { wrap.style.display = 'none'; }
+}
+function dRrFromPrev() { dRrFromCalY-=(dRrFromCalM===0?1:0); dRrFromCalM=(dRrFromCalM+11)%12; _renderWeeklyCal('dRrFromCalGrid', document.getElementById('dRrFromDate').value, 'selectDRRFromDate', 'dRrFromPrev', 'dRrFromNext', dRrFromCalY, dRrFromCalM); }
+function dRrFromNext() { dRrFromCalY+=(dRrFromCalM===11?1:0); dRrFromCalM=(dRrFromCalM+1)%12; _renderWeeklyCal('dRrFromCalGrid', document.getElementById('dRrFromDate').value, 'selectDRRFromDate', 'dRrFromPrev', 'dRrFromNext', dRrFromCalY, dRrFromCalM); }
+function selectDRRFromDate(str,d,m,y) {
+  document.getElementById('dRrFromDate').value = str;
+  document.getElementById('dRrFromDisplay').textContent = m+'/'+d+'から';
+  document.getElementById('dRrFromDisplay').style.color = '#1a2744';
+  document.getElementById('dRrFromCalWrap').style.display = 'none';
+}
+function selectDRRFrom(str) {
+  const now = getNowJST();
+  selectDRRFromDate(str, now.getUTCDate(), now.getUTCMonth()+1, now.getUTCFullYear());
+}
+function clearDRRFrom() {
+  document.getElementById('dRrFromDate').value = '';
+  document.getElementById('dRrFromDisplay').textContent = '設定なし';
+  document.getElementById('dRrFromDisplay').style.color = '#aaa';
+  document.getElementById('dRrFromCalWrap').style.display = 'none';
+}
+
+function toggleDRRToCal() {
+  const wrap = document.getElementById('dRrToCalWrap');
+  document.getElementById('dRrFromCalWrap').style.display = 'none';
+  if (wrap.style.display === 'none') {
+    const now = new Date(); dRrToCalY = now.getFullYear(); dRrToCalM = now.getMonth();
+    _renderWeeklyCal('dRrToCalGrid', document.getElementById('dRrToDate').value, 'selectDRRToDate', 'dRrToPrev', 'dRrToNext', dRrToCalY, dRrToCalM);
+    wrap.style.display = 'block';
+  } else { wrap.style.display = 'none'; }
+}
+function dRrToPrev() { dRrToCalY-=(dRrToCalM===0?1:0); dRrToCalM=(dRrToCalM+11)%12; _renderWeeklyCal('dRrToCalGrid', document.getElementById('dRrToDate').value, 'selectDRRToDate', 'dRrToPrev', 'dRrToNext', dRrToCalY, dRrToCalM); }
+function dRrToNext() { dRrToCalY+=(dRrToCalM===11?1:0); dRrToCalM=(dRrToCalM+1)%12; _renderWeeklyCal('dRrToCalGrid', document.getElementById('dRrToDate').value, 'selectDRRToDate', 'dRrToPrev', 'dRrToNext', dRrToCalY, dRrToCalM); }
+function selectDRRToDate(str,d,m,y) {
+  document.getElementById('dRrToDate').value = str;
+  document.getElementById('dRrToDisplay').textContent = m+'/'+d+'まで';
+  document.getElementById('dRrToDisplay').style.color = '#1a2744';
+  document.getElementById('dRrToCalWrap').style.display = 'none';
+}
+function clearDRRTo() {
+  document.getElementById('dRrToDate').value = '';
+  document.getElementById('dRrToDisplay').textContent = '設定なし';
+  document.getElementById('dRrToDisplay').style.color = '#aaa';
+  document.getElementById('dRrToCalWrap').style.display = 'none';
+}
+
 function saveDetailRepeatSettings() {
   const t = document.getElementById('detailModal')._task;
   if (!t) return;
-  // 現在の毎週設定を削除
+
+  const fromStr = document.getElementById('dRrFromDate').value || null;
+  const toStr = document.getElementById('dRrToDate').value || null;
+  const fromDt = fromStr ? new Date(fromStr) : getTodayJST();
+  const fromMonday = getMonday(new Date(fromDt));
+  const fromDateStr = fromStr ? dateKey(fromMonday) : null;
+
+  // 現在の設定を削除（今週以降）
   if (!localOverrides.weeklyDeleted) localOverrides.weeklyDeleted = [];
-  localOverrides.weeklyDeleted.push({uid: t.uid, dayIdx: t._dayIdx, fromDate: null});
+  const existDelIdx = localOverrides.weeklyDeleted.findIndex(d => d.uid === t.uid && d.dayIdx === t._dayIdx);
+  const delEntry = { uid: t.uid, dayIdx: t._dayIdx, fromDate: fromDateStr };
+  if (existDelIdx >= 0) localOverrides.weeklyDeleted[existDelIdx] = delEntry;
+  else localOverrides.weeklyDeleted.push(delEntry);
+
   if (localOverrides.weeklyAdded) {
     localOverrides.weeklyAdded = localOverrides.weeklyAdded.filter(a => a.uid !== t.uid);
   }
 
-  // 新しい設定で再登録
-  const fromMonday = getMonday(getTodayJST());
-  const fromDateStr = dateKey(fromMonday);
-  const baseTask = { ...t, display_type:'weekly', fromDate: fromDateStr, toDate: null, order: t.order||99 };
+  if (!localOverrides.weeklyAdded) localOverrides.weeklyAdded = [];
+  const baseTask = { ...t, display_type:'weekly', fromDate: fromDateStr, toDate: toStr, order: t.order||99 };
 
   if (_detailRRKind === 'daily') {
-    if (!localOverrides.weeklyAdded) localOverrides.weeklyAdded = [];
     for (let wi = 0; wi < 7; wi++) {
       const uid = 'drr_daily_'+Date.now()+'_'+wi;
       localOverrides.weeklyAdded.push({ ...baseTask, uid, repeat_key:uid, weekday:DAYS_JP[wi], weekday_index:wi, _dayIdx:wi });
@@ -1187,11 +1315,34 @@ function saveDetailRepeatSettings() {
       .filter(el => el.getAttribute('data-active')==='1')
       .map(el => parseInt(el.getAttribute('data-wi')));
     if (selectedWds.length === 0) { alert('曜日を選んでください'); return; }
-    if (!localOverrides.weeklyAdded) localOverrides.weeklyAdded = [];
     selectedWds.forEach(wi => {
       const uid = 'drr_weekly_'+Date.now()+'_'+wi;
       localOverrides.weeklyAdded.push({ ...baseTask, uid, repeat_key:uid, weekday:DAYS_JP[wi], weekday_index:wi, _dayIdx:wi });
     });
+  } else if (_detailRRKind === 'monthly') {
+    const selectedDays = [...document.querySelectorAll('#rrMonthdayGrid div')]
+      .filter(el => el.getAttribute('data-active')==='1')
+      .map(el => parseInt(el.getAttribute('data-day')));
+    if (selectedDays.length === 0) { alert('日付を選んでください'); return; }
+    const endDt = toStr ? new Date(toStr) : addDays(new Date(fromDt), 365);
+    let scanDt = new Date(fromDt); scanDt.setDate(1);
+    while (scanDt <= endDt) {
+      const y = scanDt.getFullYear(), mo = scanDt.getMonth();
+      selectedDays.forEach(day => {
+        const daysInMo = new Date(y,mo+1,0).getDate();
+        if (day > daysInMo) return;
+        const dt = new Date(y,mo,day); dt.setHours(0,0,0,0);
+        if (dt < fromDt || dt > endDt) return;
+        const wi = (dt.getDay()+6)%7;
+        const wkk = dateKey(getMonday(dt));
+        if (!localOverrides[wkk]) localOverrides[wkk] = {added:[],hidden:{}};
+        const uid = 'drr_mo_'+y+String(mo+1).padStart(2,'0')+String(day).padStart(2,'0');
+        if (!localOverrides[wkk].added.find(a => a.uid===uid)) {
+          localOverrides[wkk].added.push({ ...t, uid, display_type:'one_time', repeat_key:null, weekday:DAYS_JP[wi], weekday_index:wi, _dayIdx:wi });
+        }
+      });
+      scanDt.setMonth(scanDt.getMonth()+1);
+    }
   }
 
   saveLocal(); closeDetail(); render();
