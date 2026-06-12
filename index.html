@@ -2643,7 +2643,7 @@ function renderPieChart(canvasId, legendId, data) {
       <span style="font-size:10px;font-weight:700;color:#888;font-family:'Inter',sans-serif;flex-shrink:0;margin-left:auto;">${pct}%</span>
     </div>`;
   });
-  document.getElementById(legendId).innerHTML=legend;
+  if (legendId) document.getElementById(legendId).innerHTML=legend;
 }
 
 function showStats() {
@@ -2712,18 +2712,16 @@ function showStats() {
   const thisMonthMain = filterMainSubj(thisMonthData);
 
   // 2つの円グラフを横並びで表示（できるだけ大きく）
-  function makeDualPieSection(c1, l1, c2, l2, title1, title2) {
-    const sz = sm ? 130 : 180;
-    return `<div style="display:flex;gap:${sm?10:16}px;margin-top:8px;align-items:flex-start;">
+  function makeDualPieSection(c1, c2, title1, title2) {
+    const sz = sm ? 140 : 190;
+    return `<div style="display:flex;gap:${sm?8:12}px;margin-top:8px;align-items:flex-start;">
       <div style="flex:1;display:flex;flex-direction:column;align-items:center;">
         <div style="font-size:11px;color:#888;font-weight:700;margin-bottom:4px;">${title1}</div>
-        <canvas id="${c1}" width="${sz}" height="${sz}" style="width:${sz}px;height:${sz}px;"></canvas>
-        <div id="${l1}" style="width:100%;margin-top:6px;"></div>
+        <canvas id="${c1}" width="${sz}" height="${sz}" style="width:${sz}px;height:${sz}px;max-width:100%;"></canvas>
       </div>
       <div style="flex:1;display:flex;flex-direction:column;align-items:center;">
         <div style="font-size:11px;color:#888;font-weight:700;margin-bottom:4px;">${title2}</div>
-        <canvas id="${c2}" width="${sz}" height="${sz}" style="width:${sz}px;height:${sz}px;"></canvas>
-        <div id="${l2}" style="width:100%;margin-top:6px;"></div>
+        <canvas id="${c2}" width="${sz}" height="${sz}" style="width:${sz}px;height:${sz}px;max-width:100%;"></canvas>
       </div>
     </div>`;
   }
@@ -2731,14 +2729,18 @@ function showStats() {
   // 週集計HTML
   let weekHtml = `<div style="font-size:${sm?13:15}px;font-weight:700;color:#1a2744;margin-bottom:10px;">今週の集計</div>`;
   weekHtml += makeSummaryBar('今週', thisWeekTotal, lastWeekTotal);
-  weekHtml += `<div style="font-size:12px;color:#888;margin:8px 0 4px;font-weight:500;">今週の割合</div>`;
-  weekHtml += makeDualPieSection('pieChart','pieLegend','pieChartMain','pieLegendMain','全体','4教科のみ');
+  weekHtml += `<div style="font-size:12px;color:#888;margin-bottom:6px;font-weight:500;">今週の学習時間</div>`;
+  weekHtml += renderBarChart(null, thisWeek, null);
+  weekHtml += `<div style="font-size:12px;color:#888;margin:10px 0 4px;font-weight:500;">今週の割合</div>`;
+  weekHtml += makeDualPieSection('pieChart','pieChartMain','全体','4教科のみ');
 
   // 月集計HTML
   let monthHtml = `<div style="font-size:${sm?13:15}px;font-weight:700;color:#1a2744;margin-bottom:10px;">${monthNames[thisMonth-1]}の集計</div>`;
   monthHtml += makeSummaryBar('今月', thisMonthTotal, lastMonthTotal);
-  monthHtml += `<div style="font-size:12px;color:#888;margin:8px 0 4px;font-weight:500;">今月の割合</div>`;
-  monthHtml += makeDualPieSection('pieChartMonth','pieLegendMonth','pieChartMonthMain','pieLegendMonthMain','全体','4教科のみ');
+  monthHtml += `<div style="font-size:12px;color:#888;margin-bottom:6px;font-weight:500;">${monthNames[thisMonth-1]}の学習時間</div>`;
+  monthHtml += renderBarChart(null, thisMonthData, null);
+  monthHtml += `<div style="font-size:12px;color:#888;margin:10px 0 4px;font-weight:500;">今月の割合</div>`;
+  monthHtml += makeDualPieSection('pieChartMonth','pieChartMonthMain','全体','4教科のみ');
 
   // スマホ：縦1列タブ切り替え、iPad：横2列
   if (sm) {
@@ -2759,10 +2761,10 @@ function showStats() {
       </div>`;
   }
 
-  renderPieChart('pieChart', 'pieLegend', thisWeek);
-  renderPieChart('pieChartMain', 'pieLegendMain', thisWeekMain);
-  renderPieChart('pieChartMonth', 'pieLegendMonth', thisMonthData);
-  renderPieChart('pieChartMonthMain', 'pieLegendMonthMain', thisMonthMain);
+  renderPieChart('pieChart', null, thisWeek);
+  renderPieChart('pieChartMain', null, thisWeekMain);
+  renderPieChart('pieChartMonth', null, thisMonthData);
+  renderPieChart('pieChartMonthMain', null, thisMonthMain);
 
   document.getElementById('statsModal').classList.add('open');
 }
