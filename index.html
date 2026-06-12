@@ -1604,9 +1604,9 @@ function openRepeatRangeModal(t) {
   document.getElementById('repeatFromDate').value = todayStr;
   document.getElementById('repeatFromDisplay').textContent = '今日から';
   document.getElementById('repeatFromDisplay').style.color = '#1a2744';
-  document.getElementById('repeatToDate').value = '';
-  document.getElementById('repeatToDisplay').textContent = 'ずっと';
-  document.getElementById('repeatToDisplay').style.color = '#aaa';
+  document.getElementById('repeatToDate').value = '2027-01-31';
+  document.getElementById('repeatToDisplay').textContent = '2027/1/31まで';
+  document.getElementById('repeatToDisplay').style.color = '#1a2744';
   document.getElementById('repeatFromCalWrap').style.display = 'none';
   document.getElementById('repeatToCalWrap').style.display = 'none';
   // 種類を毎週にリセット、元カードの曜日をデフォルト選択
@@ -1778,9 +1778,9 @@ function setAddType(type) {
     document.getElementById('rFromDate').value = todayStr;
     document.getElementById('rFromDisplay').textContent = '今日から';
     document.getElementById('rFromDisplay').style.color = '#1a2744';
-    document.getElementById('rToDate').value = '';
-    document.getElementById('rToDisplay').textContent = 'ずっと';
-    document.getElementById('rToDisplay').style.color = '#aaa';
+    document.getElementById('rToDate').value = '2027-01-31';
+    document.getElementById('rToDisplay').textContent = '2027/1/31まで';
+    document.getElementById('rToDisplay').style.color = '#1a2744';
   }
 }
 
@@ -1907,15 +1907,17 @@ function openAdd(dayIdx, slotIdx, defaultDate) {
   const jstNow = new Date(now.getTime() + 9*60*60*1000);
   const todayStr = jstNow.toISOString().slice(0,10);
   const str = defaultDate || todayStr;
-  _setAddDate(str);
-  document.getElementById('aSlot').value = SLOTS[slotIdx] || 'night';
-  // 今週だけモードで初期化
-  setAddType('once');
-  const sel = document.getElementById('aSubject');
-  sel.value = '算数';
-  updateSubjectColor();
-  document.getElementById('addCalWrap').style.display = 'none';
+  // モーダルを先に開いてからDOM操作（要素が確実に存在する状態で操作）
   document.getElementById('addModal').classList.add('open');
+  setTimeout(() => {
+    _setAddDate(str);
+    document.getElementById('aSlot').value = SLOTS[slotIdx] || 'night';
+    setAddType('once');
+    const sel = document.getElementById('aSubject');
+    if (sel) { sel.value = '算数'; updateSubjectColor(); }
+    const calWrap = document.getElementById('addCalWrap');
+    if (calWrap) calWrap.style.display = 'none';
+  }, 0);
 }
 function openAddModal() {
   const now = new Date();
