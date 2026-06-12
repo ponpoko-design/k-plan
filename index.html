@@ -379,6 +379,28 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
           <button class="btn-sub" onclick="copyTask()">予定をコピー</button>
           <button class="btn-save" onclick="saveTask()" style="background:white;border:2px solid var(--navy);color:var(--navy);border-radius:20px;">変更を保存</button>
         </div>
+        <!-- 繰り返し状態表示（毎週くりかえす予定のとき） -->
+        <div id="detailRepeatInfo" style="display:none;margin-top:10px;background:#f4f6fb;border-radius:10px;padding:12px 14px;">
+          <div style="font-size:12px;color:#888;font-weight:700;margin-bottom:8px;">繰り返し設定</div>
+          <!-- 種類チップ（表示のみ・タップで変更） -->
+          <div style="display:flex;gap:6px;margin-bottom:10px;">
+            <div id="dRrChipDaily" onclick="setDetailRRKind('daily')" style="flex:1;padding:7px 4px;border-radius:20px;border:2px solid #ddd;background:white;font-size:12px;font-weight:700;color:#888;cursor:pointer;text-align:center;">毎日</div>
+            <div id="dRrChipWeekly" onclick="setDetailRRKind('weekly')" style="flex:1;padding:7px 4px;border-radius:20px;border:2px solid #ddd;background:white;font-size:12px;font-weight:700;color:#888;cursor:pointer;text-align:center;">毎週</div>
+            <div id="dRrChipMonthly" onclick="setDetailRRKind('monthly')" style="flex:1;padding:7px 4px;border-radius:20px;border:2px solid #ddd;background:white;font-size:12px;font-weight:700;color:#888;cursor:pointer;text-align:center;">毎月</div>
+          </div>
+          <!-- 曜日選択（毎週） -->
+          <div id="dRrWeekdays" style="display:flex;gap:5px;margin-bottom:10px;">
+            <div class="d-rr-wd" data-wi="0" onclick="toggleDRRWd(this)" style="flex:1;aspect-ratio:1;border-radius:50%;border:2px solid #ddd;background:white;font-size:12px;font-weight:700;color:#888;cursor:pointer;display:flex;align-items:center;justify-content:center;">月</div>
+            <div class="d-rr-wd" data-wi="1" onclick="toggleDRRWd(this)" style="flex:1;aspect-ratio:1;border-radius:50%;border:2px solid #ddd;background:white;font-size:12px;font-weight:700;color:#888;cursor:pointer;display:flex;align-items:center;justify-content:center;">火</div>
+            <div class="d-rr-wd" data-wi="2" onclick="toggleDRRWd(this)" style="flex:1;aspect-ratio:1;border-radius:50%;border:2px solid #ddd;background:white;font-size:12px;font-weight:700;color:#888;cursor:pointer;display:flex;align-items:center;justify-content:center;">水</div>
+            <div class="d-rr-wd" data-wi="3" onclick="toggleDRRWd(this)" style="flex:1;aspect-ratio:1;border-radius:50%;border:2px solid #ddd;background:white;font-size:12px;font-weight:700;color:#888;cursor:pointer;display:flex;align-items:center;justify-content:center;">木</div>
+            <div class="d-rr-wd" data-wi="4" onclick="toggleDRRWd(this)" style="flex:1;aspect-ratio:1;border-radius:50%;border:2px solid #ddd;background:white;font-size:12px;font-weight:700;color:#888;cursor:pointer;display:flex;align-items:center;justify-content:center;">金</div>
+            <div class="d-rr-wd" data-wi="5" onclick="toggleDRRWd(this)" style="flex:1;aspect-ratio:1;border-radius:50%;border:2px solid #ddd;background:white;font-size:12px;font-weight:700;color:#378add;cursor:pointer;display:flex;align-items:center;justify-content:center;">土</div>
+            <div class="d-rr-wd" data-wi="6" onclick="toggleDRRWd(this)" style="flex:1;aspect-ratio:1;border-radius:50%;border:2px solid #ddd;background:white;font-size:12px;font-weight:700;color:#e24b4a;cursor:pointer;display:flex;align-items:center;justify-content:center;">日</div>
+          </div>
+          <!-- 保存ボタン -->
+          <button onclick="saveDetailRepeatSettings()" style="width:100%;background:var(--navy);border:none;color:white;border-radius:20px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">繰り返し設定を変更して保存</button>
+        </div>
         <div class="modal-repeat" id="detailRepeatBtn" onclick="toggleRepeat()"></div>
       </div>
     </div>
@@ -1059,6 +1081,8 @@ function updateDetailColor() {
   badge.style.color = colors[1];
   sel.style.color = colors[1];
 }
+let _detailRRKind = 'weekly';
+
 function openDetail(t) {
   editUID = t.uid;
   const sel = document.getElementById('dSubject');
@@ -1070,22 +1094,108 @@ function openDetail(t) {
   document.getElementById('dHash').value = t.hash || '';
   document.getElementById('dMemo').value = t.note || '';
   document.getElementById('dTime').value = t.study_time || '';
+
+  const isWeekly = t.display_type === 'weekly';
   let modeLabel, repeatBtnLabel;
   if (t._isWeeklyMoved) {
-    modeLabel = '「毎週くりかえす」予定（移動済み）';
-    repeatBtnLabel = '元の曜日に戻す（毎週）';
-  } else if (t.display_type === 'weekly') {
-    modeLabel = '「毎週くりかえす」予定';
+    modeLabel = 'くりかえす予定（移動済み）';
+    repeatBtnLabel = '元の曜日に戻す';
+  } else if (isWeekly) {
+    modeLabel = 'くりかえす予定';
     repeatBtnLabel = '今回だけの予定に変更';
   } else {
-    modeLabel = '「今回だけ」の予定';
+    modeLabel = '今回だけの予定';
     repeatBtnLabel = '繰り返す予定に変更';
   }
   document.getElementById('detailModeLabel').textContent = modeLabel;
   document.getElementById('detailRepeatBtn').textContent = repeatBtnLabel;
+
+  // 繰り返し状態パネルを表示（毎週くりかえすのとき）
+  const infoPanel = document.getElementById('detailRepeatInfo');
+  if (isWeekly && !t._isWeeklyMoved) {
+    infoPanel.style.display = 'block';
+    // 毎週をデフォルト選択・元カードの曜日をハイライト
+    _detailRRKind = 'weekly';
+    setDetailRRKind('weekly');
+    document.querySelectorAll('.d-rr-wd').forEach(el => {
+      const wi = parseInt(el.getAttribute('data-wi'));
+      if (wi === t._dayIdx) {
+        el.setAttribute('data-active','1');
+        el.style.background='#1a2744'; el.style.color='white'; el.style.borderColor='#1a2744';
+      } else {
+        el.setAttribute('data-active','0');
+        el.style.background='white'; el.style.borderColor='#ddd';
+        el.style.color = wi===5?'#378add':wi===6?'#e24b4a':'#888';
+      }
+    });
+  } else {
+    infoPanel.style.display = 'none';
+  }
+
   document.getElementById('detailModal')._task = t;
   document.getElementById('detailModal').classList.add('open');
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+}
+
+function setDetailRRKind(kind) {
+  _detailRRKind = kind;
+  ['daily','weekly','monthly'].forEach(k => {
+    const el = document.getElementById('dRrChip'+k.charAt(0).toUpperCase()+k.slice(1));
+    if (!el) return;
+    if (k === kind) { el.style.background='#1a2744'; el.style.color='white'; el.style.borderColor='#1a2744'; }
+    else { el.style.background='white'; el.style.color='#888'; el.style.borderColor='#ddd'; }
+  });
+  document.getElementById('dRrWeekdays').style.display = kind === 'weekly' ? 'flex' : 'none';
+}
+
+function toggleDRRWd(el) {
+  const active = el.getAttribute('data-active') === '1';
+  if (active) {
+    el.setAttribute('data-active','0');
+    el.style.background='white'; el.style.borderColor='#ddd';
+    const wi = parseInt(el.getAttribute('data-wi'));
+    el.style.color = wi===5?'#378add':wi===6?'#e24b4a':'#888';
+  } else {
+    el.setAttribute('data-active','1');
+    el.style.background='#1a2744'; el.style.color='white'; el.style.borderColor='#1a2744';
+  }
+}
+
+function saveDetailRepeatSettings() {
+  const t = document.getElementById('detailModal')._task;
+  if (!t) return;
+  // 現在の毎週設定を削除
+  if (!localOverrides.weeklyDeleted) localOverrides.weeklyDeleted = [];
+  localOverrides.weeklyDeleted.push({uid: t.uid, dayIdx: t._dayIdx, fromDate: null});
+  if (localOverrides.weeklyAdded) {
+    localOverrides.weeklyAdded = localOverrides.weeklyAdded.filter(a => a.uid !== t.uid);
+  }
+
+  // 新しい設定で再登録
+  const fromMonday = getMonday(getTodayJST());
+  const fromDateStr = dateKey(fromMonday);
+  const baseTask = { ...t, display_type:'weekly', fromDate: fromDateStr, toDate: null, order: t.order||99 };
+
+  if (_detailRRKind === 'daily') {
+    if (!localOverrides.weeklyAdded) localOverrides.weeklyAdded = [];
+    for (let wi = 0; wi < 7; wi++) {
+      const uid = 'drr_daily_'+Date.now()+'_'+wi;
+      localOverrides.weeklyAdded.push({ ...baseTask, uid, repeat_key:uid, weekday:DAYS_JP[wi], weekday_index:wi, _dayIdx:wi });
+    }
+  } else if (_detailRRKind === 'weekly') {
+    const selectedWds = [...document.querySelectorAll('.d-rr-wd')]
+      .filter(el => el.getAttribute('data-active')==='1')
+      .map(el => parseInt(el.getAttribute('data-wi')));
+    if (selectedWds.length === 0) { alert('曜日を選んでください'); return; }
+    if (!localOverrides.weeklyAdded) localOverrides.weeklyAdded = [];
+    selectedWds.forEach(wi => {
+      const uid = 'drr_weekly_'+Date.now()+'_'+wi;
+      localOverrides.weeklyAdded.push({ ...baseTask, uid, repeat_key:uid, weekday:DAYS_JP[wi], weekday_index:wi, _dayIdx:wi });
+    });
+  }
+
+  saveLocal(); closeDetail(); render();
+  showToast('繰り返し設定を変更しました ✓');
 }
 function closeDetail() {
   document.getElementById('detailModal').classList.remove('open');
@@ -1647,14 +1757,19 @@ let rFromCalYear, rFromCalMonth, rToCalYear, rToCalMonth;
 // 今週だけ / 繰り返す の切り替え
 function setAddType(type) {
   const isRepeat = type === 'repeat';
-  document.getElementById('addTypeOnce').style.cssText = isRepeat
+  const elOnce = document.getElementById('addTypeOnce');
+  const elRepeat = document.getElementById('addTypeRepeat');
+  const elDate = document.getElementById('addDateSection');
+  const elRep = document.getElementById('addRepeatSection');
+  if (!elOnce || !elRepeat || !elDate || !elRep) return;
+  elOnce.style.cssText = isRepeat
     ? 'flex:1;padding:10px;border-radius:10px;border:2px solid #ddd;background:white;font-size:14px;font-weight:700;color:#888;cursor:pointer;text-align:center;'
     : 'flex:1;padding:10px;border-radius:10px;border:2px solid #1a2744;background:#f0f3fa;font-size:14px;font-weight:700;color:#1a2744;cursor:pointer;text-align:center;';
-  document.getElementById('addTypeRepeat').style.cssText = isRepeat
+  elRepeat.style.cssText = isRepeat
     ? 'flex:1;padding:10px;border-radius:10px;border:2px solid #1a2744;background:#f0f3fa;font-size:14px;font-weight:700;color:#1a2744;cursor:pointer;text-align:center;'
     : 'flex:1;padding:10px;border-radius:10px;border:2px solid #ddd;background:white;font-size:14px;font-weight:700;color:#888;cursor:pointer;text-align:center;';
-  document.getElementById('addDateSection').style.display = isRepeat ? 'none' : 'block';
-  document.getElementById('addRepeatSection').style.display = isRepeat ? 'block' : 'none';
+  elDate.style.display = isRepeat ? 'none' : 'block';
+  elRep.style.display = isRepeat ? 'block' : 'none';
   // 繰り返しを選んだとき初期化
   if (isRepeat) {
     setRepeatKind(_addRepeatKind);
