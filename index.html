@@ -1129,7 +1129,9 @@ function openDetail(t) {
     modeLabel = 'くりかえす予定（移動済み）';
     repeatBtnLabel = '元の曜日に戻す';
   } else if (isWeekly) {
-    modeLabel = 'くりかえす予定';
+    // fromDateやrepeat_keyから種類を判定
+    const rrKindLabel = t._rrKind === 'daily' ? '毎日' : t._rrKind === 'monthly' ? '毎月' : '毎週';
+    modeLabel = rrKindLabel + 'くりかえす予定';
     repeatBtnLabel = '今回だけの予定に変更';
   } else {
     modeLabel = '今回だけの予定';
@@ -1211,6 +1213,12 @@ function setDetailRRKind(kind) {
     else { el.style.background='white'; el.style.color='#888'; el.style.borderColor='#ddd'; }
   });
   document.getElementById('dRrWeekdays').style.display = kind === 'weekly' ? 'flex' : 'none';
+  // タイトルも連動
+  const labelMap = { daily:'毎日', weekly:'毎週', monthly:'毎月' };
+  const lbl = document.getElementById('detailModeLabel');
+  if (lbl && lbl.textContent.includes('くりかえす')) {
+    lbl.textContent = (labelMap[kind] || '毎週') + 'くりかえす予定';
+  }
 }
 
 function toggleDRRWd(el) {
@@ -1303,7 +1311,7 @@ function saveDetailRepeatSettings() {
   }
 
   if (!localOverrides.weeklyAdded) localOverrides.weeklyAdded = [];
-  const baseTask = { ...t, display_type:'weekly', fromDate: fromDateStr, toDate: toStr, order: t.order||99 };
+  const baseTask = { ...t, display_type:'weekly', fromDate: fromDateStr, toDate: toStr, order: t.order||99, _rrKind: _detailRRKind };
 
   if (_detailRRKind === 'daily') {
     for (let wi = 0; wi < 7; wi++) {
@@ -1804,7 +1812,7 @@ function confirmRepeatRange() {
   lo.hidden[t.uid] = true;
   if (lo.added) lo.added = lo.added.filter(a => a.uid !== t.uid);
 
-  const baseTask = { ...t, display_type:'weekly', fromDate: fromDateStr, toDate: toStr, order: t.order||99 };
+  const baseTask = { ...t, display_type:'weekly', fromDate: fromDateStr, toDate: toStr, order: t.order||99, _rrKind: _rrKind };
 
   if (_rrKind === 'daily') {
     if (!localOverrides.weeklyAdded) localOverrides.weeklyAdded = [];
@@ -2314,7 +2322,7 @@ function confirmAdd() {
     const baseTask = {
       color:colors[0], slot, subject:subj, unit_name:unit, note:memo, study_time:st,
       hash, is_hidden:'no', order:99, display_type:'weekly',
-      fromDate: fromDateStr, toDate: toStr
+      fromDate: fromDateStr, toDate: toStr, _rrKind: kind
     };
 
     if (kind === 'daily') {
