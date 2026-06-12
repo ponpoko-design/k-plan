@@ -2637,25 +2637,11 @@ function renderPieChart(canvasId, legendId, data) {
   sorted.forEach(([subj,mins])=>{
     const colors=SUBJ_COLOR[subj]||['#eee','#333'];
     const pct=Math.round(mins/total*100);
-    if (sm) {
-      legend+=`<div style="display:flex;align-items:center;gap:5px;margin-bottom:5px;">
-        <div style="width:10px;height:10px;border-radius:2px;background:${colors[0]};flex-shrink:0;"></div>
-        <span style="font-size:11px;font-weight:700;color:${colors[1]};background:${colors[0]};padding:1px 5px;border-radius:3px;flex-shrink:0;width:72px;text-align:center;white-space:nowrap;overflow:hidden;">${subj}</span>
-        <div style="flex:1;background:#eee;border-radius:3px;height:8px;min-width:0;">
-          <div style="background:${colors[0]};height:8px;border-radius:3px;width:${pct}%;"></div>
-        </div>
-        <span style="font-size:11px;font-weight:700;color:#1a2744;font-family:'Inter',sans-serif;flex-shrink:0;min-width:30px;text-align:right;">${pct}%</span>
-      </div>`;
-    } else {
-      legend+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-        <div style="width:12px;height:12px;border-radius:3px;background:${colors[0]};border:1px solid ${colors[1]}44;flex-shrink:0;"></div>
-        <span style="font-size:13px;font-weight:700;background:${colors[0]};color:${colors[1]};padding:1px 8px;border-radius:4px;flex-shrink:0;width:72px;text-align:center;white-space:nowrap;">${subj}</span>
-        <div style="flex:1;background:#eee;border-radius:3px;height:10px;min-width:0;">
-          <div style="background:${colors[0]};border:1px solid ${colors[1]}44;height:10px;border-radius:3px;width:${pct}%;"></div>
-        </div>
-        <span style="font-size:14px;font-weight:700;color:#1a2744;font-family:'Inter',sans-serif;flex-shrink:0;min-width:36px;text-align:right;">${pct}%</span>
-      </div>`;
-    }
+    legend+=`<div style="display:flex;align-items:center;gap:4px;margin-bottom:3px;">
+      <div style="width:8px;height:8px;border-radius:2px;background:${colors[0]};flex-shrink:0;"></div>
+      <span style="font-size:10px;font-weight:700;color:${colors[1]};background:${colors[0]};padding:1px 4px;border-radius:2px;flex-shrink:0;white-space:nowrap;overflow:hidden;max-width:60px;">${subj}</span>
+      <span style="font-size:10px;font-weight:700;color:#888;font-family:'Inter',sans-serif;flex-shrink:0;margin-left:auto;">${pct}%</span>
+    </div>`;
   });
   document.getElementById(legendId).innerHTML=legend;
 }
@@ -2715,28 +2701,44 @@ function showStats() {
     </div>`;
   }
 
-  function makePieSection(canvasId, legendId) {
-    return `<div style="display:flex;align-items:center;gap:${sm?8:14}px;margin-top:10px;">
-      <canvas id="${canvasId}" width="${pieSize}" height="${pieSize}" style="flex-shrink:0;"></canvas>
-      <div id="${legendId}" style="flex:1;min-width:0;"></div>
+  // 4教科のみのデータ
+  const MAIN_SUBJ = ['算数','国語','理科','社会'];
+  function filterMainSubj(data) {
+    const r = {};
+    MAIN_SUBJ.forEach(s => { if (data[s]) r[s] = data[s]; });
+    return r;
+  }
+  const thisWeekMain = filterMainSubj(thisWeek);
+  const thisMonthMain = filterMainSubj(thisMonthData);
+
+  // 2つの円グラフを横並びで表示（できるだけ大きく）
+  function makeDualPieSection(c1, l1, c2, l2, title1, title2) {
+    const sz = sm ? 130 : 180;
+    return `<div style="display:flex;gap:${sm?10:16}px;margin-top:8px;align-items:flex-start;">
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;">
+        <div style="font-size:11px;color:#888;font-weight:700;margin-bottom:4px;">${title1}</div>
+        <canvas id="${c1}" width="${sz}" height="${sz}" style="width:${sz}px;height:${sz}px;"></canvas>
+        <div id="${l1}" style="width:100%;margin-top:6px;"></div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;">
+        <div style="font-size:11px;color:#888;font-weight:700;margin-bottom:4px;">${title2}</div>
+        <canvas id="${c2}" width="${sz}" height="${sz}" style="width:${sz}px;height:${sz}px;"></canvas>
+        <div id="${l2}" style="width:100%;margin-top:6px;"></div>
+      </div>
     </div>`;
   }
 
   // 週集計HTML
   let weekHtml = `<div style="font-size:${sm?13:15}px;font-weight:700;color:#1a2744;margin-bottom:10px;">今週の集計</div>`;
   weekHtml += makeSummaryBar('今週', thisWeekTotal, lastWeekTotal);
-  weekHtml += `<div style="font-size:12px;color:#888;margin-bottom:6px;font-weight:500;">今週の学習時間</div>`;
-  weekHtml += renderBarChart(null, thisWeek, null);
-  weekHtml += `<div style="font-size:12px;color:#888;margin:10px 0 4px;font-weight:500;">今週の割合</div>`;
-  weekHtml += makePieSection('pieChart','pieLegend');
+  weekHtml += `<div style="font-size:12px;color:#888;margin:8px 0 4px;font-weight:500;">今週の割合</div>`;
+  weekHtml += makeDualPieSection('pieChart','pieLegend','pieChartMain','pieLegendMain','全体','4教科のみ');
 
   // 月集計HTML
   let monthHtml = `<div style="font-size:${sm?13:15}px;font-weight:700;color:#1a2744;margin-bottom:10px;">${monthNames[thisMonth-1]}の集計</div>`;
   monthHtml += makeSummaryBar('今月', thisMonthTotal, lastMonthTotal);
-  monthHtml += `<div style="font-size:12px;color:#888;margin-bottom:6px;font-weight:500;">${monthNames[thisMonth-1]}の学習時間</div>`;
-  monthHtml += renderBarChart(null, thisMonthData, null);
-  monthHtml += `<div style="font-size:12px;color:#888;margin:10px 0 4px;font-weight:500;">今月の割合</div>`;
-  monthHtml += makePieSection('pieChartMonth','pieLegendMonth');
+  monthHtml += `<div style="font-size:12px;color:#888;margin:8px 0 4px;font-weight:500;">今月の割合</div>`;
+  monthHtml += makeDualPieSection('pieChartMonth','pieLegendMonth','pieChartMonthMain','pieLegendMonthMain','全体','4教科のみ');
 
   // スマホ：縦1列タブ切り替え、iPad：横2列
   if (sm) {
@@ -2758,7 +2760,9 @@ function showStats() {
   }
 
   renderPieChart('pieChart', 'pieLegend', thisWeek);
+  renderPieChart('pieChartMain', 'pieLegendMain', thisWeekMain);
   renderPieChart('pieChartMonth', 'pieLegendMonth', thisMonthData);
+  renderPieChart('pieChartMonthMain', 'pieLegendMonthMain', thisMonthMain);
 
   document.getElementById('statsModal').classList.add('open');
 }
