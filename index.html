@@ -174,6 +174,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
       <div class="hdr-title">航大 家庭学習スケジュール</div>
       <button id="multiSelectToggle" onclick="toggleMultiSelect()"
         style="background:white;border:1.5px solid #ccc;color:#888;border-radius:14px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">複数選択</button>
+      <button class="undo-btn" onclick="undoLast()"
+        style="background:white;border:1.5px solid #ccc;color:#888;border-radius:14px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;opacity:0.35;pointer-events:none;">↩</button>
     </div>
     <button class="nav-btn" id="btnNext" onclick="navNext()"><span id="btnNextLabel">翌週</span> <svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor"><polygon points="0,0 0,12 10,6"/></svg></button>
   </div>
@@ -776,6 +778,7 @@ let currentMonday = getMonday(getTodayJST());
 let localOverrides = JSON.parse(localStorage.getItem('schedule_overrides') || '{}');
 // {weekKey: {added:[...], hidden:{uid:true}}}
 let dragInfo = null;
+let _undoSnapshot = null; // 直前のlocalOverridesのスナップショット
 let editUID = null;
 let nextUID = Date.now();
 
@@ -3046,12 +3049,44 @@ function confirmMultiDelete() {
   showToast(`${count}件を今週だけ削除しました`, 2500);
 }
 
+// ===== Undo機能 =====
+function undoLast() {
+  if (!_undoSnapshot) return;
+  localOverrides = _undoSnapshot;
+  _undoSnapshot = null;
+  localStorage.setItem('schedule_overrides', JSON.stringify(localOverrides));
+  // Firestoreにも反映
+  if (typeof db !== 'undefined') {
+    db.collection('schedules').doc('main').set({
+      overrides: localOverrides,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedBy: DEVICE_ID
+    }).catch(e => console.log('undo Firestore error:', e));
+  }
+  updateUndoBtn();
+  render();
+  showToast('元に戻しました ↩');
+}
+
+function updateUndoBtn() {
+  const btns = document.querySelectorAll('.undo-btn');
+  btns.forEach(btn => {
+    btn.style.opacity = _undoSnapshot ? '1' : '0.35';
+    btn.style.pointerEvents = _undoSnapshot ? 'auto' : 'none';
+  });
+}
+
 // ===== 固定Xボタン制御 =====
 function updateFloatingClose() {
   const btn = document.getElementById('floatingCloseBtn');
   if (!btn) return;
   const anyOpen = document.querySelector('.modal-bg.open');
   btn.style.display = anyOpen ? 'flex' : 'none';
+  // undoボタンはモーダルが閉じているときだけ表示
+  const undoBtn = document.getElementById('floatingUndoBtn');
+  if (undoBtn) {
+    undoBtn.style.display = anyOpen ? 'none' : 'flex';
+  }
 }
 
 function closeAnyModal() {
@@ -4036,7 +4071,16 @@ render();
 @media (max-width: 1024px) {
   /* スマホ・iPadでは上下のXを非表示 */
   .detail-close-btn, .add-close-btn { display: none !important; }
-  /* 固定Xボタンをモーダルopen時に表示 */
+  /* ヘッダーのundoボタンを非表示（スマホは浮きボタン） */
+  #multiSelectToggle + .undo-btn { display: none !important; }
+}
+@media (min-width: 1025px) {
+  /* PCは浮きundoボタン非表示 */
+  #floatingUndoBtn { display: none !important; }
+}
+@media (max-width: 1024px) {
+  /* スマホ・iPadでは上下のXを非表示 */
+  .detail-close-btn, .add-close-btn { display: none !important; }
   .modal-bg.open ~ #floatingCloseBtn,
   body.modal-open #floatingCloseBtn { display: flex; }
 }
@@ -4046,6 +4090,8 @@ render();
 }
 </style>
 
+<button id="floatingUndoBtn" class="undo-btn" onclick="undoLast()" ontouchend="event.preventDefault();undoLast();"
+  style="display:none;position:fixed;bottom:112px;right:16px;width:48px;height:48px;border-radius:50%;background:rgba(26,39,68,0.92);color:white;font-size:20px;font-weight:700;border:none;cursor:pointer;z-index:500;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,0.3);opacity:0.35;pointer-events:none;">↩</button>
 <button id="floatingCloseBtn" onclick="closeAnyModal()" ontouchend="event.preventDefault();closeAnyModal();">×</button>
 
 </div><!-- #app -->
@@ -4097,6 +4143,9 @@ async function loadFromFirestore() {
 // Firestoreにデータを保存する（既存のsaveLocal関数を上書き）
 const _origSaveLocal = saveLocal;
 window.saveLocal = function() {
+  // undo用スナップショットを保存（保存前の状態を記録）
+  _undoSnapshot = JSON.parse(JSON.stringify(localOverrides));
+  updateUndoBtn();
   _origSaveLocal();
   // Firestoreにも保存
   db.collection('schedules').doc('main').set({
