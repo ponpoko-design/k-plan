@@ -1432,6 +1432,7 @@ function clearDRRTo() {
 function saveDetailRepeatSettings() {
   const t = document.getElementById('detailModal')._task;
   if (!t) return;
+  takeSnapshot();
 
   const fromStr = document.getElementById('dRrFromDate').value || null;
   const toStr = document.getElementById('dRrToDate').value || null;
@@ -1498,7 +1499,7 @@ function saveDetailRepeatSettings() {
     }
   }
 
-  takeSnapshot(); saveLocal(); closeDetail(); render();
+  saveLocal(); closeDetail(); render();
   showToast('繰り返し設定を変更しました ✓');
 }
 function closeDetail() {
@@ -1511,6 +1512,7 @@ let _saveTaskData = null; // 保存範囲選択モーダル用
 function saveTask() {
   const t = document.getElementById('detailModal')._task;
   if (!t) return;
+  takeSnapshot();
   const newSubject = document.getElementById('dSubject').value;
   const newUnit = document.getElementById('dUnit').value;
   const newHash = document.getElementById('dHash').value;
@@ -1526,7 +1528,7 @@ function saveTask() {
   } else {
     // 今回だけタスク → 即保存
     _doSaveTask(t, newSubject, newUnit, newHash, newMemo, newTime, 'once');
-    takeSnapshot(); saveLocal(); closeDetail(); render();
+    saveLocal(); closeDetail(); render();
     showToast('変更を保存しました ✓');
   }
 }
@@ -1540,7 +1542,7 @@ function confirmSaveRange(range) {
   if (!_saveTaskData) return;
   const {t, newSubject, newUnit, newHash, newMemo, newTime} = _saveTaskData;
   _doSaveTask(t, newSubject, newUnit, newHash, newMemo, newTime, range);
-  takeSnapshot(); saveLocal(); closeSaveRangeModal(); render();
+  saveLocal(); closeSaveRangeModal(); render();
   showToast('変更を保存しました ✓');
 }
 
@@ -1636,6 +1638,7 @@ function closeDeleteConfirm() {
 function confirmDeleteOnce() {
   const t = _deleteTarget;
   if (!t) return;
+  takeSnapshot();
   const wk = getWeekKey();
   if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
   const lo = localOverrides[wk];
@@ -1643,7 +1646,7 @@ function confirmDeleteOnce() {
   lo.hidden[t.uid + '_' + t._dayIdx] = true;
   const idx = (lo.added||[]).findIndex(a => a.uid === t.uid);
   if (idx >= 0) lo.added.splice(idx, 1);
-  takeSnapshot(); saveLocal(); closeDeleteConfirm(); render();
+  saveLocal(); closeDeleteConfirm(); render();
   setTimeout(() => showToast('予定を削除しました ✓'), 100);
 }
 
@@ -1651,6 +1654,7 @@ function confirmDeleteOnce() {
 function confirmDeleteFrom() {
   const t = _deleteTarget;
   if (!t) return;
+  takeSnapshot();
   const fromDateStr = dateKey(currentMonday);
   if (t._groupKey) {
     const fromDt = new Date(fromDateStr);
@@ -1668,7 +1672,7 @@ function confirmDeleteFrom() {
   } else {
     _doDeleteWeekly(t, fromDateStr);
   }
-  takeSnapshot(); saveLocal(); closeDeleteConfirm(); render();
+  saveLocal(); closeDeleteConfirm(); render();
   setTimeout(() => showToast('これ以降の予定を削除しました ✓'), 100);
 }
 
@@ -1676,6 +1680,7 @@ function confirmDeleteFrom() {
 function confirmDeleteAll() {
   const t = _deleteTarget;
   if (!t) return;
+  takeSnapshot();
   // groupKeyがあれば全メンバーをweeklyAddedから除去
   if (t._groupKey) {
     localOverrides.weeklyAdded = (localOverrides.weeklyAdded||[]).filter(
@@ -1684,7 +1689,7 @@ function confirmDeleteAll() {
   } else {
     _doDeleteWeekly(t, null);
   }
-  takeSnapshot(); saveLocal(); closeDeleteConfirm(); render();
+  saveLocal(); closeDeleteConfirm(); render();
   setTimeout(() => showToast('すべての予定を削除しました ✓'), 100);
 }
 
@@ -1796,6 +1801,7 @@ function selectCopyDate(str,d,m,y){
   hideCopyCalendar();
 }
 function confirmCopy(){
+  takeSnapshot();
   const t = document.getElementById('copyModal')._task;
   if(!t) return;
   const selectedStr = document.getElementById('copyTargetDate').getAttribute('data-selected');
@@ -1838,7 +1844,7 @@ function confirmCopy(){
       is_hidden:'no'
     });
   }
-  takeSnapshot(); saveLocal();
+  saveLocal();
   document.getElementById('copyModal').classList.remove('open');
   closeDetail();
   render();
@@ -1972,6 +1978,7 @@ function selectRepeatFromToday() {
 function confirmRepeatRange() {
   const t = _repeatRangeTask;
   if (!t) return;
+  takeSnapshot();
   const fromStr = document.getElementById('repeatFromDate').value;
   const toStr = document.getElementById('repeatToDate').value || null;
   const fromDt = fromStr ? new Date(fromStr) : new Date();
@@ -2034,7 +2041,7 @@ function confirmRepeatRange() {
     }
   }
 
-  takeSnapshot(); saveLocal(); closeRepeatRangeModal(); render();
+  saveLocal(); closeRepeatRangeModal(); render();
   showToast('繰り返す予定に変更しました ✓');
 }
 
@@ -2513,6 +2520,7 @@ function updateSubjectColor() {
 }
 function closeAdd() { document.getElementById('addModal').classList.remove('open'); updateFloatingClose(); }
 function confirmAdd() {
+  takeSnapshot();
   const isRepeat = document.getElementById('addRepeatSection').style.display !== 'none';
   const slot = document.getElementById('aSlot').value;
   const subj = document.getElementById('aSubject').value;
@@ -2621,7 +2629,7 @@ function confirmAdd() {
       });
     }
 
-    takeSnapshot(); saveLocal(); closeAdd(); render();
+    saveLocal(); closeAdd(); render();
   }
 
   document.getElementById('aUnit').value='';
@@ -3965,6 +3973,7 @@ function closeMoveModal() {
 
 function confirmMove() {
   if (!_pendingMove) return;
+  takeSnapshot();
   const {task, toDay, toSlot} = _pendingMove;
   const type = document.querySelector('input[name="moveType"]:checked').value;
   const SLOTS2 = ['plan','morning','am','pm','night'];
@@ -4021,7 +4030,7 @@ function confirmMove() {
       weekday_index:toDay, order:99, repeat_key:null
     });
   }
-  takeSnapshot(); saveLocal(); closeMoveModal(); render();
+  saveLocal(); closeMoveModal(); render();
 }
 
 // fitModals
