@@ -28,7 +28,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 /* ヘッダー */
 .hdr{background:white;padding:6px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ccc;flex-shrink:0;height:42px;}
 .hdr-title{font-size:22px;font-weight:700;color:var(--navy);}
-.nav-btn{background:white;border:2px solid var(--navy);color:var(--navy);border-radius:20px;padding:6px 16px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;}
+.nav-btn{background:white;border:2px solid var(--navy);color:var(--navy);border-radius:9999px;padding:6px 16px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;}
 .nav-btn:hover{background:#f0f2f8;}
 
 /* カレンダー */
@@ -86,9 +86,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 .field input:focus,.field textarea:focus,.field select:focus{border-color:#378add;}
 .field textarea{height:60px;resize:none;}
 .modal-actions{display:flex;gap:7px;margin-top:14px;}
-.btn-del{flex:1;background:white;border:2px solid #e24b4a;color:#e24b4a;border-radius:20px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;}
-.btn-sub{flex:1;background:white;border:2px solid var(--navy);color:var(--navy);border-radius:20px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;}
-.btn-save{flex:1;background:white;border:2px solid var(--navy);color:var(--navy);border-radius:20px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;}
+.btn-del{flex:1;background:white;border:2px solid #e24b4a;color:#e24b4a;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;}
+.btn-sub{flex:1;background:white;border:2px solid var(--navy);color:var(--navy);border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;}
+.btn-save{flex:1;background:white;border:2px solid var(--navy);color:var(--navy);border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;}
 .modal-repeat{text-align:center;margin-top:14px;color:var(--navy);font-size:16px;text-decoration:underline;cursor:pointer;font-weight:700;}
 
 /* ===== スマートフォン縦向き：3列表示 ===== */
@@ -313,8 +313,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
         </div>
 
         <div class="modal-actions">
-          <button onclick="closeImageImportModal()" style="flex:1;background:white;border:2px solid #ccc;color:#888;border-radius:20px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">やめる</button>
-          <button id="imgAnalyzeBtn" onclick="runImageAnalysis()" style="flex:2;background:#1a2744;border:none;color:white;border-radius:20px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">AIで読み取って自動入力</button>
+          <button onclick="closeImageImportModal()" style="flex:1;background:white;border:2px solid #ccc;color:#888;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">やめる</button>
+          <button id="imgAnalyzeBtn" onclick="runImageAnalysis()" style="flex:2;background:#1a2744;border:none;color:white;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">AIで読み取って自動入力</button>
         </div>
       </div>
     </div>
@@ -338,8 +338,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
         </div>
         <div id="gnorevPreview" style="display:none;background:#f8f0ff;border-radius:8px;padding:12px;margin-top:10px;font-size:13px;color:#6c3483;border:1.5px solid #d7bfef;"></div>
         <div class="modal-actions" style="margin-top:16px;">
-          <button onclick="closeGnorevModal()" style="flex:1;background:white;border:2px solid #ccc;color:#888;border-radius:20px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;">やめる</button>
-          <button onclick="confirmGnorev()" style="flex:2;background:#9b59b6;border:none;color:white;border-radius:20px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;">予定を組む</button>
+          <button onclick="closeGnorevModal()" style="flex:1;background:white;border:2px solid #ccc;color:#888;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;">やめる</button>
+          <button onclick="confirmGnorev()" style="flex:2;background:#9b59b6;border:none;color:white;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;">予定を組む</button>
         </div>
       </div>
     </div>
@@ -353,10 +353,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
       <div class="modal-body" style="padding:20px 18px;">
         <div id="deleteConfirmName" style="font-size:15px;font-weight:700;color:#1a2744;text-align:center;margin-bottom:18px;"></div>
         <div style="display:flex;flex-direction:column;gap:10px;">
-          <button onclick="confirmDeleteOnce()" style="width:100%;background:white;border:2px solid #e24b4a;color:#e24b4a;border-radius:20px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;">今週だけ削除する</button>
-          <button onclick="confirmDeleteFrom()" style="width:100%;background:white;border:2px solid #e24b4a;color:#e24b4a;border-radius:20px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;">これ以降の予定を削除する</button>
-          <button onclick="confirmDeleteAll()" style="width:100%;background:#e24b4a;border:none;color:white;border-radius:20px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;">すべての予定を削除する</button>
-          <button onclick="closeDeleteConfirm()" style="width:100%;background:white;border:2px solid #ccc;color:#888;border-radius:20px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;">やめる</button>
+          <button onclick="confirmDeleteOnce()" style="width:100%;background:white;border:2px solid #e24b4a;color:#e24b4a;border-radius:9999px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;">今週だけ削除する</button>
+          <button onclick="confirmDeleteFrom()" style="width:100%;background:white;border:2px solid #e24b4a;color:#e24b4a;border-radius:9999px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;">これ以降の予定を削除する</button>
+          <button onclick="confirmDeleteAll()" style="width:100%;background:#e24b4a;border:none;color:white;border-radius:9999px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;">すべての予定を削除する</button>
+          <button onclick="closeDeleteConfirm()" style="width:100%;background:white;border:2px solid #ccc;color:#888;border-radius:9999px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;">やめる</button>
         </div>
       </div>
     </div>
@@ -367,11 +367,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
     <div class="modal">
       <div class="modal-hdr" id="detailHdr">
         <span id="detailModeLabel">「今回だけ」の予定</span>
+        <button class="modal-close detail-close-btn" onclick="closeDetail()" ontouchend="event.preventDefault();closeDetail();" style="color:white;font-size:24px;">×</button>
       </div>
       <div class="modal-body">
         <div class="subj-badge" id="detailBadge">
           <select id="dSubject" onchange="updateDetailColor()" style="font-weight:700;font-size:15px;font-family:inherit;background:transparent;border:1px solid rgba(0,0,0,0.2);border-radius:8px;padding:4px 10px;cursor:pointer;"></select>
-        <button class="modal-close" onclick="closeDetail()" ontouchend="event.preventDefault();closeDetail();" style="color:inherit;font-size:24px;">×</button>
         </div>
         <div class="field"><label>単元名</label><input id="dUnit" type="text"></div>
         <div class="field"><label># 単元番号（任意）</label><input id="dHash" type="text" placeholder="入れなくてもOK"></div>
@@ -380,16 +380,16 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
         <div class="modal-actions">
           <button class="btn-del" onclick="deleteTask()">予定を削除</button>
           <button class="btn-sub" onclick="copyTask()">予定をコピー</button>
-          <button class="btn-save" onclick="saveTask()" style="background:white;border:2px solid var(--navy);color:var(--navy);border-radius:20px;">変更を保存</button>
+          <button class="btn-save" onclick="saveTask()" style="background:var(--navy);border:2px solid var(--navy);color:white;border-radius:9999px;">変更を保存</button>
         </div>
         <!-- 繰り返し状態表示（毎週くりかえす予定のとき） -->
         <div id="detailRepeatInfo" style="display:none;margin-top:10px;background:#f4f6fb;border-radius:10px;padding:12px 14px;">
           <div style="font-size:12px;color:#888;font-weight:700;margin-bottom:8px;">繰り返し設定</div>
           <!-- 種類チップ（表示のみ・タップで変更） -->
           <div style="display:flex;gap:6px;margin-bottom:10px;">
-            <div id="dRrChipDaily" onclick="setDetailRRKind('daily')" style="flex:1;padding:7px 4px;border-radius:20px;border:2px solid #ddd;background:white;font-size:12px;font-weight:700;color:#888;cursor:pointer;text-align:center;">毎日</div>
-            <div id="dRrChipWeekly" onclick="setDetailRRKind('weekly')" style="flex:1;padding:7px 4px;border-radius:20px;border:2px solid #ddd;background:white;font-size:12px;font-weight:700;color:#888;cursor:pointer;text-align:center;">毎週</div>
-            <div id="dRrChipMonthly" onclick="setDetailRRKind('monthly')" style="flex:1;padding:7px 4px;border-radius:20px;border:2px solid #ddd;background:white;font-size:12px;font-weight:700;color:#888;cursor:pointer;text-align:center;">毎月</div>
+            <div id="dRrChipDaily" onclick="setDetailRRKind('daily')" style="flex:1;padding:7px 4px;border-radius:9999px;border:2px solid #ddd;background:white;font-size:12px;font-weight:700;color:#888;cursor:pointer;text-align:center;">毎日</div>
+            <div id="dRrChipWeekly" onclick="setDetailRRKind('weekly')" style="flex:1;padding:7px 4px;border-radius:9999px;border:2px solid #ddd;background:white;font-size:12px;font-weight:700;color:#888;cursor:pointer;text-align:center;">毎週</div>
+            <div id="dRrChipMonthly" onclick="setDetailRRKind('monthly')" style="flex:1;padding:7px 4px;border-radius:9999px;border:2px solid #ddd;background:white;font-size:12px;font-weight:700;color:#888;cursor:pointer;text-align:center;">毎月</div>
           </div>
           <!-- 曜日選択（毎週） -->
           <div id="dRrWeekdays" style="display:flex;gap:5px;margin-bottom:10px;">
@@ -430,9 +430,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
             </div>
           </div>
           <!-- 保存ボタン -->
-          <button onclick="saveDetailRepeatSettings()" style="width:100%;background:var(--navy);border:none;color:white;border-radius:20px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">繰り返し設定を変更して保存</button>
+          <button onclick="saveDetailRepeatSettings()" style="width:100%;background:var(--navy);border:none;color:white;border-radius:9999px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">繰り返し設定を変更して保存</button>
         </div>
-        <div class="modal-repeat" id="detailRepeatBtn" onclick="toggleRepeat()"></div>
+        <div style="display:flex;align-items:center;justify-content:center;margin-top:14px;position:relative;">
+          <div class="modal-repeat" id="detailRepeatBtn" onclick="toggleRepeat()" style="margin:0;text-decoration:underline;"></div>
+          <button class="detail-close-btn" onclick="closeDetail()" ontouchend="event.preventDefault();closeDetail();" style="position:absolute;right:0;width:40px;height:40px;background:white;border:2px solid #ddd;color:#888;border-radius:50%;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>
+        </div>
       </div>
     </div>
   </div>
@@ -448,8 +451,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 
         <!-- 今週だけ / 繰り返す -->
         <div style="display:flex;gap:8px;margin-bottom:4px;">
-          <div id="addTypeOnce" onclick="setAddType('once')" style="flex:1;padding:10px;border-radius:10px;border:2px solid #1a2744;background:#f0f3fa;font-size:14px;font-weight:700;color:#1a2744;cursor:pointer;text-align:center;">今週だけ</div>
-          <div id="addTypeRepeat" onclick="setAddType('repeat')" style="flex:1;padding:10px;border-radius:10px;border:2px solid #ddd;background:white;font-size:14px;font-weight:700;color:#888;cursor:pointer;text-align:center;">繰り返す</div>
+          <div id="addTypeOnce" onclick="setAddType('once')" style="flex:1;padding:10px;border-radius:9999px;border:2px solid #1a2744;background:#f0f3fa;font-size:14px;font-weight:700;color:#1a2744;cursor:pointer;text-align:center;">今週だけ</div>
+          <div id="addTypeRepeat" onclick="setAddType('repeat')" style="flex:1;padding:10px;border-radius:9999px;border:2px solid #ddd;background:white;font-size:14px;font-weight:700;color:#888;cursor:pointer;text-align:center;">繰り返す</div>
         </div>
 
         <!-- 今週だけセクション -->
@@ -482,9 +485,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
           <div style="margin-bottom:12px;">
             <div style="font-size:12px;color:#888;font-weight:700;margin-bottom:6px;">繰り返しの種類</div>
             <div style="display:flex;gap:8px;">
-              <div id="rChipDaily" onclick="setRepeatKind('daily')" style="flex:1;padding:8px 4px;border-radius:20px;border:2px solid #ddd;background:white;font-size:13px;font-weight:700;color:#888;cursor:pointer;text-align:center;">毎日</div>
-              <div id="rChipWeekly" onclick="setRepeatKind('weekly')" style="flex:1;padding:8px 4px;border-radius:20px;border:2px solid #1a2744;background:#1a2744;font-size:13px;font-weight:700;color:white;cursor:pointer;text-align:center;">毎週</div>
-              <div id="rChipMonthly" onclick="setRepeatKind('monthly')" style="flex:1;padding:8px 4px;border-radius:20px;border:2px solid #ddd;background:white;font-size:13px;font-weight:700;color:#888;cursor:pointer;text-align:center;">毎月</div>
+              <div id="rChipDaily" onclick="setRepeatKind('daily')" style="flex:1;padding:8px 4px;border-radius:9999px;border:2px solid #ddd;background:white;font-size:13px;font-weight:700;color:#888;cursor:pointer;text-align:center;">毎日</div>
+              <div id="rChipWeekly" onclick="setRepeatKind('weekly')" style="flex:1;padding:8px 4px;border-radius:9999px;border:2px solid #1a2744;background:#1a2744;font-size:13px;font-weight:700;color:white;cursor:pointer;text-align:center;">毎週</div>
+              <div id="rChipMonthly" onclick="setRepeatKind('monthly')" style="flex:1;padding:8px 4px;border-radius:9999px;border:2px solid #ddd;background:white;font-size:13px;font-weight:700;color:#888;cursor:pointer;text-align:center;">毎月</div>
             </div>
           </div>
 
@@ -563,7 +566,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
         <div class="field"><label>メモ（任意）</label><textarea id="aMemo" placeholder="メモがあれば"></textarea></div>
         <div class="modal-actions">
           <button class="btn-del" onclick="closeAdd()">やめる</button>
-          <button style="flex:2;background:var(--navy);border:none;color:white;border-radius:20px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;" onclick="confirmAdd()">予定を追加する</button>
+          <button style="flex:2;background:var(--navy);border:none;color:white;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;" onclick="confirmAdd()">予定を追加する</button>
+          <button class="add-close-btn" onclick="closeAdd()" ontouchend="event.preventDefault();closeAdd();" style="flex:none;width:44px;height:44px;background:white;border:2px solid #ddd;color:#888;border-radius:50%;font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">×</button>
         </div>
       </div>
     </div>
@@ -586,8 +590,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
         <div style="background:#e8f4ff;border-radius:10px;padding:14px;margin-bottom:14px;">
           <div style="font-size:13px;font-weight:700;color:#1a2744;text-align:center;margin-bottom:10px;">コピーする先</div>
           <div style="display:flex;gap:8px;margin-bottom:8px;">
-            <div id="copyDateDisplay" onclick="showCopyCalendar()" style="flex:1;background:white;border:1.5px solid #ccc;border-radius:20px;padding:8px 14px;font-size:13px;cursor:pointer;color:#aaa;text-align:center;">タップで日付選択</div>
-            <select id="copySlot" style="background:white;border:1.5px solid #ccc;border-radius:20px;padding:8px 12px;font-size:13px;font-family:inherit;">
+            <div id="copyDateDisplay" onclick="showCopyCalendar()" style="flex:1;background:white;border:1.5px solid #ccc;border-radius:9999px;padding:8px 14px;font-size:13px;cursor:pointer;color:#aaa;text-align:center;">タップで日付選択</div>
+            <select id="copySlot" style="background:white;border:1.5px solid #ccc;border-radius:9999px;padding:8px 12px;font-size:13px;font-family:inherit;">
               <option value="plan">予定</option><option value="morning">朝</option>
               <option value="am">午前</option><option value="pm">午後</option><option value="night">夜</option>
             </select>
@@ -600,7 +604,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
               <span onclick="hideCopyCalendar()" style="font-size:12px;color:#888;cursor:pointer;">× Close</span>
             </div>
           </div>
-          <select id="copyRepeat" style="width:100%;background:white;border:1.5px solid #ccc;border-radius:20px;padding:8px 14px;font-size:13px;font-family:inherit;">
+          <select id="copyRepeat" style="width:100%;background:white;border:1.5px solid #ccc;border-radius:9999px;padding:8px 14px;font-size:13px;font-family:inherit;">
             <option value="one_time">今回だけの予定</option>
             <option value="weekly">毎週くりかえす予定</option>
           </select>
@@ -608,8 +612,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
         </div>
         <div style="text-align:center;font-size:16px;font-weight:700;color:#1a2744;margin-bottom:14px;">これでコピーしますか？</div>
         <div style="display:flex;gap:10px;">
-          <button onclick="closeCopyModal()" style="flex:1;background:white;border:2px solid #888;color:#888;border-radius:20px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;">やめる</button>
-          <button onclick="confirmCopy()" style="flex:1;background:white;border:2px solid var(--navy);color:var(--navy);border-radius:20px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;">コピーする</button>
+          <button onclick="closeCopyModal()" style="flex:1;background:white;border:2px solid #888;color:#888;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;">やめる</button>
+          <button onclick="confirmCopy()" style="flex:1;background:white;border:2px solid var(--navy);color:var(--navy);border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;">コピーする</button>
         </div>
       </div>
     </div>
@@ -625,10 +629,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
       <div class="modal-body" style="padding:20px 18px;">
         <div id="saveRangeConfirmName" style="font-size:15px;font-weight:700;color:#1a2744;text-align:center;margin-bottom:18px;"></div>
         <div style="display:flex;flex-direction:column;gap:10px;">
-          <button onclick="confirmSaveRange('once')" style="width:100%;background:white;border:2px solid var(--navy);color:var(--navy);border-radius:20px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;">今週だけ変更する</button>
-          <button onclick="confirmSaveRange('from')" style="width:100%;background:white;border:2px solid var(--navy);color:var(--navy);border-radius:20px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;">これ以降の予定を変更する</button>
-          <button onclick="confirmSaveRange('all')" style="width:100%;background:var(--navy);border:none;color:white;border-radius:20px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;">すべての予定を変更する</button>
-          <button onclick="closeSaveRangeModal()" style="width:100%;background:white;border:2px solid #ccc;color:#888;border-radius:20px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;">やめる</button>
+          <button onclick="confirmSaveRange('once')" style="width:100%;background:white;border:2px solid var(--navy);color:var(--navy);border-radius:9999px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;">今週だけ変更する</button>
+          <button onclick="confirmSaveRange('from')" style="width:100%;background:white;border:2px solid var(--navy);color:var(--navy);border-radius:9999px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;">これ以降の予定を変更する</button>
+          <button onclick="confirmSaveRange('all')" style="width:100%;background:var(--navy);border:none;color:white;border-radius:9999px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;">すべての予定を変更する</button>
+          <button onclick="closeSaveRangeModal()" style="width:100%;background:white;border:2px solid #ccc;color:#888;border-radius:9999px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;">やめる</button>
         </div>
       </div>
     </div>
@@ -647,9 +651,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
         <div style="margin-bottom:12px;">
           <div style="font-size:12px;color:#888;font-weight:700;margin-bottom:6px;">繰り返しの種類</div>
           <div style="display:flex;gap:8px;">
-            <div id="rrChipDaily" onclick="setRRKind('daily')" style="flex:1;padding:8px 4px;border-radius:20px;border:2px solid #ddd;background:white;font-size:13px;font-weight:700;color:#888;cursor:pointer;text-align:center;">毎日</div>
-            <div id="rrChipWeekly" onclick="setRRKind('weekly')" style="flex:1;padding:8px 4px;border-radius:20px;border:2px solid #1a2744;background:#1a2744;font-size:13px;font-weight:700;color:white;cursor:pointer;text-align:center;">毎週</div>
-            <div id="rrChipMonthly" onclick="setRRKind('monthly')" style="flex:1;padding:8px 4px;border-radius:20px;border:2px solid #ddd;background:white;font-size:13px;font-weight:700;color:#888;cursor:pointer;text-align:center;">毎月</div>
+            <div id="rrChipDaily" onclick="setRRKind('daily')" style="flex:1;padding:8px 4px;border-radius:9999px;border:2px solid #ddd;background:white;font-size:13px;font-weight:700;color:#888;cursor:pointer;text-align:center;">毎日</div>
+            <div id="rrChipWeekly" onclick="setRRKind('weekly')" style="flex:1;padding:8px 4px;border-radius:9999px;border:2px solid #1a2744;background:#1a2744;font-size:13px;font-weight:700;color:white;cursor:pointer;text-align:center;">毎週</div>
+            <div id="rrChipMonthly" onclick="setRRKind('monthly')" style="flex:1;padding:8px 4px;border-radius:9999px;border:2px solid #ddd;background:white;font-size:13px;font-weight:700;color:#888;cursor:pointer;text-align:center;">毎月</div>
           </div>
         </div>
 
@@ -702,8 +706,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
         </div>
 
         <div class="modal-actions">
-          <button onclick="closeRepeatRangeModal()" style="flex:1;background:white;border:2px solid #ccc;color:#888;border-radius:20px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">やめる</button>
-          <button onclick="confirmRepeatRange()" style="flex:2;background:var(--navy);border:none;color:white;border-radius:20px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">繰り返す予定に変更</button>
+          <button onclick="closeRepeatRangeModal()" style="flex:1;background:white;border:2px solid #ccc;color:#888;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">やめる</button>
+          <button onclick="confirmRepeatRange()" style="flex:2;background:var(--navy);border:none;color:white;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">繰り返す予定に変更</button>
         </div>
       </div>
     </div>
@@ -714,7 +718,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
     <div class="modal" style="width:min(960px,96vw);max-height:88vh;overflow-y:auto;">
       <div class="modal-hdr">
         <span>家庭学習時間の合計</span>
-        <button class="modal-close" ontouchend="event.preventDefault();closeStats();" onclick="closeStats()">×</button>
+        <button class="modal-close detail-close-btn" ontouchend="event.preventDefault();closeStats();" onclick="closeStats()">×</button>
       </div>
       <div class="modal-body" style="padding:0;">
         <div id="statsInner"></div>
@@ -1247,6 +1251,7 @@ function openDetail(t) {
 
   document.getElementById('detailModal')._task = t;
   document.getElementById('detailModal').classList.add('open');
+  updateFloatingClose();
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
 }
 
@@ -1409,6 +1414,7 @@ function saveDetailRepeatSettings() {
 }
 function closeDetail() {
   document.getElementById('detailModal').classList.remove('open');
+  updateFloatingClose();
 }
 
 let _saveTaskData = null; // 保存範囲選択モーダル用
@@ -1977,11 +1983,11 @@ function setAddType(type) {
   const elRep = document.getElementById('addRepeatSection');
   if (!elOnce || !elRepeat || !elDate || !elRep) return;
   elOnce.style.cssText = isRepeat
-    ? 'flex:1;padding:10px;border-radius:10px;border:2px solid #ddd;background:white;font-size:14px;font-weight:700;color:#888;cursor:pointer;text-align:center;'
-    : 'flex:1;padding:10px;border-radius:10px;border:2px solid #1a2744;background:#f0f3fa;font-size:14px;font-weight:700;color:#1a2744;cursor:pointer;text-align:center;';
+    ? 'flex:1;padding:10px;border-radius:9999px;border:2px solid #ddd;background:white;font-size:14px;font-weight:700;color:#888;cursor:pointer;text-align:center;'
+    : 'flex:1;padding:10px;border-radius:9999px;border:2px solid #1a2744;background:#f0f3fa;font-size:14px;font-weight:700;color:#1a2744;cursor:pointer;text-align:center;';
   elRepeat.style.cssText = isRepeat
-    ? 'flex:1;padding:10px;border-radius:10px;border:2px solid #1a2744;background:#f0f3fa;font-size:14px;font-weight:700;color:#1a2744;cursor:pointer;text-align:center;'
-    : 'flex:1;padding:10px;border-radius:10px;border:2px solid #ddd;background:white;font-size:14px;font-weight:700;color:#888;cursor:pointer;text-align:center;';
+    ? 'flex:1;padding:10px;border-radius:9999px;border:2px solid #1a2744;background:#f0f3fa;font-size:14px;font-weight:700;color:#1a2744;cursor:pointer;text-align:center;'
+    : 'flex:1;padding:10px;border-radius:9999px;border:2px solid #ddd;background:white;font-size:14px;font-weight:700;color:#888;cursor:pointer;text-align:center;';
   elDate.style.display = isRepeat ? 'none' : 'block';
   elRep.style.display = isRepeat ? 'block' : 'none';
   // 繰り返しを選んだとき初期化
@@ -2166,6 +2172,7 @@ function openAdd(dayIdx, slotIdx, defaultDate) {
   const todayStr = jstNow.toISOString().slice(0,10);
   const str = defaultDate || todayStr;
   document.getElementById('addModal').classList.add('open');
+  updateFloatingClose();
   setTimeout(() => {
     _setAddDate(str);
     setAddType('once');
@@ -2387,7 +2394,7 @@ function updateSubjectColor() {
     document.getElementById('aUnit').value = '';
   }
 }
-function closeAdd() { document.getElementById('addModal').classList.remove('open'); }
+function closeAdd() { document.getElementById('addModal').classList.remove('open'); updateFloatingClose(); }
 function confirmAdd() {
   const isRepeat = document.getElementById('addRepeatSection').style.display !== 'none';
   const slot = document.getElementById('aSlot').value;
@@ -2645,11 +2652,14 @@ function renderPieChart(canvasId, legendId, data) {
   });
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
-  const sm = isPhone();
-  const size = sm ? 100 : 160;
+  // Retina対応：canvasのwidthは2倍で設定済み、ctxをスケール
+  const dpr = window.devicePixelRatio || 1;
+  const displaySize = parseInt(canvas.style.width) || canvas.width/2;
+  const size = displaySize * dpr;
   canvas.width = size; canvas.height = size;
   const ctx = canvas.getContext('2d');
-  const cx = size/2, cy = size/2, r = size/2 - 6;
+  ctx.scale(dpr, dpr);
+  const cx = displaySize/2, cy = displaySize/2, r = displaySize/2 - 6;
   let startAngle = -Math.PI/2;
   sorted.forEach(([subj, mins]) => {
     const colors = SUBJ_COLOR[subj] || ['#eee','#333'];
@@ -2664,7 +2674,7 @@ function renderPieChart(canvasId, legendId, data) {
       const mid=startAngle+slice/2;
       const lx=cx+r*0.65*Math.cos(mid), ly=cy+r*0.65*Math.sin(mid);
       ctx.fillStyle=colors[1]==='#fff'?'#fff':'#1a2744';
-      ctx.font=`bold ${sm?9:12}px Inter,sans-serif`;
+      ctx.font=`bold ${Math.round(displaySize*0.11)}px Inter,sans-serif`;
       ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillText(pct+'%',lx,ly);
     }
@@ -2750,15 +2760,15 @@ function showStats() {
 
   // 2つの円グラフを横並びで表示（できるだけ大きく）
   function makeDualPieSection(c1, c2, title1, title2) {
-    const sz = sm ? 140 : 190;
+    const sz = sm ? 155 : 200;
     return `<div style="display:flex;gap:${sm?8:12}px;margin-top:8px;align-items:flex-start;">
       <div style="flex:1;display:flex;flex-direction:column;align-items:center;">
         <div style="font-size:11px;color:#888;font-weight:700;margin-bottom:4px;">${title1}</div>
-        <canvas id="${c1}" width="${sz}" height="${sz}" style="width:${sz}px;height:${sz}px;max-width:100%;"></canvas>
+        <canvas id="${c1}" width="${sz*2}" height="${sz*2}" style="width:${sz}px;height:${sz}px;max-width:100%;"></canvas>
       </div>
       <div style="flex:1;display:flex;flex-direction:column;align-items:center;">
         <div style="font-size:11px;color:#888;font-weight:700;margin-bottom:4px;">${title2}</div>
-        <canvas id="${c2}" width="${sz}" height="${sz}" style="width:${sz}px;height:${sz}px;max-width:100%;"></canvas>
+        <canvas id="${c2}" width="${sz*2}" height="${sz*2}" style="width:${sz}px;height:${sz}px;max-width:100%;"></canvas>
       </div>
     </div>`;
   }
@@ -2804,6 +2814,7 @@ function showStats() {
   renderPieChart('pieChartMonthMain', null, thisMonthMain);
 
   document.getElementById('statsModal').classList.add('open');
+  updateFloatingClose();
 }
 
 function switchStatsTab(tab) {
@@ -2814,7 +2825,7 @@ function switchStatsTab(tab) {
   document.getElementById('statsTabWeek').style.color = tab==='week' ? '#1a2744' : '#aaa';
   document.getElementById('statsTabMonth').style.color = tab==='month' ? '#1a2744' : '#aaa';
 }
-function closeStats() { document.getElementById('statsModal').classList.remove('open'); }
+function closeStats() { document.getElementById('statsModal').classList.remove('open'); updateFloatingClose(); }
 
 function changeWeek(dir) {
   currentMonday = addDays(currentMonday, dir*7);
@@ -2921,6 +2932,32 @@ function confirmMultiDelete() {
   cancelMultiSelect();
   render();
   showToast(`${count}件を今週だけ削除しました`, 2500);
+}
+
+// ===== 固定Xボタン制御 =====
+function updateFloatingClose() {
+  const btn = document.getElementById('floatingCloseBtn');
+  if (!btn) return;
+  const anyOpen = document.querySelector('.modal-bg.open');
+  btn.style.display = anyOpen ? 'flex' : 'none';
+}
+
+function closeAnyModal() {
+  const openModal = document.querySelector('.modal-bg.open');
+  if (!openModal) return;
+  const id = openModal.id;
+  if (id === 'detailModal') closeDetail();
+  else if (id === 'addModal') closeAdd();
+  else if (id === 'aiModal') closeAIModal();
+  else if (id === 'gnorevModal') closeGnorevModal();
+  else if (id === 'imageImportModal') closeImageImportModal();
+  else if (id === 'deleteConfirmModal') closeDeleteConfirm();
+  else if (id === 'copyModal') closeCopyModal();
+  else if (id === 'statsModal') closeStats();
+  else if (id === 'saveRangeModal') closeSaveRangeModal();
+  else if (id === 'repeatRangeModal') closeRepeatRangeModal();
+  else openModal.classList.remove('open');
+  updateFloatingClose();
 }
 
 // ===== AI ラクラク機能モーダル =====
@@ -3538,7 +3575,7 @@ render();
 .move-radio label{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600;color:#1a2744;cursor:pointer;white-space:nowrap;}
 .move-radio input{width:18px;height:18px;cursor:pointer;}
 .move-btns{display:flex;gap:10px;}
-.move-btns button{flex:1;padding:11px;border-radius:20px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;}
+.move-btns button{flex:1;padding:11px;border-radius:9999px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;}
 #moveCancelBtn{background:white;border:2px solid #888;color:#888;}
 #moveConfirmBtn{background:#1a2744;border:none;color:white;}
 
@@ -3831,6 +3868,44 @@ window.render = function() {
 };
 render();
 </script>
+
+<style>
+/* スマホ・iPad：モーダル固定Xボタン */
+#floatingCloseBtn {
+  display: none;
+  position: fixed;
+  bottom: 56px;
+  right: 16px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(26,39,68,0.92);
+  color: white;
+  font-size: 22px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  z-index: 9998;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  -webkit-tap-highlight-color: rgba(0,0,0,0);
+}
+
+@media (max-width: 1024px) {
+  /* スマホ・iPadでは上下のXを非表示 */
+  .detail-close-btn, .add-close-btn { display: none !important; }
+  /* 固定Xボタンをモーダルopen時に表示 */
+  .modal-bg.open ~ #floatingCloseBtn,
+  body.modal-open #floatingCloseBtn { display: flex; }
+}
+@media (min-width: 1025px) {
+  /* PCでは固定Xを非表示 */
+  #floatingCloseBtn { display: none !important; }
+}
+</style>
+
+<button id="floatingCloseBtn" onclick="closeAnyModal()" ontouchend="event.preventDefault();closeAnyModal();">×</button>
 
 </div><!-- #app -->
 
