@@ -1633,7 +1633,7 @@ function confirmDeleteOnce() {
   const idx = (lo.added||[]).findIndex(a => a.uid === t.uid);
   if (idx >= 0) lo.added.splice(idx, 1);
   saveLocal(); closeDeleteConfirm(); render();
-  showToast('予定を削除しました ✓');
+  setTimeout(() => showToast('予定を削除しました ✓'), 100);
 }
 
 // これ以降削除（今週以降）
@@ -1643,8 +1643,9 @@ function confirmDeleteFrom() {
   const fromDateStr = dateKey(currentMonday);
   const members = getGroupMembers(t);
   members.forEach(m => _doDeleteWeekly(m, fromDateStr));
+  const msg1 = 'これ以降の予定を削除しました ✓' + (members.length > 1 ? `（${members.length}曜日分）` : '');
   saveLocal(); closeDeleteConfirm(); render();
-  showToast('これ以降の予定を削除しました ✓' + (members.length > 1 ? `（${members.length}曜日分）` : ''));
+  setTimeout(() => showToast(msg1), 100);
 }
 
 // すべて削除（過去も含む全期間）
@@ -1653,8 +1654,9 @@ function confirmDeleteAll() {
   if (!t) return;
   const members = getGroupMembers(t);
   members.forEach(m => _doDeleteWeekly(m, null));
+  const msg2 = 'すべての予定を削除しました ✓' + (members.length > 1 ? `（${members.length}曜日分）` : '');
   saveLocal(); closeDeleteConfirm(); render();
-  showToast('すべての予定を削除しました ✓' + (members.length > 1 ? `（${members.length}曜日分）` : ''));
+  setTimeout(() => showToast(msg2), 100);
 }
 
 // 毎週タスク削除の共通処理
