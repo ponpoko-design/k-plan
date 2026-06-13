@@ -1229,23 +1229,34 @@ function openDetail(t) {
 
     // 毎月の場合、_monthDayをグリッドにハイライト
     if (t._rrKind === 'monthly') {
-      buildDRRMonthdayGrid();
-      // グループメンバーの全_monthDayをハイライト
+      // グループメンバーの全_monthDayを収集
       const monthDays = new Set();
       if (t._groupKey) {
         getGroupMembers(t).forEach(m => { if (m._monthDay) monthDays.add(m._monthDay); });
       } else if (t._monthDay) {
         monthDays.add(t._monthDay);
       }
-      setTimeout(() => {
-        document.querySelectorAll('#dRrMonthdayGrid div').forEach(el => {
-          const day = parseInt(el.getAttribute('data-day'));
-          if (monthDays.has(day)) {
-            el.setAttribute('data-active','1');
-            el.style.background='#1a2744'; el.style.color='white'; el.style.borderColor='#1a2744';
-          }
-        });
-      }, 50);
+      // グリッドを構築してハイライト（アクティブ状態を直接設定）
+      const grid = document.getElementById('dRrMonthdayGrid');
+      if (grid) {
+        grid.innerHTML = '';
+        for (let d = 1; d <= 31; d++) {
+          const el = document.createElement('div');
+          el.setAttribute('data-day', d);
+          const isActive = monthDays.has(d);
+          el.setAttribute('data-active', isActive ? '1' : '0');
+          el.style.cssText = `aspect-ratio:1;border-radius:50%;border:1.5px solid ${isActive?'#1a2744':'#ddd'};background:${isActive?'#1a2744':'white'};font-size:12px;font-weight:700;color:${isActive?'white':'#888'};cursor:pointer;display:flex;align-items:center;justify-content:center;`;
+          el.textContent = d;
+          el.onclick = function() {
+            const a = this.getAttribute('data-active')==='1';
+            this.setAttribute('data-active', a?'0':'1');
+            this.style.background = a?'white':'#1a2744';
+            this.style.color = a?'#888':'white';
+            this.style.borderColor = a?'#ddd':'#1a2744';
+          };
+          grid.appendChild(el);
+        }
+      }
     }
     // fromDate / toDate の表示（_fromDateExactが実際の日付、fromDateは週の月曜）
     const fromStr = t._fromDateExact || null;
@@ -1291,10 +1302,6 @@ function openDetail(t) {
   document.getElementById('detailModal').classList.add('open');
   updateFloatingClose();
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
-  // モーダルを開いた後にsetDetailRRKindを再実行（DOM確実に存在する状態で）
-  if (isWeekly && !t._isWeeklyMoved) {
-    setTimeout(() => setDetailRRKind(_detailRRKind), 10);
-  }
 }
 
 function setDetailRRKind(kind) {
@@ -1307,10 +1314,7 @@ function setDetailRRKind(kind) {
   });
   document.getElementById('dRrWeekdays').style.display = kind === 'weekly' ? 'flex' : 'none';
   const mdSec = document.getElementById('dRrMonthdaySection');
-  if (mdSec) {
-    mdSec.style.display = kind === 'monthly' ? 'block' : 'none';
-    if (kind === 'monthly') buildDRRMonthdayGrid();
-  }
+  if (mdSec) mdSec.style.display = kind === 'monthly' ? 'block' : 'none';
   // タイトルも連動
   const labelMap = { daily:'毎日', weekly:'毎週', monthly:'毎月' };
   const lbl = document.getElementById('detailModeLabel');
