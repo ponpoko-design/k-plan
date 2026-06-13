@@ -944,15 +944,13 @@ function getTasksForWeek() {
     if (weeklyDeletedSet.has(t.uid + '_' + wi)) return;
     // fromDateExact：その週内でも実際の開始日より前はスキップ
     if (t._fromDateExact) {
-      const taskDt = addDays(dates[0], wi);
-      taskDt.setHours(0,0,0,0);
+      const taskDt = new Date(dates[wi]); taskDt.setHours(0,0,0,0);
       const exactFrom = new Date(t._fromDateExact); exactFrom.setHours(0,0,0,0);
       if (taskDt < exactFrom) return;
     }
-    // toDate：実際の終了日より後はスキップ（週単位チェックに加えて日単位チェック）
+    // toDate：実際の終了日より後はスキップ
     if (t.toDate) {
-      const taskDt2 = addDays(dates[0], wi);
-      taskDt2.setHours(0,0,0,0);
+      const taskDt2 = new Date(dates[wi]); taskDt2.setHours(0,0,0,0);
       const [ty2,tm2,td2] = t.toDate.split('-').map(Number);
       const toDt2 = new Date(ty2,tm2-1,td2); toDt2.setHours(0,0,0,0);
       if (taskDt2 > toDt2) return;
@@ -1201,12 +1199,19 @@ function openDetail(t) {
   const infoPanel = document.getElementById('detailRepeatInfo');
   if (isWeekly && !t._isWeeklyMoved) {
     infoPanel.style.display = 'block';
-    // 毎週をデフォルト選択・元カードの曜日をハイライト
-    _detailRRKind = 'weekly';
-    setDetailRRKind('weekly');
+    // 毎週をデフォルト選択・グループ全員の曜日をハイライト
+    _detailRRKind = t._rrKind || 'weekly';
+    setDetailRRKind(_detailRRKind);
+    // グループメンバーの曜日インデックスを収集
+    const groupWis = new Set();
+    if (t._groupKey) {
+      getGroupMembers(t).forEach(m => groupWis.add(m.weekday_index));
+    } else {
+      groupWis.add(t._dayIdx);
+    }
     document.querySelectorAll('.d-rr-wd').forEach(el => {
       const wi = parseInt(el.getAttribute('data-wi'));
-      if (wi === t._dayIdx) {
+      if (groupWis.has(wi)) {
         el.setAttribute('data-active','1');
         el.style.background='#1a2744'; el.style.color='white'; el.style.borderColor='#1a2744';
       } else {
@@ -1216,8 +1221,8 @@ function openDetail(t) {
       }
     });
 
-    // fromDate / toDate の表示
-    const fromStr = t.fromDate || null;
+    // fromDate / toDate の表示（_fromDateExactが実際の日付、fromDateは週の月曜）
+    const fromStr = t._fromDateExact || null;
     const toStr = t.toDate || null;
     const fromDisp = document.getElementById('dRrFromDisplay');
     const toDisp = document.getElementById('dRrToDisplay');
