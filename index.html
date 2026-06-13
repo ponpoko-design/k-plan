@@ -33,14 +33,14 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 
 /* カレンダー */
 .cal-wrap{flex:1;background:var(--navy);border-radius:10px;margin:8px;overflow:hidden;display:flex;flex-direction:column;min-height:400px;}
-.cal-head{display:grid;grid-template-columns:40px repeat(7,1fr);background:var(--navy);flex-shrink:0;}
+.cal-head{display:grid;grid-template-columns:28px repeat(7,1fr);background:var(--navy);flex-shrink:0;}
 .cal-hcell{padding:5px 3px;text-align:center;color:white;font-size:15px;font-weight:700;border-right:3px solid var(--sep);border-bottom:3px solid var(--sep);font-family:"Inter",sans-serif;}
 .cal-hcell.today{background:#f5d020;color:var(--navy);border-radius:5px;margin:2px;}
 .cal-hcell:first-child{border-right:1px solid var(--navy3);}
 
 .cal-body{flex:1;display:grid;grid-template-rows:0.61fr 0.42fr 1fr 1fr 1fr;min-height:0;}
 .time-row{display:grid;grid-template-columns:40px repeat(7,1fr);border-bottom:3px solid var(--sep);min-height:0;}
-.time-lbl{background:var(--navy);display:flex;align-items:stretch;justify-content:center;border-right:3px solid var(--sep);width:40px;flex-shrink:0;padding:8px 3px;}
+.time-lbl{background:var(--navy);display:flex;align-items:stretch;justify-content:center;border-right:3px solid var(--sep);width:28px;flex-shrink:0;padding:6px 2px;}
 .time-lbl-inner{background:transparent;border:0.8px solid white;border-radius:9999px;padding:4px;writing-mode:vertical-rl;font-size:16px;font-weight:400;color:white;letter-spacing:4px;width:100%;display:flex;align-items:center;justify-content:center;box-sizing:border-box;}
 .time-lbl-asa{background:transparent;border:0.8px solid white;border-radius:50%;width:36px;height:36px;font-size:14px;font-weight:400;color:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .day-cell{background:white;border-right:3px solid var(--sep);padding:3px 2px;display:flex;flex-direction:column;gap:2px;overflow:hidden;cursor:pointer;transition:background .1s;min-height:0;-webkit-user-select:none;}
@@ -125,8 +125,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
   .hdr{height:34px;padding:3px 8px;flex-shrink:0;}
   .hdr-title{font-size:13px;}
   .nav-btn{font-size:11px;padding:3px 8px;}
-  .cal-head{grid-template-columns:26px repeat(7,1fr);}
-  .time-row{grid-template-columns:26px repeat(7,1fr);}
+  .cal-head{grid-template-columns:24px repeat(7,1fr);}
+  .time-row{grid-template-columns:24px repeat(7,1fr);}
   .time-lbl{width:30px;padding:4px 2px;}
   .time-lbl-inner{font-size:9px;padding:10px 2px;min-height:30px;letter-spacing:1px;}
   .cal-hcell{font-size:10px;padding:3px 1px;}
@@ -974,7 +974,7 @@ function render() {
 
   // ヘッダーの列数をCSSで動的に設定
   const colCount = phonePortrait ? 3 : 7;
-  const lblW = phonePortrait ? '32px' : '40px';
+  const lblW = phonePortrait ? '28px' : '28px';
   const gridCols = `${lblW} repeat(${colCount}, 1fr)`;
   document.querySelectorAll('.cal-head, .time-row').forEach(el => {
     el.style.gridTemplateColumns = gridCols;
@@ -3649,7 +3649,7 @@ render();
   .nav-btn{font-size:11px;padding:3px 8px;}
   .cal-head{grid-template-columns:26px repeat(7,1fr);}
   .time-row{grid-template-columns:26px repeat(7,1fr);}
-  .time-lbl{width:26px;font-size:9px;letter-spacing:1px;}
+  .time-lbl{width:24px;padding:4px 1px;}
   .cal-hcell{font-size:10px;padding:3px 1px;}
   .card{font-size:9px;padding:2px 2px;line-height:1.4;}
   /* ナビ：固定ではなく通常フローの末尾に置く */
