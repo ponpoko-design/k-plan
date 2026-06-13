@@ -175,7 +175,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
       <button id="multiSelectToggle" onclick="toggleMultiSelect()"
         style="background:white;border:1.5px solid #ccc;color:#888;border-radius:14px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">複数選択</button>
       <button class="undo-btn" onclick="undoLast()"
-        style="background:white;border:1.5px solid #ccc;color:#888;border-radius:14px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;opacity:0.35;pointer-events:none;">↩</button>
+        style="background:white;border:1.5px solid #ccc;color:#888;border-radius:14px;padding:3px 18px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;opacity:0.35;pointer-events:none;">↩</button>
     </div>
     <button class="nav-btn" id="btnNext" onclick="navNext()"><span id="btnNextLabel">翌週</span> <svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor"><polygon points="0,0 0,12 10,6"/></svg></button>
   </div>
@@ -800,10 +800,13 @@ function getWeekDates() {
   return Array.from({length:7}, (_,i) => addDays(currentMonday, i));
 }
 function saveLocal() {
-  // undo用：保存前の状態をスナップショット
+  localStorage.setItem('schedule_overrides', JSON.stringify(localOverrides));
+}
+
+// undo用スナップショットを取る（操作開始時に呼ぶ）
+function takeSnapshot() {
   _undoSnapshot = JSON.parse(JSON.stringify(localOverrides));
   updateUndoBtn();
-  localStorage.setItem('schedule_overrides', JSON.stringify(localOverrides));
 }
 function getWeekKey() { return dateKey(currentMonday); }
 
@@ -1495,7 +1498,7 @@ function saveDetailRepeatSettings() {
     }
   }
 
-  saveLocal(); closeDetail(); render();
+  takeSnapshot(); saveLocal(); closeDetail(); render();
   showToast('繰り返し設定を変更しました ✓');
 }
 function closeDetail() {
@@ -1523,7 +1526,7 @@ function saveTask() {
   } else {
     // 今回だけタスク → 即保存
     _doSaveTask(t, newSubject, newUnit, newHash, newMemo, newTime, 'once');
-    saveLocal(); closeDetail(); render();
+    takeSnapshot(); saveLocal(); closeDetail(); render();
     showToast('変更を保存しました ✓');
   }
 }
@@ -1537,7 +1540,7 @@ function confirmSaveRange(range) {
   if (!_saveTaskData) return;
   const {t, newSubject, newUnit, newHash, newMemo, newTime} = _saveTaskData;
   _doSaveTask(t, newSubject, newUnit, newHash, newMemo, newTime, range);
-  saveLocal(); closeSaveRangeModal(); render();
+  takeSnapshot(); saveLocal(); closeSaveRangeModal(); render();
   showToast('変更を保存しました ✓');
 }
 
@@ -1640,7 +1643,7 @@ function confirmDeleteOnce() {
   lo.hidden[t.uid + '_' + t._dayIdx] = true;
   const idx = (lo.added||[]).findIndex(a => a.uid === t.uid);
   if (idx >= 0) lo.added.splice(idx, 1);
-  saveLocal(); closeDeleteConfirm(); render();
+  takeSnapshot(); saveLocal(); closeDeleteConfirm(); render();
   setTimeout(() => showToast('予定を削除しました ✓'), 100);
 }
 
@@ -1665,7 +1668,7 @@ function confirmDeleteFrom() {
   } else {
     _doDeleteWeekly(t, fromDateStr);
   }
-  saveLocal(); closeDeleteConfirm(); render();
+  takeSnapshot(); saveLocal(); closeDeleteConfirm(); render();
   setTimeout(() => showToast('これ以降の予定を削除しました ✓'), 100);
 }
 
@@ -1681,7 +1684,7 @@ function confirmDeleteAll() {
   } else {
     _doDeleteWeekly(t, null);
   }
-  saveLocal(); closeDeleteConfirm(); render();
+  takeSnapshot(); saveLocal(); closeDeleteConfirm(); render();
   setTimeout(() => showToast('すべての予定を削除しました ✓'), 100);
 }
 
@@ -1835,7 +1838,7 @@ function confirmCopy(){
       is_hidden:'no'
     });
   }
-  saveLocal();
+  takeSnapshot(); saveLocal();
   document.getElementById('copyModal').classList.remove('open');
   closeDetail();
   render();
@@ -2031,7 +2034,7 @@ function confirmRepeatRange() {
     }
   }
 
-  saveLocal(); closeRepeatRangeModal(); render();
+  takeSnapshot(); saveLocal(); closeRepeatRangeModal(); render();
   showToast('繰り返す予定に変更しました ✓');
 }
 
@@ -2618,7 +2621,7 @@ function confirmAdd() {
       });
     }
 
-    saveLocal(); closeAdd(); render();
+    takeSnapshot(); saveLocal(); closeAdd(); render();
   }
 
   document.getElementById('aUnit').value='';
@@ -4018,7 +4021,7 @@ function confirmMove() {
       weekday_index:toDay, order:99, repeat_key:null
     });
   }
-  saveLocal(); closeMoveModal(); render();
+  takeSnapshot(); saveLocal(); closeMoveModal(); render();
 }
 
 // fitModals
