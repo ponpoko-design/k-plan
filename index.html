@@ -3068,8 +3068,10 @@ function confirmMultiDelete() {
 // ===== Undo機能 =====
 function undoLast() {
   if (!_undoSnapshot) return;
-  localOverrides = _undoSnapshot;
+  // スナップショットを一時変数に退避してからnullに
+  const snapshot = JSON.parse(JSON.stringify(_undoSnapshot));
   _undoSnapshot = null;
+  localOverrides = snapshot;
   localStorage.setItem('schedule_overrides', JSON.stringify(localOverrides));
   // Firestoreにも反映
   if (typeof db !== 'undefined') {
