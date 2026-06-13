@@ -799,7 +799,12 @@ function sameDateStr(a, b) {
 function getWeekDates() {
   return Array.from({length:7}, (_,i) => addDays(currentMonday, i));
 }
-function saveLocal() { localStorage.setItem('schedule_overrides', JSON.stringify(localOverrides)); }
+function saveLocal() {
+  // undo用：保存前の状態をスナップショット
+  _undoSnapshot = JSON.parse(JSON.stringify(localOverrides));
+  updateUndoBtn();
+  localStorage.setItem('schedule_overrides', JSON.stringify(localOverrides));
+}
 function getWeekKey() { return dateKey(currentMonday); }
 
 // ===== Compute tasks for current week =====
@@ -4143,9 +4148,6 @@ async function loadFromFirestore() {
 // Firestoreにデータを保存する（既存のsaveLocal関数を上書き）
 const _origSaveLocal = saveLocal;
 window.saveLocal = function() {
-  // undo用スナップショットを保存（保存前の状態を記録）
-  _undoSnapshot = JSON.parse(JSON.stringify(localOverrides));
-  updateUndoBtn();
   _origSaveLocal();
   // Firestoreにも保存
   db.collection('schedules').doc('main').set({
