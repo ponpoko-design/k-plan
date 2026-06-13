@@ -41,7 +41,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 .cal-body{flex:1;display:grid;grid-template-rows:0.61fr 0.42fr 1fr 1fr 1fr;min-height:0;}
 .time-row{display:grid;grid-template-columns:40px repeat(7,1fr);border-bottom:3px solid var(--sep);min-height:0;}
 .time-lbl{background:var(--navy);display:flex;align-items:center;justify-content:center;border-right:3px solid var(--sep);width:40px;flex-shrink:0;padding:8px 3px;}
-.time-lbl-inner{background:white;border-radius:9999px;padding:22px 4px;writing-mode:vertical-rl;font-size:16px;font-weight:700;color:var(--navy);letter-spacing:4px;min-height:80px;display:flex;align-items:center;justify-content:center;}
+.time-lbl-inner{background:transparent;border:1.5px solid white;border-radius:9999px;padding:22px 4px;writing-mode:vertical-rl;font-size:16px;font-weight:700;color:white;letter-spacing:4px;min-height:80px;display:flex;align-items:center;justify-content:center;}
+.time-lbl-asa{background:transparent;border:1.5px solid white;border-radius:50%;width:36px;height:36px;font-size:14px;font-weight:700;color:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .day-cell{background:white;border-right:3px solid var(--sep);padding:3px 2px;display:flex;flex-direction:column;gap:2px;overflow:hidden;cursor:pointer;transition:background .1s;min-height:0;-webkit-user-select:none;}
 .day-cell.drag-over{background:#ddeeff;outline:2px dashed #378add;}
 
@@ -105,6 +106,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
   .day-cell.sp-hide,.cal-hcell.sp-hide{display:none!important;}
   .time-lbl{width:32px;padding:4px 2px;}
   .time-lbl-inner{font-size:11px;padding:12px 3px;min-height:40px;letter-spacing:2px;}
+  .time-lbl-asa{width:26px;height:26px;font-size:11px;}
   .cal-hcell{font-size:12px;padding:4px 2px;}
   .card{font-size:12px;padding:3px 4px;line-height:1.4;}
   /* ナビを小さく → カレンダー領域を広げる */
@@ -186,7 +188,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
     </div>
     <div class="cal-body" id="calBody">
       <div class="time-row"><div class="time-lbl"><div class="time-lbl-inner">予定</div></div><div id="c0-0" class="day-cell"></div><div id="c1-0" class="day-cell"></div><div id="c2-0" class="day-cell"></div><div id="c3-0" class="day-cell"></div><div id="c4-0" class="day-cell"></div><div id="c5-0" class="day-cell"></div><div id="c6-0" class="day-cell"></div></div>
-      <div class="time-row"><div class="time-lbl"><div class="time-lbl-inner">朝</div></div><div id="c0-1" class="day-cell"></div><div id="c1-1" class="day-cell"></div><div id="c2-1" class="day-cell"></div><div id="c3-1" class="day-cell"></div><div id="c4-1" class="day-cell"></div><div id="c5-1" class="day-cell"></div><div id="c6-1" class="day-cell"></div></div>
+      <div class="time-row"><div class="time-lbl"><div class="time-lbl-asa">朝</div></div><div id="c0-1" class="day-cell"></div><div id="c1-1" class="day-cell"></div><div id="c2-1" class="day-cell"></div><div id="c3-1" class="day-cell"></div><div id="c4-1" class="day-cell"></div><div id="c5-1" class="day-cell"></div><div id="c6-1" class="day-cell"></div></div>
       <div class="time-row"><div class="time-lbl"><div class="time-lbl-inner">午前</div></div><div id="c0-2" class="day-cell"></div><div id="c1-2" class="day-cell"></div><div id="c2-2" class="day-cell"></div><div id="c3-2" class="day-cell"></div><div id="c4-2" class="day-cell"></div><div id="c5-2" class="day-cell"></div><div id="c6-2" class="day-cell"></div></div>
       <div class="time-row"><div class="time-lbl"><div class="time-lbl-inner">午後</div></div><div id="c0-3" class="day-cell"></div><div id="c1-3" class="day-cell"></div><div id="c2-3" class="day-cell"></div><div id="c3-3" class="day-cell"></div><div id="c4-3" class="day-cell"></div><div id="c5-3" class="day-cell"></div><div id="c6-3" class="day-cell"></div></div>
       <div class="time-row"><div class="time-lbl"><div class="time-lbl-inner">夜</div></div><div id="c0-4" class="day-cell"></div><div id="c1-4" class="day-cell"></div><div id="c2-4" class="day-cell"></div><div id="c3-4" class="day-cell"></div><div id="c4-4" class="day-cell"></div><div id="c5-4" class="day-cell"></div><div id="c6-4" class="day-cell"></div></div>
