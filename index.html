@@ -40,7 +40,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 
 .cal-body{flex:1;display:grid;grid-template-rows:0.61fr 0.42fr 1fr 1fr 1fr;min-height:0;}
 .time-row{display:grid;grid-template-columns:40px repeat(7,1fr);border-bottom:3px solid var(--sep);min-height:0;}
-.time-lbl{background:var(--navy2);color:white;font-size:13px;writing-mode:vertical-rl;display:flex;align-items:center;justify-content:center;border-right:3px solid var(--sep);font-weight:700;letter-spacing:2px;width:40px;flex-shrink:0;}
+.time-lbl{background:var(--navy);display:flex;align-items:center;justify-content:center;border-right:3px solid var(--sep);width:40px;flex-shrink:0;padding:8px 3px;}
+.time-lbl-inner{background:white;border-radius:9999px;padding:22px 4px;writing-mode:vertical-rl;font-size:16px;font-weight:700;color:var(--navy);letter-spacing:4px;min-height:80px;display:flex;align-items:center;justify-content:center;}
 .day-cell{background:white;border-right:3px solid var(--sep);padding:3px 2px;display:flex;flex-direction:column;gap:2px;overflow:hidden;cursor:pointer;transition:background .1s;min-height:0;-webkit-user-select:none;}
 .day-cell.drag-over{background:#ddeeff;outline:2px dashed #378add;}
 
@@ -102,7 +103,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
   .cal-head{grid-template-columns:28px repeat(3,1fr)!important;}
   .time-row{grid-template-columns:28px repeat(3,1fr)!important;}
   .day-cell.sp-hide,.cal-hcell.sp-hide{display:none!important;}
-  .time-lbl{width:28px;font-size:10px;letter-spacing:1px;}
+  .time-lbl{width:32px;padding:4px 2px;}
+  .time-lbl-inner{font-size:11px;padding:12px 3px;min-height:40px;letter-spacing:2px;}
   .cal-hcell{font-size:12px;padding:4px 2px;}
   .card{font-size:12px;padding:3px 4px;line-height:1.4;}
   /* ナビを小さく → カレンダー領域を広げる */
@@ -123,7 +125,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
   .nav-btn{font-size:11px;padding:3px 8px;}
   .cal-head{grid-template-columns:26px repeat(7,1fr);}
   .time-row{grid-template-columns:26px repeat(7,1fr);}
-  .time-lbl{width:26px;font-size:9px;letter-spacing:1px;}
+  .time-lbl{width:30px;padding:4px 2px;}
+  .time-lbl-inner{font-size:9px;padding:10px 2px;min-height:30px;letter-spacing:1px;}
   .cal-hcell{font-size:10px;padding:3px 1px;}
   .card{font-size:9px;padding:2px 2px;line-height:1.4;}
   /* ナビ：固定ではなく通常フローの末尾に置く */
@@ -182,11 +185,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
       <div class="cal-hcell" id="hd6"></div>
     </div>
     <div class="cal-body" id="calBody">
-      <div class="time-row"><div class="time-lbl">予定</div><div id="c0-0" class="day-cell"></div><div id="c1-0" class="day-cell"></div><div id="c2-0" class="day-cell"></div><div id="c3-0" class="day-cell"></div><div id="c4-0" class="day-cell"></div><div id="c5-0" class="day-cell"></div><div id="c6-0" class="day-cell"></div></div>
-      <div class="time-row"><div class="time-lbl">朝</div><div id="c0-1" class="day-cell"></div><div id="c1-1" class="day-cell"></div><div id="c2-1" class="day-cell"></div><div id="c3-1" class="day-cell"></div><div id="c4-1" class="day-cell"></div><div id="c5-1" class="day-cell"></div><div id="c6-1" class="day-cell"></div></div>
-      <div class="time-row"><div class="time-lbl">午前</div><div id="c0-2" class="day-cell"></div><div id="c1-2" class="day-cell"></div><div id="c2-2" class="day-cell"></div><div id="c3-2" class="day-cell"></div><div id="c4-2" class="day-cell"></div><div id="c5-2" class="day-cell"></div><div id="c6-2" class="day-cell"></div></div>
-      <div class="time-row"><div class="time-lbl">午後</div><div id="c0-3" class="day-cell"></div><div id="c1-3" class="day-cell"></div><div id="c2-3" class="day-cell"></div><div id="c3-3" class="day-cell"></div><div id="c4-3" class="day-cell"></div><div id="c5-3" class="day-cell"></div><div id="c6-3" class="day-cell"></div></div>
-      <div class="time-row"><div class="time-lbl">夜</div><div id="c0-4" class="day-cell"></div><div id="c1-4" class="day-cell"></div><div id="c2-4" class="day-cell"></div><div id="c3-4" class="day-cell"></div><div id="c4-4" class="day-cell"></div><div id="c5-4" class="day-cell"></div><div id="c6-4" class="day-cell"></div></div>
+      <div class="time-row"><div class="time-lbl"><div class="time-lbl-inner">予定</div></div><div id="c0-0" class="day-cell"></div><div id="c1-0" class="day-cell"></div><div id="c2-0" class="day-cell"></div><div id="c3-0" class="day-cell"></div><div id="c4-0" class="day-cell"></div><div id="c5-0" class="day-cell"></div><div id="c6-0" class="day-cell"></div></div>
+      <div class="time-row"><div class="time-lbl"><div class="time-lbl-inner">朝</div></div><div id="c0-1" class="day-cell"></div><div id="c1-1" class="day-cell"></div><div id="c2-1" class="day-cell"></div><div id="c3-1" class="day-cell"></div><div id="c4-1" class="day-cell"></div><div id="c5-1" class="day-cell"></div><div id="c6-1" class="day-cell"></div></div>
+      <div class="time-row"><div class="time-lbl"><div class="time-lbl-inner">午前</div></div><div id="c0-2" class="day-cell"></div><div id="c1-2" class="day-cell"></div><div id="c2-2" class="day-cell"></div><div id="c3-2" class="day-cell"></div><div id="c4-2" class="day-cell"></div><div id="c5-2" class="day-cell"></div><div id="c6-2" class="day-cell"></div></div>
+      <div class="time-row"><div class="time-lbl"><div class="time-lbl-inner">午後</div></div><div id="c0-3" class="day-cell"></div><div id="c1-3" class="day-cell"></div><div id="c2-3" class="day-cell"></div><div id="c3-3" class="day-cell"></div><div id="c4-3" class="day-cell"></div><div id="c5-3" class="day-cell"></div><div id="c6-3" class="day-cell"></div></div>
+      <div class="time-row"><div class="time-lbl"><div class="time-lbl-inner">夜</div></div><div id="c0-4" class="day-cell"></div><div id="c1-4" class="day-cell"></div><div id="c2-4" class="day-cell"></div><div id="c3-4" class="day-cell"></div><div id="c4-4" class="day-cell"></div><div id="c5-4" class="day-cell"></div><div id="c6-4" class="day-cell"></div></div>
     </div>
   </div>
 
@@ -1181,7 +1184,9 @@ function openDetail(t) {
   } else if (isWeekly) {
     // fromDateやrepeat_keyから種類を判定
     const rrKindLabel = t._rrKind === 'daily' ? '毎日' : t._rrKind === 'monthly' ? '毎月' : '毎週';
-    modeLabel = rrKindLabel + 'くりかえす予定';
+    const groupSize = t._groupKey ? getGroupMembers(t).length : 1;
+    const groupLabel = groupSize > 1 ? `（${groupSize}曜日セット）` : '';
+    modeLabel = rrKindLabel + 'くりかえす予定' + groupLabel;
     repeatBtnLabel = '今回だけの予定に変更';
   } else {
     modeLabel = '今回だけの予定';
@@ -1559,22 +1564,24 @@ function confirmDeleteOnce() {
 }
 
 // これ以降削除（今週以降）
-// これ以降削除（今週以降）
 function confirmDeleteFrom() {
   const t = _deleteTarget;
   if (!t) return;
-  _doDeleteWeekly(t, dateKey(currentMonday));
+  const fromDateStr = dateKey(currentMonday);
+  const members = getGroupMembers(t);
+  members.forEach(m => _doDeleteWeekly(m, fromDateStr));
   saveLocal(); closeDeleteConfirm(); render();
-  showToast('これ以降の予定を削除しました ✓');
+  showToast('これ以降の予定を削除しました ✓' + (members.length > 1 ? `（${members.length}曜日分）` : ''));
 }
 
 // すべて削除（過去も含む全期間）
 function confirmDeleteAll() {
   const t = _deleteTarget;
   if (!t) return;
-  _doDeleteWeekly(t, null);
+  const members = getGroupMembers(t);
+  members.forEach(m => _doDeleteWeekly(m, null));
   saveLocal(); closeDeleteConfirm(); render();
-  showToast('すべての予定を削除しました ✓');
+  showToast('すべての予定を削除しました ✓' + (members.length > 1 ? `（${members.length}曜日分）` : ''));
 }
 
 // 毎週タスク削除の共通処理
@@ -2441,13 +2448,15 @@ function confirmAdd() {
     };
 
     if (kind === 'daily') {
-      // 毎日 → 7曜日分をweeklyAddedに登録（くりかえす予定方式）
+      // 毎日 → 7曜日分をweeklyAddedに登録（グループ化）
       if (!localOverrides.weeklyAdded) localOverrides.weeklyAdded = [];
       const fromMondayStrD = dateKey(getMonday(new Date(fromDt)));
+      const groupKeyD = 'grp_daily_' + Date.now();
       for (let wi = 0; wi < 7; wi++) {
-        const uid = 'new_daily_'+Date.now()+'_'+wi;
+        const uid = groupKeyD + '_' + wi;
         localOverrides.weeklyAdded.push({
           ...baseTask, uid, repeat_key: uid,
+          _groupKey: groupKeyD,
           weekday: DAYS_JP[wi], weekday_index: wi,
           _dayIdx: wi, _slotIdx: SLOT_IDX[slot]||0,
           _rrKind: 'daily',
@@ -2458,17 +2467,19 @@ function confirmAdd() {
       }
 
     } else if (kind === 'weekly') {
-      // 毎週：weeklyAddedに登録、fromDateをいつからの週の月曜に設定
+      // 毎週：同じgroupKeyで複数曜日をワンセットとして登録
       const selectedWds = [...document.querySelectorAll('.r-wd')]
         .filter(el => el.getAttribute('data-active') === '1')
         .map(el => parseInt(el.getAttribute('data-wi')));
       if (selectedWds.length === 0) { alert('曜日を選んでください'); return; }
       const fromMondayStr = dateKey(getMonday(new Date(fromDt)));
-      const fromExact = fromStr; // 実際のいつからの日付
+      const fromExact = fromStr;
+      const groupKey = 'grp_weekly_' + Date.now(); // ワンセットのグループID
       selectedWds.forEach(wi => {
-        const uid = 'new_weekly_'+Date.now()+'_'+wi;
+        const uid = groupKey + '_' + wi;
         localOverrides.weeklyAdded.push({
           ...baseTask, uid, repeat_key: uid,
+          _groupKey: groupKey,  // グループID
           weekday: DAYS_JP[wi], weekday_index: wi,
           _dayIdx: wi, _slotIdx: SLOT_IDX[slot]||0,
           _rrKind: 'weekly',
@@ -2485,10 +2496,12 @@ function confirmAdd() {
         .map(el => parseInt(el.getAttribute('data-day')));
       if (selectedDays.length === 0) { alert('日付を選んでください'); return; }
       const fromMondayStr2 = dateKey(getMonday(new Date(fromDt)));
+      const groupKeyM = 'grp_monthly_' + Date.now();
       selectedDays.forEach(day => {
-        const uid = 'new_monthly_'+Date.now()+'_d'+day;
+        const uid = groupKeyM + '_d' + day;
         localOverrides.weeklyAdded.push({
           ...baseTask, uid, repeat_key: uid,
+          _groupKey: groupKeyM,
           _rrKind: 'monthly', _monthDay: day,
           fromDate: fromMondayStr2,
           _fromDateExact: fromStr,
@@ -2958,6 +2971,29 @@ function closeAnyModal() {
   else if (id === 'repeatRangeModal') closeRepeatRangeModal();
   else openModal.classList.remove('open');
   updateFloatingClose();
+}
+
+// ===== グループ管理ヘルパー =====
+// 同じ_groupKeyを持つweeklyAddedのカードを全て返す
+function getGroupMembers(t) {
+  if (!t._groupKey) return [t];
+  return (localOverrides.weeklyAdded || []).filter(a => a._groupKey === t._groupKey);
+}
+
+// グループ全体を削除（weeklyDeleted に全メンバーを登録）
+function deleteGroupAll(t, fromDateStr) {
+  const members = getGroupMembers(t);
+  if (!localOverrides.weeklyDeleted) localOverrides.weeklyDeleted = [];
+  members.forEach(m => {
+    const existIdx = localOverrides.weeklyDeleted.findIndex(d => d.uid === m.uid && d.dayIdx === m.weekday_index);
+    const entry = { uid: m.uid, dayIdx: m.weekday_index, fromDate: fromDateStr };
+    if (existIdx >= 0) localOverrides.weeklyDeleted[existIdx] = entry;
+    else localOverrides.weeklyDeleted.push(entry);
+  });
+  if (fromDateStr === null) {
+    // 全削除の場合weeklyAddedからも除去
+    localOverrides.weeklyAdded = (localOverrides.weeklyAdded || []).filter(a => a._groupKey !== t._groupKey && a.uid !== t.uid);
+  }
 }
 
 // ===== AI ラクラク機能モーダル =====
