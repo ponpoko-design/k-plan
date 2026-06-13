@@ -1641,13 +1641,17 @@ function confirmDeleteFrom() {
   const t = _deleteTarget;
   if (!t) return;
   const fromDateStr = dateKey(currentMonday);
-  // groupKeyがあれば全メンバーのtoDateを前日に設定
   if (t._groupKey) {
     const fromDt = new Date(fromDateStr);
     fromDt.setDate(fromDt.getDate() - 1);
     const toDateStr = dateKey(fromDt);
     localOverrides.weeklyAdded = (localOverrides.weeklyAdded||[]).map(a => {
       if (a._groupKey !== t._groupKey) return a;
+      // タップしたカードと同じ_monthDay（または同じweekday_index）のみ対象
+      const isSameItem = t._rrKind === 'monthly'
+        ? a._monthDay === t._monthDay
+        : a.weekday_index === t.weekday_index;
+      if (!isSameItem) return a; // 別の日付・曜日は残す
       return {...a, toDate: toDateStr};
     });
   } else {
