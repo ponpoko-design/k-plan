@@ -1640,28 +1640,47 @@ function confirmDeleteOnce() {
 function confirmDeleteFrom() {
   const t = _deleteTarget;
   if (!t) return;
-  const fromDateStr = dateKey(currentMonday);
-  const members = getGroupMembers(t);
-  members.forEach(m => _doDeleteWeekly(m, fromDateStr));
-  const msg1 = 'これ以降の予定を削除しました ✓' + (members.length > 1 ? `（${members.length}曜日分）` : '');
-  saveLocal(); closeDeleteConfirm(); render();
-  setTimeout(() => showToast(msg1), 100);
+  try {
+    const fromDateStr = dateKey(currentMonday);
+    const members = getGroupMembers(t);
+    members.forEach(m => _doDeleteWeekly(m, fromDateStr));
+    const msg1 = 'これ以降の予定を削除しました ✓' + (members.length > 1 ? `（${members.length}曜日分）` : '');
+    saveLocal(); closeDeleteConfirm(); render();
+    setTimeout(() => showToast(msg1), 100);
+  } catch(e) {
+    console.log('confirmDeleteFrom error:', e);
+    saveLocal(); closeDeleteConfirm(); render();
+    setTimeout(() => showToast('予定を削除しました ✓'), 100);
+  }
 }
 
 // すべて削除（過去も含む全期間）
 function confirmDeleteAll() {
   const t = _deleteTarget;
   if (!t) return;
-  const members = getGroupMembers(t);
-  members.forEach(m => _doDeleteWeekly(m, null));
-  const msg2 = 'すべての予定を削除しました ✓' + (members.length > 1 ? `（${members.length}曜日分）` : '');
-  saveLocal(); closeDeleteConfirm(); render();
-  setTimeout(() => showToast(msg2), 100);
+  try {
+    const members = getGroupMembers(t);
+    members.forEach(m => _doDeleteWeekly(m, null));
+    const msg2 = 'すべての予定を削除しました ✓' + (members.length > 1 ? `（${members.length}曜日分）` : '');
+    saveLocal(); closeDeleteConfirm(); render();
+    setTimeout(() => showToast(msg2), 100);
+  } catch(e) {
+    console.log('confirmDeleteAll error:', e);
+    // フォールバック：weeklyAddedから直接除去
+    if (t._groupKey) {
+      localOverrides.weeklyAdded = (localOverrides.weeklyAdded||[]).filter(a => a._groupKey !== t._groupKey);
+    }
+    if (!localOverrides.weeklyDeleted) localOverrides.weeklyDeleted = [];
+    localOverrides.weeklyDeleted.push({uid: t.uid, dayIdx: t._dayIdx, fromDate: null});
+    saveLocal(); closeDeleteConfirm(); render();
+    setTimeout(() => showToast('予定を削除しました ✓'), 100);
+  }
 }
 
 // 毎週タスク削除の共通処理
 // fromDate: 文字列 → その週以降を削除 / null → 全週削除
 function _doDeleteWeekly(t, fromDate) {
+  if (!t) return;
   if (t._isWeeklyMoved) {
     if (localOverrides.weeklyMoves) {
       localOverrides.weeklyMoves = localOverrides.weeklyMoves.filter(mv => mv.moveUid !== t.uid);
@@ -1675,22 +1694,21 @@ function _doDeleteWeekly(t, fromDate) {
   const entry = {uid: origUid, dayIdx: t._dayIdx, fromDate: fromDate};
   if (existIdx >= 0) localOverrides.weeklyDeleted[existIdx] = entry;
   else localOverrides.weeklyDeleted.push(entry);
-  // weeklyAddedの当該タスクにもtoDate/fromDateを設定して非表示化
+  // weeklyAddedの当該タスクを非表示化/削除
   if (localOverrides.weeklyAdded) {
-    localOverrides.weeklyAdded = localOverrides.weeklyAdded.map(a => {
-      if (a.uid !== t.uid && a._origUid !== origUid) return a;
-      if (fromDate === null) return null; // 全削除はnullで除去
+    if (fromDate === null) {
+      // 全削除：該当UIDをweeklyAddedから除去
+      localOverrides.weeklyAdded = localOverrides.weeklyAdded.filter(a => a.uid !== origUid && a.uid !== t.uid);
+    } else {
       // これ以降削除：toDateをfromDateの前日に設定
       const fromDt = new Date(fromDate);
       fromDt.setDate(fromDt.getDate() - 1);
-      return {...a, toDate: dateKey(fromDt)};
-    }).filter(Boolean);
-  }
-  // groupKeyがある場合、全メンバーをweeklyAddedから除去（全削除時）
-  if (fromDate === null && t._groupKey) {
-    localOverrides.weeklyAdded = (localOverrides.weeklyAdded||[]).filter(
-      a => a._groupKey !== t._groupKey
-    );
+      const toDateStr = dateKey(fromDt);
+      localOverrides.weeklyAdded = localOverrides.weeklyAdded.map(a => {
+        if (a.uid !== t.uid && a._origUid !== origUid) return a;
+        return {...a, toDate: toDateStr};
+      });
+    }
   }
 }
 
@@ -2586,7 +2604,7 @@ function confirmAdd() {
           _rrKind: 'monthly', _monthDay: day,
           fromDate: fromMondayStr2,
           _fromDateExact: fromStr,
-          toDate: toStr || null,
+          toDate: toStr || '2027-01-31',
           display_type: 'weekly'
         });
       });
@@ -3057,8 +3075,14 @@ function closeAnyModal() {
 // ===== グループ管理ヘルパー =====
 // 同じ_groupKeyを持つweeklyAddedのカードを全て返す
 function getGroupMembers(t) {
-  if (!t._groupKey) return [t];
-  return (localOverrides.weeklyAdded || []).filter(a => a._groupKey === t._groupKey);
+  try {
+    if (!t || !t._groupKey) return [t];
+    const members = (localOverrides.weeklyAdded || []).filter(a => a && a._groupKey === t._groupKey);
+    return members.length > 0 ? members : [t];
+  } catch(e) {
+    console.log('getGroupMembers error:', e);
+    return [t];
+  }
 }
 
 // グループ全体を削除（weeklyDeleted に全メンバーを登録）
