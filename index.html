@@ -3267,7 +3267,7 @@ async function sendRuleChatMessage() {
       history.push({ role: el.dataset.role, content: el.dataset.content });
     }
   });
-  var sp = 'K-studyAIアシスタント。塾:月(国社)水(算理)帰宅後勉強なし。木:プロタゴ16:50。土日:サッカー。グノレブ:月か水のみ2027年1月末まで。優先:国語=漢字毎日15分最重要、理科=テスト振返り優先、社会=音読優先(得意)、算数=基礎力毎朝。曜日別:月水=朝のみ、火金=朝午後夜、木=朝夜、土=朝午前9-15:30夜18以降、日=朝午前12時まで夜18以降。日本語で親しみやすく簡潔に回答。';
+  var sp = 'K-studyAIアシスタント。塾:月(国社)水(算理)帰宅後勉強なし。木:プロタゴ16:50。土日:サッカー。グノレブ:月か水のみ2027年1月末まで。実力テスト:グノレブとは別で半年に1回・土日のどちらかに実施・範囲なし・グノレブ前後の提案には影響しない。優先:国語=漢字毎日15分最重要、理科=テスト振返り優先、社会=音読優先(得意)、算数=基礎力毎朝。曜日別:月水=朝のみ、火金=朝午後夜、木=朝夜、土=朝午前9-15:30夜18以降、日=朝午前12時まで夜18以降。日本語で親しみやすく簡潔に回答。';
   try {
     var res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -3732,88 +3732,99 @@ function confirmGnorev() {
   // テスト当日カード
   addTask(testDate, 'plan', 'テスト', 'グノレブ', null, false, range);
 
-  // ===== 直前週の学習提案 =====
+  // ===== 直前週の学習提案（ベストパターン：スクショ実績ベース） =====
+  // グノレブは月曜または水曜のみ（2027年1月末まで）
   const daysToMon = dow === 0 ? 6 : dow - 1;
   const thisMonday = new Date(testDate); thisMonday.setDate(testDate.getDate() - daysToMon);
   const prevMonday = new Date(thisMonday); prevMonday.setDate(thisMonday.getDate() - 7);
 
-  // 直前週の各日（月〜テスト前日）に提案
-  // 月：朝のみ（基礎力・漢字は通常予定あり→提案なし）
-  // 火：午後・夜可
-  // 水：午後のみ（塾前）
-  // 木：夜のみ（プロタゴ後）
-  // 金：午後・夜可
-  // 土日：朝か夜に集約（本人が動かす前提）
-  const plan = [
-    // 火曜(+1)：月曜塾（国語・社会）翌日復習 ＋ 水曜塾（算数・理科）前日対策
-    {offset:1, slot:'pm',    subject:'理科', unit:'確認問題 復習', time:40},
-    {offset:1, slot:'night', subject:'国語', unit:'単元音読 復習', time:15},
-    {offset:1, slot:'night', subject:'社会', unit:'単元音読 復習', time:10},
-    {offset:1, slot:'night', subject:'国語', unit:'意味調べ 復習', time:20},
-    // 水曜(+2)：午後のみ（塾前）
-    {offset:2, slot:'pm',    subject:'算数', unit:'Nテキスト 復習', time:30},
-    {offset:2, slot:'pm',    subject:'理科', unit:'基礎力テスト', time:15},
-    // 木曜(+3)：水曜塾（算数・理科）翌日復習 夜のみ
-    {offset:3, slot:'night', subject:'算数', unit:'N家庭学習 復習', time:30},
-    {offset:3, slot:'night', subject:'理科', unit:'テスト振り返り', time:30},
-    // 金曜(+4)：グノチェック＋算数・社会
-    {offset:4, slot:'pm',    subject:'社会', unit:'復習 前半', time:30},
-    {offset:4, slot:'pm',    subject:'理科', unit:'グノチェック', time:30},
-    {offset:4, slot:'night', subject:'算数', unit:'復習 前半', time:40},
-    {offset:4, slot:'night', subject:'算数', unit:'基礎力復習', time:20},
-    // 土曜(+5)：午前（通常枠）＋夜
-    {offset:5, slot:'am',    subject:'算数', unit:'計算マスタ 復習', time:20},
-    {offset:5, slot:'am',    subject:'理科', unit:'基礎力テスト', time:15},
-    {offset:5, slot:'night', subject:'社会', unit:'復習 後半', time:20},
-    {offset:5, slot:'night', subject:'算数', unit:'復習 後半', time:30},
-    // 日曜(+6)：午前（通常枠）＋夜
-    {offset:6, slot:'am',    subject:'算数', unit:'N間違い 復習', time:30},
-    {offset:6, slot:'am',    subject:'社会', unit:'基礎問題 復習', time:30},
-    {offset:6, slot:'night', subject:'理科', unit:'総復習', time:30},
-    {offset:6, slot:'night', subject:'算数', unit:'計算ルール', time:15},
-    {offset:6, slot:'night', subject:'国語', unit:'漢字総復習', time:15},
-  ];
+  let plan = [];
+
+  if (dow === 3) {
+    // ===== 水曜グノレブ ベストパターン（7/1水実績） =====
+    plan = [
+      {offset:1,  slot:'pm',     subject:'理科', unit:'復習1',          time:40},
+      {offset:3,  slot:'night',  subject:'算数', unit:'復習1',          time:30},
+      {offset:3,  slot:'night',  subject:'理科', unit:'復習2',          time:30},
+      {offset:4,  slot:'pm',     subject:'社会', unit:'復習 前半',      time:30},
+      {offset:4,  slot:'pm',     subject:'理科', unit:'復習3',          time:30},
+      {offset:4,  slot:'night',  subject:'算数', unit:'復習2',          time:40},
+      {offset:4,  slot:'night',  subject:'算数', unit:'基礎力復習',     time:20},
+      {offset:5,  slot:'am',     subject:'算数', unit:'計算マスタ',     time:20},
+      {offset:5,  slot:'pm',     subject:'国語', unit:'言葉 復習前半',  time:15},
+      {offset:5,  slot:'pm',     subject:'国語', unit:'漢字復習1',      time:15},
+      {offset:5,  slot:'night',  subject:'算数', unit:'復習3',          time:40},
+      {offset:6,  slot:'am',     subject:'算数', unit:'復習4',          time:30},
+      {offset:6,  slot:'am',     subject:'理科', unit:'復習4',          time:30},
+      {offset:6,  slot:'night',  subject:'算数', unit:'計算マスタ',     time:20},
+      {offset:6,  slot:'night',  subject:'理科', unit:'基礎力テスト',   time:15},
+      {offset:8,  slot:'morning',subject:'国語', unit:'漢字復習2',      time:15},
+      {offset:8,  slot:'pm',     subject:'算数', unit:'基礎力復習',     time:20},
+      {offset:8,  slot:'pm',     subject:'国語', unit:'言葉 復習後半',  time:15},
+      {offset:8,  slot:'night',  subject:'社会', unit:'復習 後半',      time:20},
+      {offset:9,  slot:'morning',subject:'国語', unit:'漢字復習3',      time:15},
+    ];
+  } else if (dow === 1) {
+    // ===== 月曜グノレブ ベストパターン（6/1月実績） =====
+    plan = [
+      {offset:1,  slot:'night',  subject:'社会', unit:'復習 前半',           time:30},
+      {offset:1,  slot:'night',  subject:'国語', unit:'言葉 復習前半',       time:30},
+      {offset:2,  slot:'morning',subject:'国語', unit:'漢字 間違い復習',     time:15},
+      {offset:3,  slot:'morning',subject:'国語', unit:'漢字 間違い復習',     time:15},
+      {offset:4,  slot:'morning',subject:'国語', unit:'漢字 間違い復習',     time:15},
+      {offset:4,  slot:'pm',     subject:'社会', unit:'復習 後半',           time:30},
+      {offset:4,  slot:'night',  subject:'算数', unit:'復習',               time:40},
+      {offset:4,  slot:'night',  subject:'理科', unit:'復習',               time:30},
+      {offset:5,  slot:'morning',subject:'国語', unit:'漢字 間違い復習',     time:15},
+      {offset:5,  slot:'night',  subject:'算数', unit:'復習',               time:40},
+      {offset:5,  slot:'night',  subject:'算数', unit:'基礎力復習',         time:20},
+      {offset:6,  slot:'morning',subject:'国語', unit:'漢字 間違い復習',     time:15},
+      {offset:6,  slot:'am',     subject:'算数', unit:'復習',               time:30},
+      {offset:6,  slot:'am',     subject:'理科', unit:'復習',               time:30},
+      {offset:6,  slot:'night',  subject:'算数', unit:'計算ルール',         time:15},
+      {offset:6,  slot:'night',  subject:'算数', unit:'復習',               time:30},
+      {offset:7,  slot:'pm',     subject:'社会', unit:'復習（歴史漢字）',   time:30},
+    ];
+  }
 
   plan.forEach(p => {
     const dt = new Date(prevMonday); dt.setDate(prevMonday.getDate() + p.offset);
-    if (dt >= testDate) return; // テスト当日以降はスキップ
+    if (dt > testDate) return;
     addTask(dt, p.slot, p.subject, p.unit, p.time, true);
   });
 
   // ===== グノレブ後の振り返り提案 =====
-  // 当日夜
-  addTask(testDate, 'night', '算数', 'テスト振り返り', 20, true);
+  let afterPlan = [];
 
-  // 翌授業日の計算
-  let daysToNextClass;
-  if (dow === 1) { daysToNextClass = 2; } // 月→水
-  else { daysToNextClass = (8 - dow) % 7 + 1; } // その他→翌月曜
-
-  // テスト翌日〜次回授業前日まで提案
-  // テスト翌日〜次回授業前日まで提案
-  // 7/1水（グノレブ）→翌週月曜7/6に塾（国・社）
-  // 木（+2）：夜のみ、金（+3）：午後・夜、土（+4）：夜
-  const afterPlan = [
-    // 木7/3（+2）夜
-    {dOff:2, slot:'night', subject:'算数', unit:'Nテキスト', time:30},
-    {dOff:2, slot:'night', subject:'国語', unit:'グノレブ振り返り', time:15},
-    {dOff:2, slot:'night', subject:'社会', unit:'グノレブ振り返り', time:15},
-    // 金7/4（+3）午後・夜
-    {dOff:3, slot:'pm',    subject:'社会', unit:'用語/基礎力確認', time:30},
-    {dOff:3, slot:'pm',    subject:'理科', unit:'グノチェック', time:30},
-    {dOff:3, slot:'night', subject:'算数', unit:'Nテキスト', time:30},
-    {dOff:3, slot:'night', subject:'算数', unit:'N家庭学習', time:30},
-    // 土7/5（+4）夜（本人が動かす前提）
-    {dOff:4, slot:'night', subject:'国語', unit:'塾前復習', time:20},
-    {dOff:4, slot:'night', subject:'社会', unit:'塾前復習', time:20},
-    {dOff:4, slot:'night', subject:'算数', unit:'N家庭学習', time:30},
-  ];
+  if (dow === 3) {
+    // 水曜グノレブ後：翌木から即新単元＋振り返り
+    afterPlan = [
+      {dOff:1, slot:'pm',    subject:'国語', unit:'単元音読',       time:15},
+      {dOff:1, slot:'pm',    subject:'国語', unit:'意味調べ',       time:20},
+      {dOff:1, slot:'pm',    subject:'社会', unit:'単元音読',       time:10},
+      {dOff:1, slot:'night', subject:'算数', unit:'グノレブ振り返り', time:30},
+      {dOff:3, slot:'am',    subject:'理科', unit:'グノレブ振り返り', time:30},
+      {dOff:3, slot:'night', subject:'社会', unit:'グノレブ振り返り', time:15},
+      {dOff:3, slot:'night', subject:'国語', unit:'グノレブ振り返り', time:15},
+    ];
+  } else if (dow === 1) {
+    // 月曜グノレブ後：翌火から通常週（穏やか）
+    afterPlan = [
+      {dOff:1, slot:'night', subject:'国語', unit:'単元音読',  time:15},
+      {dOff:1, slot:'night', subject:'国語', unit:'意味調べ',  time:20},
+      {dOff:1, slot:'night', subject:'社会', unit:'単元音読',  time:10},
+      {dOff:2, slot:'am',    subject:'算数', unit:'グノレブ振り返り', time:30},
+      {dOff:2, slot:'am',    subject:'理科', unit:'グノレブ振り返り', time:30},
+      {dOff:2, slot:'am',    subject:'国語', unit:'グノレブ振り返り', time:15},
+      {dOff:2, slot:'am',    subject:'社会', unit:'グノレブ振り返り', time:15},
+    ];
+  }
 
   afterPlan.forEach(p => {
     const dt = new Date(testDate); dt.setDate(testDate.getDate() + p.dOff);
-    if (p.dOff >= daysToNextClass) return; // 次回授業以降はスキップ
     addTask(dt, p.slot, p.subject, p.unit, p.time, true);
   });
+
 
   saveLocal();
   closeGnorevModal();
