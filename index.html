@@ -219,53 +219,126 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 
   <!-- AI ラクラク機能モーダル -->
   <div class="modal-bg" id="aiModal" style="z-index:200;">
-    <div class="modal" style="width:min(400px,96vw);">
-      <div class="modal-hdr" style="background:#1a2744;padding:16px 20px;">
+    <div class="modal" style="width:min(420px,96vw);height:min(600px,88dvh);display:flex;flex-direction:column;">
+      <div class="modal-hdr" style="background:#1a2744;padding:16px 20px;flex-shrink:0;">
         <div style="display:flex;align-items:center;gap:10px;">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M12 2v4M8 2h8"/><circle cx="9" cy="13" r="1.5" fill="white" stroke="none"/><circle cx="15" cy="13" r="1.5" fill="white" stroke="none"/><line x1="9" y1="17" x2="15" y2="17"/><line x1="7" y1="8" x2="7" y2="6"/><line x1="17" y1="8" x2="17" y2="6"/></svg>
           <span style="font-size:17px;font-weight:700;">AI ラクラク機能</span>
         </div>
         <button class="modal-close" onclick="closeAIModal()">×</button>
       </div>
-      <div class="modal-body" style="padding:20px 18px;display:flex;flex-direction:column;gap:12px;">
-        <button onclick="closeAIModal();openGnorevModal();" style="display:flex;align-items:center;gap:14px;width:100%;background:white;border:2px solid #eee;border-radius:12px;padding:16px 18px;cursor:pointer;text-align:left;transition:border-color .15s,box-shadow .15s;font-family:inherit;" onmouseover="this.style.borderColor='#9b59b6';this.style.boxShadow='0 2px 12px rgba(155,89,182,0.15)'" onmouseout="this.style.borderColor='#eee';this.style.boxShadow='none'">
-          <div style="width:44px;height:44px;border-radius:10px;background:#f0e6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9b59b6" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
-          </div>
-          <div>
-            <div style="font-size:15px;font-weight:700;color:#1a2744;margin-bottom:3px;">グノレブ前後の勉強提案</div>
-            <div style="font-size:12px;color:#888;">テスト日を入れると前後の学習計画を自動で組む</div>
-          </div>
-          <svg style="margin-left:auto;flex-shrink:0;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-        </button>
+      <div class="modal-body" style="padding:12px;box-sizing:border-box;overflow-y:auto;flex:1;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(3,1fr);gap:10px;height:100%;min-height:360px;">
 
-        <button onclick="closeAIModal();showToast('塾お休み期間の提案は近日公開予定です 🚧',2500);" style="display:flex;align-items:center;gap:14px;width:100%;background:white;border:2px solid #eee;border-radius:12px;padding:16px 18px;cursor:pointer;text-align:left;transition:border-color .15s,box-shadow .15s;font-family:inherit;" onmouseover="this.style.borderColor='#378add';this.style.boxShadow='0 2px 12px rgba(55,138,221,0.15)'" onmouseout="this.style.borderColor='#eee';this.style.boxShadow='none'">
-          <div style="width:44px;height:44px;border-radius:10px;background:#e8f4ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#378add" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
-          </div>
-          <div>
-            <div style="font-size:15px;font-weight:700;color:#1a2744;margin-bottom:3px;">塾お休み期間の提案</div>
-            <div style="font-size:12px;color:#888;">塾がない期間の勉強スケジュールを自動で組む</div>
-          </div>
-          <svg style="margin-left:auto;flex-shrink:0;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-        </button>
+          <!-- 左上：提案 / グノレブ前後 -->
+          <button onclick="closeAIModal();openGnorevModal();" style="display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:10px;background:white;border:2px solid #eee;border-radius:14px;padding:14px;cursor:pointer;text-align:left;transition:border-color .15s,box-shadow .15s;font-family:inherit;width:100%;box-sizing:border-box;" onmouseover="this.style.borderColor='#9b59b6';this.style.boxShadow='0 2px 14px rgba(155,89,182,0.18)'" onmouseout="this.style.borderColor='#eee';this.style.boxShadow='none'">
+            <div style="display:flex;align-items:center;gap:7px;">
+              <div style="width:32px;height:32px;border-radius:8px;background:#f0e6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#9b59b6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M12 2v4M8 2h8"/><circle cx="9" cy="13" r="1.5" fill="#9b59b6" stroke="none"/><circle cx="15" cy="13" r="1.5" fill="#9b59b6" stroke="none"/><line x1="9" y1="17" x2="15" y2="17"/><line x1="7" y1="8" x2="7" y2="6"/><line x1="17" y1="8" x2="17" y2="6"/></svg>
+              </div>
+              <span style="font-size:16px;color:#9b59b6;font-weight:400;letter-spacing:.02em;">提案</span>
+            </div>
+            <div class="ai-btn-label" style="font-weight:500;color:#2b2b2b;white-space:nowrap;line-height:1;">グノレブ前後</div>
+          </button>
 
-        <button onclick="closeAIModal();openImageImportModal();" style="display:flex;align-items:center;gap:14px;width:100%;background:white;border:2px solid #eee;border-radius:12px;padding:16px 18px;cursor:pointer;text-align:left;transition:border-color .15s,box-shadow .15s;font-family:inherit;" onmouseover="this.style.borderColor='#2ecc71';this.style.boxShadow='0 2px 12px rgba(46,204,113,0.15)'" onmouseout="this.style.borderColor='#eee';this.style.boxShadow='none'">
-          <div style="width:44px;height:44px;border-radius:10px;background:#e8fff2;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          <!-- 右上：提案 / 塾休み期間 -->
+          <button onclick="closeAIModal();showToast('塾お休み期間の提案は近日公開予定です 🚧',2500);" style="display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:10px;background:white;border:2px solid #eee;border-radius:14px;padding:14px;cursor:pointer;text-align:left;transition:border-color .15s,box-shadow .15s;font-family:inherit;width:100%;box-sizing:border-box;" onmouseover="this.style.borderColor='#378add';this.style.boxShadow='0 2px 14px rgba(55,138,221,0.18)'" onmouseout="this.style.borderColor='#eee';this.style.boxShadow='none'">
+            <div style="display:flex;align-items:center;gap:7px;">
+              <div style="width:32px;height:32px;border-radius:8px;background:#e8f4ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#378add" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M12 2v4M8 2h8"/><circle cx="9" cy="13" r="1.5" fill="#378add" stroke="none"/><circle cx="15" cy="13" r="1.5" fill="#378add" stroke="none"/><line x1="9" y1="17" x2="15" y2="17"/><line x1="7" y1="8" x2="7" y2="6"/><line x1="17" y1="8" x2="17" y2="6"/></svg>
+              </div>
+              <span style="font-size:16px;color:#378add;font-weight:400;letter-spacing:.02em;">提案</span>
+            </div>
+            <div class="ai-btn-label" style="font-weight:500;color:#2b2b2b;white-space:nowrap;line-height:1;">塾休み期間</div>
+          </button>
+
+          <!-- 中左：提案 / 課題学習 -->
+          <button onclick="closeAIModal();showToast('課題学習の提案は近日公開予定です 🚧',2500);" style="display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:10px;background:white;border:2px solid #eee;border-radius:14px;padding:14px;cursor:pointer;text-align:left;transition:border-color .15s,box-shadow .15s;font-family:inherit;width:100%;box-sizing:border-box;" onmouseover="this.style.borderColor='#f39c12';this.style.boxShadow='0 2px 14px rgba(243,156,18,0.18)'" onmouseout="this.style.borderColor='#eee';this.style.boxShadow='none'">
+            <div style="display:flex;align-items:center;gap:7px;">
+              <div style="width:32px;height:32px;border-radius:8px;background:#fff8e6;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#f39c12" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M12 2v4M8 2h8"/><circle cx="9" cy="13" r="1.5" fill="#f39c12" stroke="none"/><circle cx="15" cy="13" r="1.5" fill="#f39c12" stroke="none"/><line x1="9" y1="17" x2="15" y2="17"/><line x1="7" y1="8" x2="7" y2="6"/><line x1="17" y1="8" x2="17" y2="6"/></svg>
+              </div>
+              <span style="font-size:16px;color:#f39c12;font-weight:400;letter-spacing:.02em;">提案</span>
+            </div>
+            <div class="ai-btn-label" style="font-weight:500;color:#2b2b2b;white-space:nowrap;line-height:1;">課題学習</div>
+          </button>
+
+          <!-- 中右：チェック / 全体バランス -->
+          <button onclick="closeAIModal();showToast('全体バランスチェックは近日公開予定です 🚧',2500);" style="display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:10px;background:white;border:2px solid #eee;border-radius:14px;padding:14px;cursor:pointer;text-align:left;transition:border-color .15s,box-shadow .15s;font-family:inherit;width:100%;box-sizing:border-box;" onmouseover="this.style.borderColor='#F2B9E4';this.style.boxShadow='0 2px 14px rgba(242,185,228,0.4)'" onmouseout="this.style.borderColor='#eee';this.style.boxShadow='none'">
+            <div style="display:flex;align-items:center;gap:7px;">
+              <div style="width:32px;height:32px;border-radius:8px;background:#fce8f6;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#d4609e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12S5 5 12 5s11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+              </div>
+              <span style="font-size:16px;color:#d4609e;font-weight:400;letter-spacing:.02em;">チェック</span>
+            </div>
+            <div class="ai-btn-label" style="font-weight:500;color:#2b2b2b;white-space:nowrap;line-height:1;">全体バランス</div>
+          </button>
+
+          <!-- 下左：相談 -->
+          <button onclick="closeAIModal();openRuleChatModal();" style="display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:10px;background:white;border:2px solid #eee;border-radius:14px;padding:14px;cursor:pointer;text-align:left;transition:border-color .15s,box-shadow .15s;font-family:inherit;width:100%;box-sizing:border-box;" onmouseover="this.style.borderColor='#1a2744';this.style.boxShadow='0 2px 14px rgba(26,39,68,0.15)'" onmouseout="this.style.borderColor='#eee';this.style.boxShadow='none'">
+            <div style="display:flex;align-items:center;gap:7px;">
+              <div style="width:32px;height:32px;border-radius:8px;background:#eef0f5;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1a2744" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+              </div>
+              <span style="font-size:16px;color:#1a2744;font-weight:400;letter-spacing:.02em;">相談</span>
+            </div>
+            <div class="ai-btn-label" style="font-weight:500;color:#2b2b2b;white-space:nowrap;line-height:1;">ルール確認</div>
+          </button>
+
+          <!-- 下右：写真から -->
+          <button onclick="closeAIModal();openImageImportModal();" style="display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:10px;background:white;border:2px solid #eee;border-radius:14px;padding:14px;cursor:pointer;text-align:left;transition:border-color .15s,box-shadow .15s;font-family:inherit;width:100%;box-sizing:border-box;" onmouseover="this.style.borderColor='#2ecc71';this.style.boxShadow='0 2px 14px rgba(46,204,113,0.18)'" onmouseout="this.style.borderColor='#eee';this.style.boxShadow='none'">
+            <div style="display:flex;align-items:center;gap:7px;">
+              <div style="width:32px;height:32px;border-radius:8px;background:#e8fff2;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              </div>
+              <span style="font-size:16px;color:#2ecc71;font-weight:400;letter-spacing:.02em;">写真から</span>
+            </div>
+            <div class="ai-btn-label" style="font-weight:500;color:#2b2b2b;white-space:nowrap;line-height:1;">予定入力</div>
+          </button>
+
+        </div>
+      </div>      </div>
+    </div>
+  </div>
+  <!-- ルール確認・相談チャットモーダル -->
+  <div class="modal-bg" id="ruleChatModal" style="z-index:210;">
+    <div class="modal" style="width:min(420px,96vw);height:min(680px,92dvh);display:flex;flex-direction:column;">
+      <div class="modal-hdr" style="background:#1a2744;padding:16px 20px;flex-shrink:0;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          <span style="font-size:17px;font-weight:700;">ルール確認・相談</span>
+        </div>
+        <button class="modal-close" onclick="closeRuleChatModal()">×</button>
+      </div>
+
+      <!-- チャット履歴エリア -->
+      <div id="ruleChatMessages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;background:#f7f8fa;">
+        <!-- 最初のAIメッセージ -->
+        <div style="display:flex;gap:8px;align-items:flex-start;">
+          <div style="width:30px;height:30px;border-radius:50%;background:#1a2744;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M12 2v4M8 2h8"/><circle cx="9" cy="13" r="1.5" fill="white" stroke="none"/><circle cx="15" cy="13" r="1.5" fill="white" stroke="none"/><line x1="9" y1="17" x2="15" y2="17"/><line x1="7" y1="8" x2="7" y2="6"/><line x1="17" y1="8" x2="17" y2="6"/></svg>
           </div>
-          <div>
-            <div style="font-size:15px;font-weight:700;color:#1a2744;margin-bottom:3px;">画像から予定を自動入力</div>
-            <div style="font-size:12px;color:#888;">授業カレンダー画像を送ると予定を自動で登録</div>
+          <div style="background:white;border-radius:4px 14px 14px 14px;padding:12px 14px;font-size:13px;line-height:1.6;color:#333;max-width:85%;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+            こんにちは！現在のルールや優先順位の確認、変更の相談ができます。<br><br>
+            例えば：<br>
+            「今の理科のルールを教えて」<br>
+            「サッカーの曜日が変わった」<br>
+            「算数をもう少し増やしたい」<br><br>
+            何でも話しかけてください😊
           </div>
-          <svg style="margin-left:auto;flex-shrink:0;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+      </div>
+
+      <!-- 入力エリア -->
+      <div style="padding:12px 16px;background:white;border-top:1px solid #eee;display:flex;gap:8px;align-items:flex-end;flex-shrink:0;">
+        <textarea id="ruleChatInput" placeholder="メッセージを入力…" style="flex:1;border:1.5px solid #ddd;border-radius:10px;padding:10px 12px;font-size:14px;font-family:inherit;resize:none;outline:none;line-height:1.5;max-height:100px;overflow-y:auto;" rows="1" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendRuleChatMessage();}"></textarea>
+        <button onclick="sendRuleChatMessage()" style="width:40px;height:40px;border-radius:50%;background:#1a2744;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:opacity .15s;" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
       </div>
     </div>
   </div>
 
-
-  <!-- 画像インポートモーダル -->
   <div class="modal-bg" id="imageImportModal" style="z-index:210;">
     <div class="modal" style="width:min(440px,96vw);max-height:90vh;">
       <div class="modal-hdr" style="background:#1a2744;">
@@ -3099,8 +3172,9 @@ function updateFloatingClose() {
   const btn = document.getElementById('floatingCloseBtn');
   if (!btn) return;
   const anyOpen = document.querySelector('.modal-bg.open');
-  btn.style.display = anyOpen ? 'flex' : 'none';
-  // undoボタンはモーダルが閉じているときだけ表示
+  // ruleChatModal・imageImportModalは自前の×ボタンがあるので浮きXは非表示
+  const hideFloating = anyOpen && (anyOpen.id === 'ruleChatModal' || anyOpen.id === 'imageImportModal');
+  btn.style.display = (anyOpen && !hideFloating) ? 'flex' : 'none';
   const undoBtn = document.getElementById('floatingUndoBtn');
   if (undoBtn) {
     undoBtn.style.display = anyOpen ? 'none' : 'flex';
@@ -3114,6 +3188,7 @@ function closeAnyModal() {
   if (id === 'detailModal') closeDetail();
   else if (id === 'addModal') closeAdd();
   else if (id === 'aiModal') closeAIModal();
+  else if (id === 'ruleChatModal') closeRuleChatModal();
   else if (id === 'gnorevModal') closeGnorevModal();
   else if (id === 'imageImportModal') closeImageImportModal();
   else if (id === 'deleteConfirmModal') closeDeleteConfirm();
@@ -3155,8 +3230,92 @@ function deleteGroupAll(t, fromDateStr) {
 }
 
 // ===== AI ラクラク機能モーダル =====
+function openRuleChatModal() {
+  document.getElementById('ruleChatModal').classList.add('open');
+  updateFloatingClose();
+}
+function closeRuleChatModal() {
+  document.getElementById('ruleChatModal').classList.remove('open');
+  openAIModal();
+}
+
+async function sendRuleChatMessage() {
+  var input = document.getElementById('ruleChatInput');
+  var text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  input.style.height = 'auto';
+  var msgs = document.getElementById('ruleChatMessages');
+  var userDiv = document.createElement('div');
+  userDiv.style.cssText = 'display:flex;justify-content:flex-end;';
+  userDiv.setAttribute('data-role','user');
+  userDiv.setAttribute('data-content', text);
+  var ub = document.createElement('div');
+  ub.style.cssText = 'background:#1a2744;color:white;border-radius:14px 4px 14px 14px;padding:10px 14px;font-size:13px;line-height:1.6;max-width:85%;';
+  ub.textContent = text;
+  userDiv.appendChild(ub);
+  msgs.appendChild(userDiv);
+  msgs.scrollTop = msgs.scrollHeight;
+  var loadDiv = document.createElement('div');
+  loadDiv.style.cssText = 'display:flex;gap:8px;align-items:flex-start;';
+  loadDiv.innerHTML = '<div style="width:30px;height:30px;border-radius:50%;background:#1a2744;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M12 2v4M8 2h8"/><circle cx="9" cy="13" r="1.5" fill="white" stroke="none"/><circle cx="15" cy="13" r="1.5" fill="white" stroke="none"/><line x1="9" y1="17" x2="15" y2="17"/><line x1="7" y1="8" x2="7" y2="6"/><line x1="17" y1="8" x2="17" y2="6"/></svg></div><div style="background:white;border-radius:4px 14px 14px 14px;padding:12px 14px;font-size:13px;color:#aaa;">考え中...</div>';
+  msgs.appendChild(loadDiv);
+  msgs.scrollTop = msgs.scrollHeight;
+  var history = [];
+  msgs.querySelectorAll('[data-role]').forEach(function(el) {
+    if (el.dataset.role && el.dataset.content) {
+      history.push({ role: el.dataset.role, content: el.dataset.content });
+    }
+  });
+  var sp = 'K-studyAIアシスタント。塾:月(国社)水(算理)帰宅後勉強なし。木:プロタゴ16:50。土日:サッカー。グノレブ:月か水のみ2027年1月末まで。優先:国語=漢字毎日15分最重要、理科=テスト振返り優先、社会=音読優先(得意)、算数=基礎力毎朝。曜日別:月水=朝のみ、火金=朝午後夜、木=朝夜、土=朝午前9-15:30夜18以降、日=朝午前12時まで夜18以降。日本語で親しみやすく簡潔に回答。';
+  try {
+    var res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, system: sp, messages: history })
+    });
+    var data = await res.json();
+    var reply = (data.content && data.content[0] && data.content[0].text) ? data.content[0].text : 'エラーが発生しました。';
+    msgs.removeChild(loadDiv);
+    var aiDiv = document.createElement('div');
+    aiDiv.style.cssText = 'display:flex;gap:8px;align-items:flex-start;';
+    aiDiv.setAttribute('data-role','assistant');
+    aiDiv.setAttribute('data-content', reply);
+    var icon = document.createElement('div');
+    icon.style.cssText = 'width:30px;height:30px;border-radius:50%;background:#1a2744;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+    icon.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M12 2v4M8 2h8"/><circle cx="9" cy="13" r="1.5" fill="white" stroke="none"/><circle cx="15" cy="13" r="1.5" fill="white" stroke="none"/><line x1="9" y1="17" x2="15" y2="17"/><line x1="7" y1="8" x2="7" y2="6"/><line x1="17" y1="8" x2="17" y2="6"/></svg>';
+    var bubble = document.createElement('div');
+    bubble.style.cssText = 'background:white;border-radius:4px 14px 14px 14px;padding:12px 14px;font-size:13px;line-height:1.6;color:#333;max-width:85%;box-shadow:0 1px 4px rgba(0,0,0,0.06);';
+    bubble.textContent = reply;
+    aiDiv.appendChild(icon);
+    aiDiv.appendChild(bubble);
+    msgs.appendChild(aiDiv);
+  } catch(err) {
+    msgs.removeChild(loadDiv);
+    var errDiv = document.createElement('div');
+    errDiv.style.cssText = 'padding:12px 14px;font-size:13px;color:#e74c3c;background:#fff0f0;border-radius:8px;';
+    errDiv.textContent = '通信エラーが発生しました。';
+    msgs.appendChild(errDiv);
+  }
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
 function openAIModal() {
   document.getElementById('aiModal').classList.add('open');
+  requestAnimationFrame(function(){ fitAIModalLabels(); });
+}
+
+function fitAIModalLabels() {
+  const labels = document.querySelectorAll('#aiModal .ai-btn-label');
+  if (!labels.length) return;
+  const base = labels[0]; // グノレブ前後が基準
+  const parent = base.closest('button');
+  if (!parent) return;
+  const maxW = parent.clientWidth - 28;
+  let size = 32;
+  base.style.fontSize = size + 'px';
+  while (base.scrollWidth > maxW && size > 12) { size--; base.style.fontSize = size + 'px'; }
+  labels.forEach(el => { el.style.fontSize = size + 'px'; });
 }
 function closeAIModal() {
   document.getElementById('aiModal').classList.remove('open');
@@ -3179,6 +3338,7 @@ function openImageImportModal() {
 }
 function closeImageImportModal() {
   document.getElementById('imageImportModal').classList.remove('open');
+  openAIModal();
 }
 
 function previewImgMulti(input, containerId) {
@@ -3487,6 +3647,7 @@ function openGnorevModal() {
 }
 function closeGnorevModal() {
   document.getElementById('gnorevModal').classList.remove('open');
+  openAIModal();
 }
 function updateGnorevPreview() {
   const dateStr = document.getElementById('gnorevDate').value;
