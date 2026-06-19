@@ -3792,8 +3792,51 @@ function confirmGnorev() {
   const testDate = new Date(y, mo-1, d); testDate.setHours(0,0,0,0);
   const dow = testDate.getDay();
 
-  // AI提案モードで実行
-  confirmGnorevWithAI(dateStr, range, testDate, dow);
+  function addTask(dt, slot, subject, unitName, studyTime, isAi, hash) {
+    const dow2 = dt.getDay();
+    const daysToMon = dow2 === 0 ? 6 : dow2 - 1;
+    const monday = new Date(dt); monday.setDate(dt.getDate() - daysToMon); monday.setHours(0,0,0,0);
+    const wk = monday.toISOString().slice(0,10);
+    const dayIdx = dow2 === 0 ? 6 : dow2 - 1;
+    const SLOT_IDX2 = {plan:0,morning:1,am:2,pm:3,night:4};
+    const SUBJ_COLOR2 = {
+      '算数':['#C1E8FB','#1a2744'],'国語':['#F2B9E4','#1a2744'],
+      '理科':['#B6EBB0','#1a2744'],'社会':['#F9DB82','#1a2744'],
+      '学校の宿題':['#D3D3D3','#1a2744'],'習い事':['#D6C3AA','#1a2744'],
+      '予定':['#F5F4E4','#1a2744'],'テスト':['#F104BA','#fff']
+    };
+    const colors = SUBJ_COLOR2[subject] || ['#eee','#333'];
+    const uid = 'gnv_' + dt.toISOString().slice(0,10) + '_' + slot + '_' + subject + '_' + unitName.slice(0,4);
+    if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
+    if (!localOverrides[wk].added) localOverrides[wk].added = [];
+    if (localOverrides[wk].added.find(a => a.uid === uid)) return;
+    localOverrides[wk].added.push({
+      uid, color: colors[0],
+      weekday: ['月','火','水','木','金','土','日'][dayIdx],
+      weekday_index: dayIdx, slot, subject, unit_name: unitName,
+      study_time: studyTime, display_type: 'one_time',
+      repeat_key: null, is_hidden: 'no', order: 90,
+      hash: hash || '',
+      note: isAi ? 'AI提案' : '',
+      _dayIdx: dayIdx, _slotIdx: SLOT_IDX2[slot]||0,
+      _aiSuggest: isAi
+    });
+  }
+
+  // テスト当日カード
+  addTask(testDate, 'plan', 'テスト', 'グノレブ', null, false, range);
+
+  // 固定パターンで提案
+  applyFallbackGnorevPlan(testDate, dow, addTask);
+
+  saveLocal();
+  closeGnorevModal();
+
+  const daysToMon2 = dow === 0 ? 6 : dow - 1;
+  const testMonday = new Date(testDate); testMonday.setDate(testDate.getDate() - daysToMon2);
+  currentMonday = testMonday;
+  render();
+  showToast('グノレブの予定を登録しました ✓', 3000);
 }
 
 async function confirmGnorevWithAI(dateStr, range, testDate, dow) {
