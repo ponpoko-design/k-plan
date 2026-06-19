@@ -535,6 +535,15 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
       </div>
       <div class="modal-body">
 
+        <!-- 祝日一括登録バナー -->
+        <button onclick="insertHolidays()" style="display:flex;align-items:center;gap:10px;width:100%;background:#fff5f5;border:1.5px solid #AB0000;border-radius:10px;padding:12px 14px;cursor:pointer;font-family:inherit;margin-bottom:12px;text-align:left;" onmouseover="this.style.background='#ffe8e8'" onmouseout="this.style.background='#fff5f5'">
+          <span style="font-size:20px;">🗓️</span>
+          <div>
+            <div style="font-size:14px;font-weight:700;color:#AB0000;">祝日を自動登録</div>
+            <div style="font-size:11px;color:#888;">2026年7月〜2027年1月の祝日を予定欄に一括追加</div>
+          </div>
+        </button>
+
         <!-- 今週だけ / 繰り返す -->
         <div style="display:flex;gap:8px;margin-bottom:4px;">
           <div id="addTypeOnce" onclick="setAddType('once')" style="flex:1;padding:10px;border-radius:9999px;border:2px solid #1a2744;background:#f0f3fa;font-size:14px;font-weight:700;color:#1a2744;cursor:pointer;text-align:center;">今週だけ</div>
@@ -3230,6 +3239,62 @@ function deleteGroupAll(t, fromDateStr) {
 }
 
 // ===== AI ラクラク機能モーダル =====
+function insertHolidays() {
+  const HOLIDAYS = [
+    ["2026-07-20", "海の日"],
+    ["2026-08-11", "山の日"],
+    ["2026-09-21", "敬老の日"],
+    ["2026-09-22", "国民の休日"],
+    ["2026-09-23", "秋分の日"],
+    ["2026-10-12", "スポーツの日"],
+    ["2026-11-03", "文化の日"],
+    ["2026-11-23", "勤労感謝の日"],
+    ["2026-12-23", "天皇誕生日"],
+    ["2027-01-01", "元日"],
+    ["2027-01-11", "成人の日"],
+  ];
+
+  let added = 0;
+  HOLIDAYS.forEach(([dateStr, name]) => {
+    const dt = new Date(dateStr + 'T00:00:00');
+    const dow = dt.getDay();
+    const dayIdx = dow === 0 ? 6 : dow - 1;
+    const daysToMon = dow === 0 ? 6 : dow - 1;
+    const monday = new Date(dt); monday.setDate(dt.getDate() - daysToMon); monday.setHours(0,0,0,0);
+    const wk = monday.toISOString().slice(0,10);
+    const uid = 'holiday_' + dateStr;
+
+    if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
+    if (!localOverrides[wk].added) localOverrides[wk].added = [];
+    if (localOverrides[wk].added.find(a => a.uid === uid)) return; // 既存はスキップ
+
+    localOverrides[wk].added.push({
+      uid,
+      color: '#AB0000',
+      weekday: ['月','火','水','木','金','土','日'][dayIdx],
+      weekday_index: dayIdx,
+      slot: 'plan',
+      subject: '祝日',
+      unit_name: name,
+      study_time: null,
+      display_type: 'one_time',
+      repeat_key: null,
+      is_hidden: 'no',
+      order: 1,
+      note: '',
+      _dayIdx: dayIdx,
+      _slotIdx: 0
+    });
+    added++;
+  });
+
+  saveLocal();
+  closeAdd();
+  render();
+  showToast(`祝日を${added}件登録しました 🎌`, 3000);
+}
+
+
 function openRuleChatModal() {
   document.getElementById('ruleChatModal').classList.add('open');
   updateFloatingClose();
