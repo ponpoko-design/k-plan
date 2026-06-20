@@ -419,7 +419,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
         <div id="gnorevPreview" style="display:none;background:#f8f0ff;border-radius:8px;padding:12px;margin-top:10px;font-size:13px;color:#6c3483;border:1.5px solid #d7bfef;"></div>
         <div class="modal-actions" style="margin-top:16px;">
           <button onclick="closeGnorevModal()" style="flex:1;background:white;border:2px solid #ccc;color:#888;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;">やめる</button>
-          <button onclick="confirmGnorev()" style="flex:2;background:#9b59b6;border:none;color:white;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;">予定を組む</button>
+          <button onclick="startConfirmGnorevWithAI()" style="flex:2;background:#9b59b6;border:none;color:white;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;">AIで予定を組む</button>
         </div>
       </div>
     </div>
@@ -3784,6 +3784,16 @@ document.addEventListener('DOMContentLoaded', () => {
   if (el) el.addEventListener('change', updateGnorevPreview);
 });
 
+function startConfirmGnorevWithAI() {
+  const dateStr = document.getElementById('gnorevDate').value;
+  if (!dateStr) { alert('日付を入力してください'); return; }
+  const range = document.getElementById('gnorevRange').value || 'グノレブ';
+  const [y,mo,d] = dateStr.split('-').map(Number);
+  const testDate = new Date(y, mo-1, d); testDate.setHours(0,0,0,0);
+  const dow = testDate.getDay();
+  confirmGnorevWithAI(dateStr, range, testDate, dow);
+}
+
 function confirmGnorev() {
   const dateStr = document.getElementById('gnorevDate').value;
   if (!dateStr) { alert('日付を入力してください'); return; }
@@ -3890,46 +3900,110 @@ async function confirmGnorevWithAI(dateStr, range, testDate, dow) {
     const scheduleSummary = buildScheduleSummary(prevMonday, 3);
 
     // AIへのプロンプト構築
-    const prompt = `あなたはこうたくん（小学5年生）の家庭学習スケジュール管理AIです。
-グノレブ（月次テスト）の日付と現在のスケジュールを見て、前後の学習計画をJSON形式で返してください。
+    const slotsText = Object.entries(rules.study_slots || {}).map(([day, info]) => {
+      if (typeof info === 'string') return `${day}: ${info}`;
+      const parts = [];
+      if (info['朝']) parts.push('朝✅');
+      if (info['午後'] === true) parts.push('午後✅' + (info['午後_end'] ? '(〜'+info['午後_end']+')' : ''));
+      if (info['午後'] === false) parts.push('午後❌');
+      if (info['夜'] === true) parts.push('夜✅');
+      if (typeof info['夜'] === 'string') parts.push('夜✅('+info['夜']+')');
+      if (info['夜'] === false) parts.push('夜❌');
+      if (info['午前']) parts.push('午前✅' + (typeof info['午前'] === 'string' ? '('+info['午前']+')' : ''));
+      if (info['備考']) parts.push('※'+info['備考']);
+      return `${day}: ${parts.join(' / ')}`;
+    }).join('\n');
 
+    const patternKey = dow === 3 ? 'gnorev_wed_pattern' : 'gnorev_mon_pattern';
+    const pattern = rules[patternKey] || {};
+    const patternText = typeof pattern === 'string' ? pattern :
+      Object.entries(pattern).filter(([k]) => k !== 'label').map(([k,v]) => `  ${k}: ${v}`).join('\n');
+
+    // ベスト週の実際のスケジュールを取得
+    // 水曜グノレブ: 7/1(水) → 前週月曜 = 6/22(月)
+    // 月曜グノレブ: 6/1(月) → 前週月曜 = 5/25(月)
+    const bestMonday = dow === 3
+      ? new Date('2026-06-22T00:00:00')  // 7/1水グノレブの前週月曜
+      : new Date('2026-05-25T00:00:00'); // 6/1月グノレブの前週月曜
+    const bestScheduleSummary = buildScheduleSummary(bestMonday, 3);
+
+    const prompt = `あなたはこうたくん（小学5年生・グノーブル塾）の家庭学習スケジュールを組むAIです。
+グノレブ（月次テスト）に向けた前後の学習計画をJSON配列で返してください。
+
+━━━━━━━━━━━━━━━━━━━━━━━━
 【グノレブ情報】
 日付: ${dateStr}（${['日','月','火','水','木','金','土'][dow]}曜日）
-単元: ${range}
+単元範囲: ${range}
 
-【ルール】
-塾: ${rules.juku_days.join('・')}曜日（終了: ${rules.juku_end}）
-${JSON.stringify(rules.subject_priority, null, 2)}
-勉強可能時間: ${JSON.stringify(rules.study_slots, null, 2)}
-${rules.jitsuryoku_test}
-${dow === 3 ? rules.gnorev_wed_pattern : rules.gnorev_mon_pattern}
-${rules.custom_rules ? 'カスタムルール: ' + rules.custom_rules : ''}
+━━━━━━━━━━━━━━━━━━━━━━━━
+【こうたくんの基本情報】
+起床6:00〜6:30、就寝22:30目標 / 登校8:00、帰宅15:00〜15:45
+塾: 月曜・水曜（16:30出発、17:00〜21:00、帰宅後勉強なし）
+木曜: プロタゴ（プログラミング）16:50〜18:00
+土曜サッカー: 7:30〜9:00 / 15:30〜18:00（午後スロット使用不可）
+日曜サッカー: 12:00〜13:30 / 15:30〜18:00（午後スロット使用不可）
 
-【現在のスケジュール（前週〜テスト翌週）】
-${scheduleSummary}
+【曜日別勉強可能スロット】
+\${slotsText}
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+【教科別ルール】
+算数: \${rules.subject_priority && rules.subject_priority['算数'] ? rules.subject_priority['算数'] : '毎朝基礎力テスト必須'}
+　週間詳細: 木金夜=Nテキスト / 金土夜=N家庭学習 / 土日午前=計算マスタ+計算ルール分割 / 日曜夜=N間違い直し（翌月テスト前）
+国語: \${rules.subject_priority && rules.subject_priority['国語'] ? rules.subject_priority['国語'] : '漢字毎日15分'}
+　※毎朝「漢字15分」は固定タスクで既存。追加不要
+理科: \${rules.subject_priority && rules.subject_priority['理科'] ? rules.subject_priority['理科'] : ''}
+　基礎力テスト: 週2回・日を空けて（木・土が理想）
+社会: \${rules.subject_priority && rules.subject_priority['社会'] ? rules.subject_priority['社会'] : ''}
+グノチェック（理科基礎まとめプリント）: 金曜午後
+算数基礎力テスト: 毎朝15分（固定タスクで既存。追加不要）
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+【グノレブ後の解き直し配分（テスト翌日以降）】
+合計90分: 算数30分 / 理科30分 / 国語15分 / 社会15分
+振り返りタイミング目安:
+  水曜グノレブ → 翌木に算数振り返り+新単元音読 / 翌土に理科・社会・国語振り返り
+  月曜グノレブ → 翌火に新単元音読 / 翌水午前に全教科振り返り
+
+【ベストパターン実績（参考）】
+\${patternText}
+
+【ベスト週の実際のスケジュール（参考・これが理想の組み方）】
+※\${dow === 3 ? '7/1(水)グノレブ前後（前週月曜6/22〜テスト翌週）' : '6/1(月)グノレブ前後（前週月曜5/25〜テスト翌週）'}の実績データ
+\${bestScheduleSummary}
+\${rules.custom_rules ? '\n【カスタムルール】\n' + rules.custom_rules : ''}
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+【現在入っているスケジュール（前週〜テスト翌週）】
+※毎週固定タスク（塾・サッカー・プロタゴ・毎朝漢字・算数基礎力等）も含む。参考として渡すが、重複を気にせずベストな計画を立てること。
+\${scheduleSummary}
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+【指示】
+上記の通常スケジュールを「参考」として把握した上で、グノレブに向けた最適な復習・準備・振り返り計画をゼロから組んでください。
+既存タスクとの重複は気にしないでOKです（お母さんが手動で調整します）。
+ベストパターン実績を参考にしつつ、その週の曜日・スロットに合わせて最適化してください。
+
+【必須制約】
+- 月・水の夜スロットは追加しない（塾帰り）
+- 土日の午後スロット（pm）は追加しない（サッカー）
+- グノレブ当日は morningスロットのみ・軽め（漢字確認程度1件まで）
+- 毎朝の漢字・算数基礎力テストは追加しない（固定タスクで既存）
+- テスト後の振り返りカードも必ず含める
 
 【回答形式】
-以下のJSON配列のみを返してください（説明文不要）:
+JSON配列のみ返してください（説明文・コードブロック不要）:
 [
-  {"date": "YYYY-MM-DD", "slot": "morning|am|pm|night", "subject": "算数|国語|理科|社会", "unit": "カード名", "time": 分数},
+  {"date": "YYYY-MM-DD", "slot": "morning|am|pm|night", "subject": "算数|国語|理科|社会", "unit": "カード名（具体的に。例: 算数N復習・理科電気振り返り等）", "time": 分数},
   ...
-]
-
-注意:
-- 塾のある月・水の夜は追加しない
-- 既に入っているカードと重複しない
-- 国語漢字は毎朝あるので追加しない
-- 算数基礎力テストは毎朝あるので追加しない
-- サッカーのある土日午後は追加しない
-- グノレブ当日は朝のみ軽めに
-- テスト後の振り返りも含める`;
+]`;
 
     const res = await fetch('https://kota-ai-proxy.nacchukkim.workers.dev', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 2000,
+        max_tokens: 3000,
         messages: [{ role: 'user', content: prompt }]
       })
     });
@@ -4584,31 +4658,114 @@ try {
 let aiRulesCache = null;
 
 const DEFAULT_AI_RULES = {
+  // ── 基本情報 ──────────────────────────────────────
+  child_name: 'こうた（航大）',
+  grade: '小学5年生',
+  juku_name: 'グノーブル',
+  juku_year: '2月スタート・1月終わり（2026年2月〜2027年1月）',
   juku_days: ['月', '水'],
   juku_end: '2027-01-31',
-  subject_priority: {
-    国語: '漢字が最重要・毎日15分',
-    理科: 'テスト振り返り→グノチェック→確認問題→基礎力テスト',
-    社会: '単元音読→用語確認→基礎問題（得意教科）',
-    算数: '毎朝基礎力テスト必須'
+
+  // ── こうたくんの生活リズム ──────────────────────────
+  life_schedule: {
+    wake_up: '6:00〜6:30',
+    bed_time: '22:30（目標）',
+    go_to_school: '8:00',
+    come_home: '15:00〜15:45',
+    juku_mon: '月曜16:30出発・17:00〜21:00・帰宅後勉強なし',
+    juku_wed: '水曜16:30出発・17:00〜21:00・帰宅後勉強なし',
+    protago_thu: '木曜16:50〜18:00（プログラミング教室）',
+    soccer_sat: '土曜7:30〜9:00 / 15:30〜18:00（2回）',
+    soccer_sun: '日曜12:00〜13:30 / 15:30〜18:00（2回）',
+    match_weeks: '試合がある週は土日の予定が変わる（都度対応）'
   },
+
+  // ── 曜日別勉強可能スロット ────────────────────────
   study_slots: {
-    月: '朝のみ（塾帰り夜なし）',
-    火: '朝＋午後＋夜',
-    水: '朝のみ（塾帰り夜なし）',
-    木: '朝＋夜（プロタゴ後）',
-    金: '朝＋午後＋夜',
-    土: '朝＋午前9-15:30＋夜18以降（サッカーあり）',
-    日: '朝＋午前〜12時＋夜18以降（サッカーあり）'
+    月: { 朝: true,  午後: false, 夜: false, 備考: '塾（国語・社会）帰宅後なし' },
+    火: { 朝: true,  午後: true,  夜: true,  備考: '最も学習できる日' },
+    水: { 朝: true,  午後: true,  午後_end: '16:30', 夜: false, 備考: '塾（算数・理科）帰宅後なし' },
+    木: { 朝: true,  午後: false, 夜: true,  備考: 'プロタゴ後（18:00〜）夜のみ' },
+    金: { 朝: true,  午後: true,  夜: true,  備考: '学習しやすい日' },
+    土: { 朝: true,  午前: '9:00〜15:30', 夜: '18:00以降', 備考: 'サッカー2回あり' },
+    日: { 朝: true,  午前: '〜12:00', 夜: '18:00以降', 備考: 'サッカー2回あり' }
   },
-  gnorev_wed_pattern: '水曜グノレブ実績パターン(7/1): 前週火=理科復習40分、前週木=算数・理科各30分夜、前週金=社会・理科各30分午後+算数60分夜、前週土=算数計算マスタ+国語言葉+漢字復習午前+算数40分夜、前週日=算数・理科各30分午前+算数・理科夜、当週火=漢字復習2+算数基礎力+言葉後半+社会復習後半、当日朝=漢字復習3のみ。振り返り:翌木に新単元音読+算数振り返り夜、翌土に理科・社会・国語振り返り',
-  gnorev_mon_pattern: '月曜グノレブ実績パターン(6/1): 前週火=社会・国語言葉復習夜、前週水〜日=毎朝漢字間違い復習、前週金=社会後半+算数・理科夜、前週土日=算数集中+理科復習。当日午後=社会のみ。振り返り:翌火に新単元音読、翌水午前に全教科振り返り',
+
+  // ── 教科別優先順位・ルール ────────────────────────
+  subject_priority: {
+    国語: '漢字が最重要・毎日15分必須。単元音読・意味調べ毎週。グノレブ前は漢字＋ことわざ等の知識系を復習',
+    理科: 'テスト振り返り ＞ グノチェック ＞ 基本のまとめ・確認問題 ＞ 基礎力テスト ＞ 練習問題。基礎力テストは週2回・日を空けて（木・土）',
+    社会: '単元音読 ＞ 用語/基礎力問題 ＞ 基礎問題。得意教科・好きな教科なので適度に組み込む',
+    算数: '毎朝基礎力テスト必須。Nテキスト優先→N家庭学習→T間違い。計算マスタ・計算ルールは土日午前に分割。日曜夜はN間違い直し（翌月テスト前）'
+  },
+
+  // ── 算数の週間詳細ルール ──────────────────────────
+  math_weekly_rules: {
+    毎朝: '基礎力テスト',
+    月_塾: 'N授業（新単元）＋T授業（前週N復習）',
+    優先順位: 'Nテキスト → N家庭学習 → T間違い',
+    木金夜: 'Nテキスト',
+    金土夜: 'N家庭学習',
+    土日午前: '計算マスタ＋計算ルールを分割',
+    日曜夜: 'N間違った所（翌月曜テスト前）',
+    T確認テスト: '水曜午後・毎週'
+  },
+
+  // ── 翌日復習ルール ────────────────────────────────
+  review_rules: {
+    火曜: '月曜塾（国語・社会）翌日 → 音読・意味調べ ＋ 水曜塾前日 → 理科確認問題',
+    木曜: '水曜塾（算数・理科）翌日 → 算数・理科復習',
+    グノチェック: '金曜に実施（基礎まとめプリント）'
+  },
+
+  // ── グノレブ（月1テスト）情報 ─────────────────────
+  gnorev_info: {
+    frequency: '月1回・月曜か水曜のみ・2027年1月末まで',
+    review_time: '合計約1時間30分（算数30分・理科30分・国語15分・社会15分）'
+  },
+
+  // ── グノレブ前後パターン（ベスト週実績）─────────────
+  gnorev_wed_pattern: {
+    label: '水曜グノレブパターン（7/1水実績）',
+    前週火: '理科復習40分（午後）',
+    前週木: '算数復習30分＋理科復習30分（夜）',
+    前週金: '社会復習前半30分＋理科復習30分（午後）/ 算数復習40分＋基礎力復習20分（夜）',
+    前週土: '算数計算マスタ20分＋国語言葉復習前半15分＋漢字復習15分（午前）/ 算数復習40分（夜）',
+    前週日: '算数復習30分＋理科復習30分（午前）/ 算数計算マスタ20分＋理科基礎力テスト15分（夜）',
+    当週月: '塾のみ（追加なし）',
+    当週火: '漢字復習2（朝）/ 算数基礎力復習20分＋国語言葉復習後半15分（午後）/ 社会復習後半20分（夜）',
+    当日朝: '漢字復習3のみ',
+    振り返り: '翌木に新単元音読＋算数振り返り夜 / 翌土に理科・社会・国語振り返り'
+  },
+  gnorev_mon_pattern: {
+    label: '月曜グノレブパターン（6/1月実績）',
+    前週火: '社会復習前半30分＋国語言葉復習30分（夜）',
+    前週水_日: '毎朝漢字間違い復習15分',
+    前週金: '社会復習後半30分（午後）/ 算数復習40分＋理科復習30分（夜）',
+    前週土: '算数復習40分＋基礎力復習20分（夜）',
+    前週日: '算数復習30分＋理科復習30分（午前）/ 算数計算ルール15分＋復習30分（夜）',
+    当日午後: '社会のみ（歴史漢字・軽め）',
+    振り返り: '翌火に新単元音読 / 翌水午前に全教科振り返り'
+  },
+
+  // ── 実力テスト ─────────────────────────────────────
   jitsuryoku_test: '実力テストはグノレブとは別・半年に1回・土日のどちらかに実施・範囲なし・グノレブ提案には影響しない',
+
+  // ── 課外活動 ───────────────────────────────────────
   extra_activities: {
-    サッカー: '土7:30-9:00/15:30-18:00、日12:00-13:30/15:30-18:00',
-    プロタゴ: '木16:50-18:00（プログラミング）',
-    水泳授業: '火曜（6月〜7月）'
+    サッカー: '土7:30〜9:00 / 15:30〜18:00、日12:00〜13:30 / 15:30〜18:00',
+    プロタゴ: '木16:50〜18:00（プログラミング）',
   },
+
+  // ── 2026年度5年生 単元表 ──────────────────────────
+  units: {
+    算数: '10:点の移動(2) / 11:総合(07〜10) / 12:量の変化とグラフ(1) / 13:量の変化とグラフ(2) / 14:量の変化とグラフ(3) / 15:割合基本 / 16:相当算 / 17:売買損益 / 18:食塩水 / 19:総合(15〜18)',
+    理科: '10:電気3 / 11:月1 / 12:月2 / 13:てこ1 / 14:てこ2 / 15:星1 / 16:星2 / 17:人体1(消化) / 18:人体2(呼吸) / 19:人体3(血液)',
+    国語: '10〜19:文章読解＋文法・季節・ことわざ・類義語等',
+    社会: '10:院政と平氏 / 11:まとめ③(平安) / 12〜15:鎌倉時代 / 16〜19:室町時代'
+  },
+
+  // ── カスタムルール（ユーザーが追加） ────────────────
   custom_rules: ''
 };
 
@@ -4655,29 +4812,30 @@ function buildScheduleSummary(targetMonday, weeksCount) {
     mon.setDate(targetMonday.getDate() + w * 7);
     const wk = mon.toISOString().slice(0,10);
     summary += `\n【${wk}週】\n`;
+    const wkData = localOverrides[wk] || {};
+    const hiddenSet = new Set(Object.keys(wkData.hidden || {}));
 
     for (let d = 0; d < 7; d++) {
       const dt = new Date(mon); dt.setDate(mon.getDate() + d);
       const dateStr = `${dt.getMonth()+1}/${dt.getDate()}(${DAY_LABELS[d]})`;
       const dayItems = [];
 
-      // RAW_DATAから
+      // RAW_DATA（weeklyの繰り返しタスク）: 曜日が一致 かつ hiddenでない
       RAW_DATA.forEach(item => {
-        if (item.weekday_index === d) {
+        if (item.weekday_index === d && !hiddenSet.has(item.uid)) {
           dayItems.push({slot: item.slot, subject: item.subject, unit: item.unit_name, time: item.study_time});
         }
       });
 
-      // OVERRIDE_DATAから
+      // OVERRIDE_DATA（一時的な変更・追加）: 日付が一致
       OVERRIDE_DATA.forEach(item => {
         const itemDate = new Date(item.date);
-        if (itemDate.toDateString() === dt.toDateString()) {
+        if (itemDate.toDateString() === dt.toDateString() && !hiddenSet.has(item.uid)) {
           dayItems.push({slot: item.slot, subject: item.subject, unit: item.unit_name, time: item.study_time});
         }
       });
 
-      // localOverridesから
-      const wkData = localOverrides[wk] || {};
+      // localOverrides.added: dayIdxが一致 かつ is_hiddenでない
       (wkData.added || []).forEach(item => {
         if (item._dayIdx === d && item.is_hidden !== 'yes') {
           dayItems.push({slot: item.slot, subject: item.subject, unit: item.unit_name, time: item.study_time});
