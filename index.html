@@ -3592,9 +3592,7 @@ async function runBalanceCheck() {
 
   try {
     const rules = await loadAiRules();
-    const _rawSummary = buildScheduleSummary(balanceCheckMonday, 1);
-    // 長すぎる場合は制限（1000文字）
-    const scheduleSummary = _rawSummary.length > 1000 ? _rawSummary.slice(0, 1000) + '...' : _rawSummary;
+    const scheduleSummary = buildScheduleSummary(balanceCheckMonday, 1);
 
     const mon = new Date(balanceCheckMonday);
     const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
@@ -3637,10 +3635,7 @@ async function runBalanceCheck() {
     }
     const bestPreKey = gnorevDow + '';
     if (isPreGnorev && !runBalanceCheck._bestPreCache[bestPreKey]) {
-      // ベストサマリーはグノレブ前週の要点のみ（全カードではなく教科別件数）
-      const fullSummary = buildScheduleSummary(bestPreMonday, 1);
-      // 長すぎる場合は先頭800文字に制限
-      runBalanceCheck._bestPreCache[bestPreKey] = fullSummary.length > 800 ? fullSummary.slice(0, 800) + '...' : fullSummary;
+      runBalanceCheck._bestPreCache[bestPreKey] = buildScheduleSummary(bestPreMonday, 1);
     }
     const bestPreSummary = isPreGnorev ? (runBalanceCheck._bestPreCache[bestPreKey] || '') : '';
 
@@ -3671,31 +3666,41 @@ async function runBalanceCheck() {
 
     if (isPreGnorev) {
       const dowLabel = gnorevDow === 3 ? '水' : '月';
-      prompt += '【グノレブ前週モード】翌週' + dowLabel + 'グノレブ。\n';
+      prompt += '【グノレブ前週モード】\n';
+      prompt += '翌週' + dowLabel + '曜日にグノレブがあります。通常週と以下が異なります:\n';
       if (gnorevDow === 3) {
-        prompt += '理科基礎力テスト週2回不要/グノチェックより復習優先\n';
-        prompt += 'ベスト週の理想配置: 火=理科復習40分午後/木=算数・理科各30分夜/金=社会・理科各30分午後+算数60分夜/土=算数計算マスタ+国語言葉+漢字午前+算数40分夜/日=算数・理科各30分午前+算数・理科夜\n';
+        prompt += '・理科基礎力テストが週2回なくてもOK（復習優先）\n';
+        prompt += '・グノチェック（金曜）より復習カードを優先\n';
+        prompt += '・4教科バランスの基準は下記ベスト実績週を参照\n';
       } else {
-        prompt += 'ベスト週の理想配置: 火=社会・国語言葉復習夜/金=社会後半+算数・理科夜/土日=算数集中+理科復習\n';
+        prompt += '・月曜グノレブのベスト実績週を参照してバランスを判断\n';
       }
+      prompt += '\n【ベスト実績週のスケジュール（参考・これが理想の組み方）】\n';
+      prompt += bestPreSummary + '\n';
     }
 
     if (isGnorevWeek) {
       const dowLabel = gnorevThisDow === 3 ? '水' : '月';
       const afterLabel = gnorevThisDow === 3 ? '木曜以降' : '火曜以降';
-      prompt += '【グノレブ当日週モード】この週の' + dowLabel + 'グノレブ。' + afterLabel + 'の振り返りカード確認。\n';
-      if (gnorevThisDow === 3) {
-        prompt += '振り返り理想: 翌木=算数振り返り+新単元音読夜/翌土=理科・社会・国語振り返り\n';
-      } else {
-        prompt += '振り返り理想: 翌火=新単元音読/翌水午前=全教科振り返り\n';
-      }
+      prompt += '【グノレブ当日週モード】\n';
+      prompt += 'この週の' + dowLabel + '曜日にグノレブがあります。\n';
+      prompt += 'テスト後（' + afterLabel + '）の振り返りカードが入っているか確認してください。\n';
+      prompt += '\n【ベスト実績週のスケジュール（参考・テスト後の振り返りカードの理想形）】\n';
+      prompt += bestGnorevSummary + '\n';
     }
 
     prompt += '【この週のスケジュール】\n';
     prompt += scheduleSummary + '\n';
 
     if (isPreGnorev || isGnorevWeek) {
-      prompt += 'ベスト週の理想配置と比較し、欠けているカードを「入れ忘れ確認」で指摘。除外OK: 漢字・基礎力・塾・サッカー・宿題\n\n';
+      prompt += '【ベスト週との比較チェック（必須）】\n';
+      prompt += '上記のベスト実績週に入っているカード（教科・内容・スロット）と、この週のスケジュールを比較してください。\n';
+      if (isGnorevWeek) {
+        const afterLabel2 = gnorevThisDow === 3 ? '木曜以降' : '火曜以降';
+        prompt += 'グノレブ当日週は' + afterLabel2 + 'の振り返りカードに絞って比較してください。\n';
+      }
+      prompt += 'ベスト週にあってこの週にないカードは「入れ忘れ確認」として必ず全件指摘してください。\n';
+      prompt += '除外してOK: 漢字・算数基礎力テストなど毎朝の固定タスク / 塾・サッカー・プロタゴなどの習い事 / 学校の宿題\n\n';
     }
 
     prompt += '【出力形式】\n';
@@ -3721,7 +3726,7 @@ async function runBalanceCheck() {
     prompt += '問題なければitemsは[{"category":"確認OK","date":"-","slot":"-","subject":"-","detail":"バランスよく組めています！"}]のみ。\n';
     prompt += 'detailの中でカード名・タスク名を引用するときは必ず「」で囲むこと（例:「計算マスタ」「言葉 復習前半」）。\n';
     prompt += '敬語なし・シンプルな日本語で。\n';
-    prompt += '重要度の高いものだけ最大8件に絞ること。';
+    prompt += '重要度の高いものに絞って簡潔に。';
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 45000); // 45秒タイムアウト
@@ -3731,7 +3736,7 @@ async function runBalanceCheck() {
       signal: controller.signal,
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 1500,
+        max_tokens: 2000,
         messages: [{ role: 'user', content: prompt }]
       })
     });
