@@ -3735,12 +3735,21 @@ async function runBalanceCheck() {
 
     msgs.removeChild(loadDiv);
 
-    // JSONパース（コードブロック除去してから）
+    // JSONパース（コードブロック・余分なテキスト除去）
     let parsed = null;
     try {
-      const cleaned = replyText.replace(/```json|```/g, '').trim();
-      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-      if (jsonMatch) parsed = JSON.parse(jsonMatch[0]);
+      // バッククォート・jsonラベル・前後のテキストを除去
+      let cleaned = replyText
+        .replace(/^[\s\S]*?(?=\{)/,'')  // {の前を削除
+        .replace(/\}[\s\S]*$/s, '}')    // }の後を削除（最後の}まで）
+        .trim();
+      // 最後の}を見つけて確実に切り出す
+      const start = replyText.indexOf('{');
+      const end = replyText.lastIndexOf('}');
+      if (start !== -1 && end !== -1 && end > start) {
+        cleaned = replyText.slice(start, end + 1);
+      }
+      parsed = JSON.parse(cleaned);
     } catch(e2) { parsed = null; }
 
     const resultDiv = document.createElement('div');
