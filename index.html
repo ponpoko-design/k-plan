@@ -337,7 +337,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
     /* 左端リサイズハンドル */
     #balanceCheckPanel * {
       box-sizing: border-box;
-      font-size: 12px;
+      font-size: 16px;
       line-height: 1.5;
     }
     #balanceCheckPanelHdr span,
@@ -360,7 +360,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
     #balanceCheckMessages table {
       table-layout: fixed;
       width: 100%;
-      font-size: 12px;
+      font-size: 16px;
     }
     #balanceCheckMessages table td,
     #balanceCheckMessages table th {
@@ -370,10 +370,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
       vertical-align: top;
       padding: 6px 5px;
       line-height: 1.5;
-      font-size: 12px;
+      font-size: 16px;
     }
     #balanceCheckMessages {
-      font-size: 12px;
+      font-size: 16px;
     }
     /* スマホ幅調整ボタン */
     #balanceCheckWidthBtns {
@@ -408,10 +408,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
     <div style="padding:12px 14px;border-bottom:1px solid #f0e0f5;flex-shrink:0;">
       <div style="display:flex;gap:6px;align-items:center;">
         <button onclick="balanceCheckWeekOffset(-1)" style="background:#fce8f6;border:none;border-radius:8px;width:30px;height:30px;cursor:pointer;color:#d4609e;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M8 2L4 6l4 4" stroke="#d4609e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-        <div id="balanceCheckWeekLabel" style="flex:1;text-align:center;font-size:12px;font-weight:700;color:#1a2744;"></div>
+        <div id="balanceCheckWeekLabel" style="flex:1;text-align:center;font-size:16px;font-weight:700;color:#1a2744;"></div>
         <button onclick="balanceCheckWeekOffset(1)" style="background:#fce8f6;border:none;border-radius:8px;width:30px;height:30px;cursor:pointer;color:#d4609e;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2l4 4-4 4" stroke="#d4609e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
-      <button onclick="runBalanceCheck()" id="balanceCheckRunBtn" style="width:100%;margin-top:8px;background:#d4609e;border:none;color:white;border-radius:9999px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;">この週をチェック ✨</button>
+      <button onclick="runBalanceCheck()" id="balanceCheckRunBtn" style="width:100%;margin-top:8px;background:#d4609e;border:none;color:white;border-radius:9999px;padding:9px;font-size:16px;font-weight:700;cursor:pointer;">この週をチェック ✨</button>
     </div>
     <div id="balanceCheckMessages" style="flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px;">
       <div style="color:#bbb;font-size:13px;text-align:center;margin-top:20px;">チェックボタンを押すと、AIがこの週のスケジュールを確認します</div>
@@ -3551,6 +3551,152 @@ function onResizeUp() {
   panel.style.transition = '';
 }
 
+async function runMissedCheck(isPreGnorev, isGnorevWeek, gnorevDow, gnorevThisDow, scheduleSummary) {
+  const btn = document.getElementById('balanceMissedCheckBtn');
+  const msgs = document.getElementById('balanceCheckMessages');
+  if (btn) { btn.disabled = true; btn.textContent = '確認中...'; }
+
+  // ローディング
+  const loadDiv = document.createElement('div');
+  loadDiv.style.cssText = 'padding:10px 14px;font-size:12px;color:#aaa;';
+  loadDiv.textContent = '入れ忘れを確認中...';
+  msgs.appendChild(loadDiv);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  try {
+    // ベストスケジュールを取得
+    const bestPreMonday = gnorevDow === 3
+      ? new Date('2026-06-22T00:00:00')
+      : new Date('2026-05-25T00:00:00');
+    const bestGnorevMonday = gnorevThisDow === 3
+      ? new Date('2026-06-29T00:00:00')
+      : new Date('2026-06-01T00:00:00');
+    const bestSummary = isPreGnorev
+      ? buildScheduleSummary(bestPreMonday, 1)
+      : buildScheduleSummary(bestGnorevMonday, 1);
+
+    let missedPrompt = '以下のベスト実績週と今週のスケジュールを比較して、入れ忘れているカードを指摘してください。\n\n';
+    if (isPreGnorev) {
+      const dowLabel = gnorevDow === 3 ? '水' : '月';
+      missedPrompt += '【グノレブ前週】翌週' + dowLabel + 'グノレブ。\n';
+    }
+    if (isGnorevWeek) {
+      const afterLabel = gnorevThisDow === 3 ? '木曜以降' : '火曜以降';
+      missedPrompt += '【グノレブ当日週】' + afterLabel + 'の振り返りカードに絞って比較。\n';
+    }
+    missedPrompt += '\n【ベスト実績週】\n' + bestSummary;
+    missedPrompt += '\n【この週のスケジュール】\n' + scheduleSummary;
+    missedPrompt += '\n\n除外OK: 漢字・算数基礎力テストなど毎朝固定タスク / 塾・サッカー・プロタゴ / 学校の宿題\n';
+    missedPrompt += '\n最初の文字は { 最後の文字は } であること。コードブロック禁止。\n';
+    missedPrompt += 'JSON配列のみ返す:\n[{"date":"6/25(木)など or -","slot":"朝/午前/午後/夜","subject":"算数/国語/理科/社会","best":"ベスト週の状況1行","current":"この週の状況1行","detail":"内容1行"}]';
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
+    const res = await fetch('https://kota-ai-proxy.nacchukkim.workers.dev', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1200, messages: [{ role: 'user', content: missedPrompt }] })
+    });
+    clearTimeout(timeoutId);
+    const data = await res.json();
+    const replyText = (data.content && data.content[0] && data.content[0].text) ? data.content[0].text : '';
+
+    msgs.removeChild(loadDiv);
+    if (btn) btn.remove();
+
+    // JSONパース
+    let items = null;
+    try {
+      const start = replyText.indexOf('[');
+      const end = replyText.lastIndexOf(']');
+      if (start !== -1 && end > start) items = JSON.parse(replyText.slice(start, end + 1));
+    } catch(e2) { items = null; }
+
+    const SUBJ_COLOR = {'算数':'#C1E8FB','国語':'#F2B9E4','理科':'#B6EBB0','社会':'#F9DB82'};
+    const subjShort = {'算数':'算','国語':'国','理科':'理','社会':'社'};
+
+    const secDiv = document.createElement('div');
+    secDiv.style.cssText = 'width:100%;';
+
+    const header = document.createElement('div');
+    header.style.cssText = 'font-size:12px;font-weight:700;color:#1a6fa0;margin:8px 0 3px;';
+    header.textContent = '📋 入れ忘れ確認';
+    secDiv.appendChild(header);
+
+    if (!items || items.length === 0) {
+      const ok = document.createElement('div');
+      ok.style.cssText = 'padding:8px 10px;background:#eef6ff;border:1px solid #2980b9;border-radius:8px;font-size:12px;color:#1a6fa0;';
+      ok.textContent = '✅ 入れ忘れなし';
+      secDiv.appendChild(ok);
+    } else {
+      const table = document.createElement('table');
+      table.style.cssText = 'width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;';
+      const thead = document.createElement('tr');
+      thead.style.cssText = 'background:#eef6ff;';
+      [['日付','20%'],['スロット','15%'],['科','10%'],['内容','55%']].forEach(([h,w]) => {
+        const th = document.createElement('th');
+        th.style.cssText = 'padding:5px 5px;text-align:left;color:#888;font-weight:600;border-bottom:1px solid #2980b9;width:'+w+';';
+        th.textContent = h;
+        thead.appendChild(th);
+      });
+      table.appendChild(thead);
+
+      items.forEach((item, idx) => {
+        const tr = document.createElement('tr');
+        tr.style.cssText = 'background:' + (idx%2===0 ? 'white' : '#eef6ff') + ';';
+        const sc = SUBJ_COLOR[item.subject] || '';
+        [{val:item.date||'-',style:'padding:5px 5px;color:#555;white-space:nowrap;vertical-align:top;'},
+         {val:item.slot||'-',style:'padding:5px 5px;color:#555;white-space:nowrap;vertical-align:top;'},
+         {val:(subjShort[item.subject]||item.subject||'-'),style:'padding:5px 5px;text-align:center;vertical-align:top;',badge:sc&&item.subject!=='-'},
+         {val:null,style:'padding:0;vertical-align:top;',detail:true},
+        ].forEach(c => {
+          const td = document.createElement('td');
+          td.style.cssText = c.style + 'border-bottom:1px solid #f0f0f0;';
+          if (c.badge) {
+            const sp = document.createElement('span');
+            sp.style.cssText = 'background:'+sc+';border-radius:4px;padding:1px 5px;font-weight:700;font-size:11px;';
+            sp.textContent = c.val;
+            td.appendChild(sp);
+          } else if (c.detail) {
+            // 2段表示
+            const top = document.createElement('div');
+            top.style.cssText = 'padding:5px 6px 4px;font-size:11px;color:#666;background:#f5f9ff;';
+            top.innerHTML = '<span style="font-size:10px;font-weight:700;color:#999;display:block;margin-bottom:1px;">ベスト週</span>' + (item.best || item.detail || '');
+            const div = document.createElement('div');
+            div.style.cssText = 'height:1px;background:#ddd;';
+            const bot = document.createElement('div');
+            bot.style.cssText = 'padding:4px 6px 5px;font-size:11px;color:#333;';
+            bot.innerHTML = '<span style="font-size:10px;font-weight:700;color:#999;display:block;margin-bottom:1px;">この週</span>' + (item.current || item.detail || '');
+            td.appendChild(top); td.appendChild(div); td.appendChild(bot);
+          } else {
+            td.textContent = c.val;
+          }
+          tr.appendChild(td);
+        });
+        table.appendChild(tr);
+      });
+
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'border:1px solid #2980b9;border-radius:8px;overflow:hidden;';
+      wrap.appendChild(table);
+      secDiv.appendChild(wrap);
+    }
+
+    msgs.appendChild(secDiv);
+    msgs.scrollTop = msgs.scrollHeight;
+
+  } catch(e) {
+    msgs.removeChild(loadDiv);
+    if (btn) { btn.disabled = false; btn.textContent = '📋 入れ忘れ確認をする'; }
+    const errDiv = document.createElement('div');
+    errDiv.style.cssText = 'padding:8px 10px;font-size:12px;color:#e74c3c;background:#fff0f0;border-radius:8px;';
+    errDiv.textContent = e.name === 'AbortError' ? 'タイムアウト。もう一度試してください。' : '通信エラーが発生しました。';
+    msgs.appendChild(errDiv);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+}
+
 function balanceCheckResize(delta) {
   const panel = document.getElementById('balanceCheckPanel');
   const rect = panel.getBoundingClientRect();
@@ -3917,6 +4063,17 @@ async function runBalanceCheck() {
     }
 
     msgs.appendChild(resultDiv);
+
+    // グノレブ前週・当日週のときだけ「入れ忘れ確認」ボタンを表示
+    if (isPreGnorev || isGnorevWeek) {
+      const missedBtn = document.createElement('button');
+      missedBtn.id = 'balanceMissedCheckBtn';
+      missedBtn.style.cssText = 'width:100%;margin-top:8px;background:#2980b9;border:none;color:white;border-radius:9999px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;';
+      missedBtn.textContent = '📋 入れ忘れ確認をする';
+      missedBtn.onclick = () => runMissedCheck(isPreGnorev, isGnorevWeek, gnorevDow, gnorevThisDow, scheduleSummary);
+      msgs.appendChild(missedBtn);
+    }
+
     msgs.scrollTop = msgs.scrollHeight;
 
   } catch(e) {
