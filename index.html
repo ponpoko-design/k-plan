@@ -3735,7 +3735,7 @@ async function runBalanceCheck() {
       signal: controller.signal,
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 800,
+        max_tokens: 2000,
         messages: [{ role: 'user', content: prompt }]
       })
     });
@@ -3745,31 +3745,22 @@ async function runBalanceCheck() {
 
     msgs.removeChild(loadDiv);
 
-    // JSONパース（コードブロック・余分なテキスト除去）
+    // JSONパース（最初の{〜最後の}を確実に切り出す）
     let parsed = null;
     try {
-      // バッククォート・jsonラベル・前後のテキストを除去
-      let cleaned = replyText
-        .replace(/^[\s\S]*?(?=\{)/,'')  // {の前を削除
-        .replace(/\}[\s\S]*$/s, '}')    // }の後を削除（最後の}まで）
-        .trim();
-      // 最後の}を見つけて確実に切り出す
       const start = replyText.indexOf('{');
       const end = replyText.lastIndexOf('}');
       if (start !== -1 && end !== -1 && end > start) {
-        cleaned = replyText.slice(start, end + 1);
+        parsed = JSON.parse(replyText.slice(start, end + 1));
       }
-      parsed = JSON.parse(cleaned);
-    } catch(e2) { parsed = null; }
+    } catch(e2) {
+      console.error('JSON parse error:', e2.message);
+      parsed = null;
+    }
 
     const resultDiv = document.createElement('div');
     resultDiv.style.cssText = 'width:100%;padding:4px 0;';
 
-    console.log('BALANCE CHECK parsed:', parsed);
-    console.log('replyText full:', replyText);
-    console.log('start idx:', replyText.indexOf('{'), 'end idx:', replyText.lastIndexOf('}'));
-    const _s = replyText.indexOf('{'), _e = replyText.lastIndexOf('}');
-    if (_s !== -1 && _e > _s) console.log('sliced:', replyText.slice(_s, _e+1).slice(0,300));
     if (!parsed || !parsed.items) {
       resultDiv.style.cssText += 'background:white;border-radius:10px;padding:12px;font-size:13px;color:#333;white-space:pre-wrap;';
       resultDiv.textContent = replyText || 'エラーが発生しました。';
