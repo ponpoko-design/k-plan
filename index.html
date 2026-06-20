@@ -231,7 +231,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
         <div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(3,1fr);gap:10px;height:100%;min-height:360px;">
 
           <!-- 左上：提案 / グノレブ前後 -->
-          <button onclick="closeAIModal();openGnorevModal();" style="display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:10px;background:white;border:2px solid #eee;border-radius:14px;padding:14px;cursor:pointer;text-align:left;transition:border-color .15s,box-shadow .15s;font-family:inherit;width:100%;box-sizing:border-box;" onmouseover="this.style.borderColor='#9b59b6';this.style.boxShadow='0 2px 14px rgba(155,89,182,0.18)'" onmouseout="this.style.borderColor='#eee';this.style.boxShadow='none'">
+          <button onclick="closeAIModal();openGnorevModal();" style="display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:10px;background:#faf5ff;border:2px solid #e8d5f5;border-radius:14px;padding:14px;cursor:pointer;text-align:left;transition:border-color .15s,box-shadow .15s;font-family:inherit;width:100%;box-sizing:border-box;" onmouseover="this.style.borderColor='#9b59b6';this.style.boxShadow='0 2px 14px rgba(155,89,182,0.18)'" onmouseout="this.style.borderColor='#eee';this.style.boxShadow='none'">
             <div style="display:flex;align-items:center;gap:7px;">
               <div style="width:32px;height:32px;border-radius:8px;background:#f0e6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#9b59b6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M12 2v4M8 2h8"/><circle cx="9" cy="13" r="1.5" fill="#9b59b6" stroke="none"/><circle cx="15" cy="13" r="1.5" fill="#9b59b6" stroke="none"/><line x1="9" y1="17" x2="15" y2="17"/><line x1="7" y1="8" x2="7" y2="6"/><line x1="17" y1="8" x2="17" y2="6"/></svg>
@@ -242,7 +242,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
           </button>
 
           <!-- 右上：提案 / 塾休み期間 -->
-          <button onclick="closeAIModal();showToast('塾お休み期間の提案は近日公開予定です 🚧',2500);" style="display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:10px;background:white;border:2px solid #eee;border-radius:14px;padding:14px;cursor:pointer;text-align:left;transition:border-color .15s,box-shadow .15s;font-family:inherit;width:100%;box-sizing:border-box;" onmouseover="this.style.borderColor='#378add';this.style.boxShadow='0 2px 14px rgba(55,138,221,0.18)'" onmouseout="this.style.borderColor='#eee';this.style.boxShadow='none'">
+          <button onclick="closeAIModal();showToast('塾お休み期間の提案は近日公開予定です 🚧',2500);" style="display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:10px;background:#f0f7ff;border:2px solid #cce0f5;border-radius:14px;padding:14px;cursor:pointer;text-align:left;transition:border-color .15s,box-shadow .15s;font-family:inherit;width:100%;box-sizing:border-box;" onmouseover="this.style.borderColor='#378add';this.style.boxShadow='0 2px 14px rgba(55,138,221,0.18)'" onmouseout="this.style.borderColor='#eee';this.style.boxShadow='none'">
             <div style="display:flex;align-items:center;gap:7px;">
               <div style="width:32px;height:32px;border-radius:8px;background:#e8f4ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#378add" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M12 2v4M8 2h8"/><circle cx="9" cy="13" r="1.5" fill="#378add" stroke="none"/><circle cx="15" cy="13" r="1.5" fill="#378add" stroke="none"/><line x1="9" y1="17" x2="15" y2="17"/><line x1="7" y1="8" x2="7" y2="6"/><line x1="17" y1="8" x2="17" y2="6"/></svg>
@@ -253,7 +253,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
           </button>
 
           <!-- 中左：提案 / 課題学習 -->
-          <button onclick="closeAIModal();showToast('課題学習の提案は近日公開予定です 🚧',2500);" style="display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:10px;background:white;border:2px solid #eee;border-radius:14px;padding:14px;cursor:pointer;text-align:left;transition:border-color .15s,box-shadow .15s;font-family:inherit;width:100%;box-sizing:border-box;" onmouseover="this.style.borderColor='#f39c12';this.style.boxShadow='0 2px 14px rgba(243,156,18,0.18)'" onmouseout="this.style.borderColor='#eee';this.style.boxShadow='none'">
+          <button onclick="closeAIModal();showToast('課題学習の提案は近日公開予定です 🚧',2500);" style="display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:10px;background:#fffaf0;border:2px solid #f5e4c0;border-radius:14px;padding:14px;cursor:pointer;text-align:left;transition:border-color .15s,box-shadow .15s;font-family:inherit;width:100%;box-sizing:border-box;" onmouseover="this.style.borderColor='#f39c12';this.style.boxShadow='0 2px 14px rgba(243,156,18,0.18)'" onmouseout="this.style.borderColor='#eee';this.style.boxShadow='none'">
             <div style="display:flex;align-items:center;gap:7px;">
               <div style="width:32px;height:32px;border-radius:8px;background:#fff8e6;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#f39c12" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M12 2v4M8 2h8"/><circle cx="9" cy="13" r="1.5" fill="#f39c12" stroke="none"/><circle cx="15" cy="13" r="1.5" fill="#f39c12" stroke="none"/><line x1="9" y1="17" x2="15" y2="17"/><line x1="7" y1="8" x2="7" y2="6"/><line x1="17" y1="8" x2="17" y2="6"/></svg>
@@ -264,7 +264,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
           </button>
 
           <!-- 中右：チェック / 全体バランス -->
-          <button onclick="closeAIModal();openBalanceCheckModal();" style="display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:10px;background:white;border:2px solid #eee;border-radius:14px;padding:14px;cursor:pointer;text-align:left;transition:border-color .15s,box-shadow .15s;font-family:inherit;width:100%;box-sizing:border-box;" onmouseover="this.style.borderColor='#F2B9E4';this.style.boxShadow='0 2px 14px rgba(242,185,228,0.4)'" onmouseout="this.style.borderColor='#eee';this.style.boxShadow='none'">
+          <button onclick="closeAIModal();openBalanceCheckModal();" style="display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:10px;background:#fff5fb;border:2px solid #f5d0ea;border-radius:14px;padding:14px;cursor:pointer;text-align:left;transition:border-color .15s,box-shadow .15s;font-family:inherit;width:100%;box-sizing:border-box;" onmouseover="this.style.borderColor='#F2B9E4';this.style.boxShadow='0 2px 14px rgba(242,185,228,0.4)'" onmouseout="this.style.borderColor='#eee';this.style.boxShadow='none'">
             <div style="display:flex;align-items:center;gap:7px;">
               <div style="width:32px;height:32px;border-radius:8px;background:#fce8f6;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#d4609e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12S5 5 12 5s11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -275,7 +275,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
           </button>
 
           <!-- 下左：相談 -->
-          <button onclick="closeAIModal();openRuleChatModal();" style="display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:10px;background:white;border:2px solid #eee;border-radius:14px;padding:14px;cursor:pointer;text-align:left;transition:border-color .15s,box-shadow .15s;font-family:inherit;width:100%;box-sizing:border-box;" onmouseover="this.style.borderColor='#1a2744';this.style.boxShadow='0 2px 14px rgba(26,39,68,0.15)'" onmouseout="this.style.borderColor='#eee';this.style.boxShadow='none'">
+          <button onclick="closeAIModal();openRuleChatModal();" style="display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:10px;background:#f2f4f8;border:2px solid #d0d6e8;border-radius:14px;padding:14px;cursor:pointer;text-align:left;transition:border-color .15s,box-shadow .15s;font-family:inherit;width:100%;box-sizing:border-box;" onmouseover="this.style.borderColor='#1a2744';this.style.boxShadow='0 2px 14px rgba(26,39,68,0.15)'" onmouseout="this.style.borderColor='#eee';this.style.boxShadow='none'">
             <div style="display:flex;align-items:center;gap:7px;">
               <div style="width:32px;height:32px;border-radius:8px;background:#eef0f5;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1a2744" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
@@ -286,7 +286,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
           </button>
 
           <!-- 下右：写真から -->
-          <button onclick="closeAIModal();openImageImportModal();" style="display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:10px;background:white;border:2px solid #eee;border-radius:14px;padding:14px;cursor:pointer;text-align:left;transition:border-color .15s,box-shadow .15s;font-family:inherit;width:100%;box-sizing:border-box;" onmouseover="this.style.borderColor='#2ecc71';this.style.boxShadow='0 2px 14px rgba(46,204,113,0.18)'" onmouseout="this.style.borderColor='#eee';this.style.boxShadow='none'">
+          <button onclick="closeAIModal();openImageImportModal();" style="display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:10px;background:#f0fff8;border:2px solid #c0edd8;border-radius:14px;padding:14px;cursor:pointer;text-align:left;transition:border-color .15s,box-shadow .15s;font-family:inherit;width:100%;box-sizing:border-box;" onmouseover="this.style.borderColor='#2ecc71';this.style.boxShadow='0 2px 14px rgba(46,204,113,0.18)'" onmouseout="this.style.borderColor='#eee';this.style.boxShadow='none'">
             <div style="display:flex;align-items:center;gap:7px;">
               <div style="width:32px;height:32px;border-radius:8px;background:#e8fff2;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
@@ -3411,66 +3411,77 @@ async function runBalanceCheck() {
       : new Date('2026-06-01T00:00:00'); // 6/1月グノレブ当日週の月曜
     const bestGnorevSummary = isGnorevWeek ? buildScheduleSummary(bestGnorevMonday, 1) : '';
 
-    const prompt = `あなたはこうたくん（小学5年生・グノーブル塾）の学習スケジュールをチェックするAIです。
+    // プロンプトを文字列結合で構築（テンプレートリテラルのネスト回避）
+    let prompt = 'あなたはこうたくん（小学5年生・グノーブル塾）の学習スケジュールをチェックするAIです。\n\n';
+    prompt += '【チェック対象週】\n';
+    prompt += fmt(mon) + '（月）〜' + fmt(sun) + '（日）\n\n';
+    prompt += '【スロット使用ルール】\n';
+    prompt += '・朝: 漢字・算数基礎力テストのみ\n';
+    prompt += '・平日午前（am）: 学校中なので不可（土日午前はOK）\n';
+    prompt += '・月曜: 朝のみ。学校の宿題が塾前に終わらない場合は夜に残してOK。午後不可\n';
+    prompt += '・火曜: 朝・午後・夜OK\n';
+    prompt += '・水曜: 朝・午後（〜16:30）のみ。学校の宿題は午後（塾前にマスト）。夜不可\n';
+    prompt += '・木曜: 朝・夜のみ。プロタゴ（プログラミング）は木曜午後に入っていてOK\n';
+    prompt += '・金曜: 朝・午後・夜OK\n';
+    prompt += '・土曜: 朝・午前（9:00〜15:30）・夜（18:00〜）のみ。午後不可\n';
+    prompt += '・日曜: 朝・午前（〜12:00）・夜（18:00〜）のみ。午後不可\n\n';
+    prompt += '【学習量の目安】\n';
+    prompt += '・塾なし日の夜: 合計90分以内（バッファ込み）\n';
+    prompt += '・それ以外: 現在の固定タスク量が基準。大幅超過は指摘\n\n';
+    prompt += '【教科バランスの基準】\n';
+    prompt += '・算数: 毎朝基礎力テスト。Nテキスト（木金夜）・N家庭学習（金土夜）・計算マスタ（土日午前）\n';
+    prompt += '・国語: 毎朝漢字。単元音読・意味調べ毎週\n';
+    prompt += '・理科: 基礎力テスト週2回（木・土が理想）。グノチェック金曜\n';
+    prompt += '・社会: 単元音読優先\n\n';
 
-【チェック対象週】
-${fmt(mon)}（月）〜${fmt(sun)}（日）
+    if (isPreGnorev) {
+      const dowLabel = gnorevDow === 3 ? '水' : '月';
+      prompt += '【グノレブ前週モード】\n';
+      prompt += '翌週' + dowLabel + '曜日にグノレブがあります。通常週と以下が異なります:\n';
+      if (gnorevDow === 3) {
+        prompt += '・理科基礎力テストが週2回なくてもOK（復習優先）\n';
+        prompt += '・グノチェック（金曜）より復習カードを優先\n';
+        prompt += '・4教科バランスの基準は下記ベスト実績週を参照\n';
+      } else {
+        prompt += '・月曜グノレブのベスト実績週を参照してバランスを判断\n';
+      }
+      prompt += '\n【ベスト実績週のスケジュール（参考・これが理想の組み方）】\n';
+      prompt += bestPreSummary + '\n';
+    }
 
-【スロット使用ルール】
-- 朝: 漢字・算数基礎力テストのみ
-- 平日午前（am）: 学校中なので不可（土日午前はOK）
-- 月曜: 朝のみ。夜に学校の宿題が残る場合は塾前に終わらせる想定で残してOK。午後・夜は基本不可
-- 火曜: 朝・午後・夜OK
-- 水曜: 朝・午後（〜16:30）のみ。水曜の学校の宿題は午後（塾前にマスト）。夜不可
-- 木曜: 朝・夜のみ。プロタゴ（プログラミング）は木曜午後に入っていてOK（ルール違反ではない）
-- 金曜: 朝・午後・夜OK
-- 土曜: 朝・午前（9:00〜15:30）・夜（18:00〜）のみ。午後不可
-- 日曜: 朝・午前（〜12:00）・夜（18:00〜）のみ。午後不可
+    if (isGnorevWeek) {
+      const dowLabel = gnorevThisDow === 3 ? '水' : '月';
+      const afterLabel = gnorevThisDow === 3 ? '木曜以降' : '火曜以降';
+      prompt += '【グノレブ当日週モード】\n';
+      prompt += 'この週の' + dowLabel + '曜日にグノレブがあります。\n';
+      prompt += 'テスト後（' + afterLabel + '）の振り返りカードが入っているか確認してください。\n';
+      prompt += '\n【ベスト実績週のスケジュール（参考・テスト後の振り返りカードの理想形）】\n';
+      prompt += bestGnorevSummary + '\n';
+    }
 
-【学習量の目安】
-- 塾なし日の夜: 合計90分以内（バッファ込み）
-- それ以外: 現在の固定タスク量が基準。大幅超過は指摘
+    prompt += '【この週のスケジュール】\n';
+    prompt += scheduleSummary + '\n';
 
-【教科バランスの基準】
-- 算数: 毎朝基礎力テスト。Nテキスト（木金夜）・N家庭学習（金土夜）・計算マスタ（土日午前）
-- 国語: 毎朝漢字。単元音読・意味調べ毎週
-- 理科: 基礎力テスト週2回（木・土が理想）。グノチェック金曜
-- 社会: 単元音読優先
+    if (isPreGnorev || isGnorevWeek) {
+      prompt += '【ベスト週との比較チェック（必須）】\n';
+      prompt += '上記のベスト実績週に入っているカード（教科・内容・スロット）と、この週のスケジュールを比較してください。\n';
+      if (isGnorevWeek) {
+        const afterLabel = gnorevThisDow === 3 ? '木曜以降' : '火曜以降';
+        prompt += 'グノレブ当日週は' + afterLabel + 'の振り返りカードに絞って比較してください。\n';
+      }
+      prompt += 'ベスト週にあってこの週にないカードは「入れ忘れ確認」として必ず全件指摘してください。\n';
+      prompt += '除外してOK: 漢字・算数基礎力テストなど毎朝の固定タスク / 塾・サッカー・プロタゴなどの習い事 / 学校の宿題\n\n';
+    }
 
-${isPreGnorev ? `【⚠️ グノレブ前週モード】
-翌週${gnorevDow===3?'水':'月'}曜日にグノレブがあります。通常週と以下が異なります:
-${gnorevDow===3 ? `・理科基礎力テストが週2回なくてもOK（復習優先）
-・グノチェック（金曜）より復習カードを優先
-・4教科バランスの基準は下記ベスト実績週を参照` : `・月曜グノレブのベスト実績週を参照してバランスを判断`}
-
-【ベスト実績週のスケジュール（参考・これが理想の組み方）】
-${bestPreSummary}
-` : ''}${isGnorevWeek ? `【⚠️ グノレブ当日週モード】
-この週の${gnorevThisDow===3?'水':'月'}曜日にグノレブがあります。
-テスト後（${gnorevThisDow===3?'木曜以降':'火曜以降'}）の振り返りカードが入っているか確認してください。
-
-【ベスト実績週のスケジュール（参考・テスト後の振り返りカードの理想形）】
-${bestGnorevSummary}
-` : ''}【この週のスケジュール】
-${scheduleSummary}
-
-${(isPreGnorev || isGnorevWeek) ? `【ベスト週との比較チェック（必須）】
-上記のベスト実績週に入っているカード（教科・内容・スロット）と、この週のスケジュールを比較してください。
-${isGnorevWeek ? `グノレブ当日週の場合、${gnorevThisDow===3?'木曜以降':'火曜以降'}の振り返りカードに絞って比較してください。` : ''}
-ベスト週にあってこの週にないカードは「📋 入れ忘れ確認」として必ず全件指摘してください。
-ただし以下は除外してOK:
-・漢字・算数基礎力テストなど毎朝の固定タスク
-・塾カード・サッカー・プロタゴなどの習い事
-・「学校の宿題」
-` : ''}【出力形式の指示】
-- #や##や###などのMarkdown見出しは使わない
-- **太字**も使わない
-- 絵文字は✅❌⚠️💡のみ使ってOK
-- 箇条書きは「・」を使う
-- カテゴリは「❌ ルール違反」「⚠️ 負荷・バランス」「✅ 確認OK」「📋 入れ忘れ確認」「💡 アドバイス」の形式で
-- 各項目は1〜2行で簡潔に
-- 問題なければ「✅ バランスよく組めています！」だけでOK
-- 敬語なし・シンプルな日本語で`;
+    prompt += '【出力形式の指示】\n';
+    prompt += '・#や##などのMarkdown見出しは使わない\n';
+    prompt += '・**太字**も使わない\n';
+    prompt += '・絵文字は✅❌⚠️💡📋のみ使ってOK\n';
+    prompt += '・箇条書きは「・」を使う\n';
+    prompt += '・カテゴリは「❌ ルール違反」「⚠️ 負荷・バランス」「✅ 確認OK」「📋 入れ忘れ確認」「💡 アドバイス」の形式で\n';
+    prompt += '・各項目は1〜2行で簡潔に\n';
+    prompt += '・問題なければ「✅ バランスよく組めています！」だけでOK\n';
+    prompt += '・敬語なし・シンプルな日本語で';
 
     const res = await fetch('https://kota-ai-proxy.nacchukkim.workers.dev', {
       method: 'POST',
