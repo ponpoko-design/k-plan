@@ -3417,7 +3417,7 @@ ${scheduleSummary}
 問題なければ「バランスよく組めています！」と伝えてください。
 問題がある場合は箇条書きで具体的に指摘してください。
 最後に一言アドバイスを添えてください。
-日本語で、お母さんに話しかけるような親しみやすい口調で。`;
+日本語で簡潔に。箇条書き（・や→を使う）でまとめること。長い説明は不要。問題なければ一言でOK。`;
 
     const res = await fetch('https://kota-ai-proxy.nacchukkim.workers.dev', {
       method: 'POST',
@@ -4980,9 +4980,32 @@ function buildScheduleSummary(targetMonday, weeksCount) {
       const dateStr = `${dt.getMonth()+1}/${dt.getDate()}(${DAY_LABELS[d]})`;
       const dayItems = [];
 
-      // RAW_DATA（weeklyの繰り返しタスク）: 曜日が一致 かつ hiddenでない
+      // EXCEPTION_DATA: その週だけの例外。is_hidden:yesはRAW_DATAの該当repeat_keyを非表示にする
+      const exceptionHiddenKeys = new Set();
+      const exceptionAddItems = [];
+      if (typeof EXCEPTION_DATA !== 'undefined') {
+        EXCEPTION_DATA.forEach(item => {
+          const itemDate = new Date(item.date);
+          if (itemDate.toDateString() === dt.toDateString()) {
+            if (item.is_hidden === 'yes') {
+              exceptionHiddenKeys.add(item.repeat_key);
+            } else {
+              exceptionAddItems.push(item);
+            }
+          }
+        });
+      }
+
+      // RAW_DATA（weeklyの繰り返しタスク）: 曜日が一致 かつ hiddenでない かつ例外で非表示でない
       RAW_DATA.forEach(item => {
-        if (item.weekday_index === d && !hiddenSet.has(item.uid)) {
+        if (item.weekday_index === d && !hiddenSet.has(item.uid) && !exceptionHiddenKeys.has(item.repeat_key)) {
+          dayItems.push({slot: item.slot, subject: item.subject, unit: item.unit_name, time: item.study_time});
+        }
+      });
+
+      // EXCEPTION_DATA追加分（is_hidden:no）
+      exceptionAddItems.forEach(item => {
+        if (!hiddenSet.has(item.uid)) {
           dayItems.push({slot: item.slot, subject: item.subject, unit: item.unit_name, time: item.study_time});
         }
       });
