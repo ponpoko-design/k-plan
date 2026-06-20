@@ -3507,10 +3507,11 @@ async function runBalanceCheck() {
 
     msgs.removeChild(loadDiv);
 
-    // JSONパース
+    // JSONパース（コードブロック除去してから）
     let parsed = null;
     try {
-      const jsonMatch = replyText.match(/\{[\s\S]*\}/);
+      const cleaned = replyText.replace(/```json|```/g, '').trim();
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
       if (jsonMatch) parsed = JSON.parse(jsonMatch[0]);
     } catch(e2) { parsed = null; }
 
