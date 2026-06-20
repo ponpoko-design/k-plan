@@ -3644,8 +3644,10 @@ async function runMissedCheck(isPreGnorev, isGnorevWeek, gnorevDow, gnorevThisDo
 
       items.forEach((item, idx) => {
         const tr = document.createElement('tr');
-        tr.style.cssText = 'background:' + (idx%2===0 ? 'white' : '#eef6ff') + ';';
         const sc = SUBJ_COLOR[item.subject] || '';
+        // 行全体の背景を教科の薄い色に
+        const rowBg = sc ? sc + '44' : (idx%2===0 ? 'white' : '#eef6ff');
+        tr.style.cssText = 'background:' + rowBg + ';';
         [{val:item.date||'-',style:'padding:5px 5px;color:#555;white-space:nowrap;vertical-align:top;'},
          {val:item.slot||'-',style:'padding:5px 5px;color:#555;white-space:nowrap;vertical-align:top;'},
          {val:(subjShort[item.subject]||item.subject||'-'),style:'padding:5px 5px;text-align:center;vertical-align:top;',badge:sc&&item.subject!=='-'},
@@ -3697,7 +3699,9 @@ async function runMissedCheck(isPreGnorev, isGnorevWeek, gnorevDow, gnorevThisDo
               return frag;
             };
 
-            top.style.cssText = 'padding:6px 6px 5px;font-size:16px;color:#555;background:#f0f5ff;';
+            const subjectTextColor = {'#C1E8FB':'#1a6fa0','#F2B9E4':'#9b2a7a','#B6EBB0':'#2a7a2a','#F9DB82':'#7a5c00'}[sc] || '#555';
+            const topBg = sc ? sc + '88' : '#f0f5ff';
+            top.style.cssText = 'padding:6px 6px 5px;font-size:16px;color:' + subjectTextColor + ';background:' + topBg + ';';
             const topLabel = document.createElement('span');
             topLabel.style.cssText = 'font-size:11px;font-weight:700;color:#999;display:block;margin-bottom:2px;';
             topLabel.textContent = 'ベスト週';
@@ -3833,7 +3837,7 @@ async function runBalanceCheck() {
     prompt += '【チェック対象週】\n';
     prompt += fmt(mon) + '（月）〜' + fmt(sun) + '（日）\n\n';
     // 共通スロットルール（3モード分岐）
-    const slotRule = '【スロットルール（共通）】朝=漢字・基礎力のみ/平日午前不可/月=朝のみ(宿題残置OK)/火=朝午後夜/水=朝午後(〜16:30)/木=朝夜(プロタゴ午後OK)/金=朝午後夜/土=朝午前夜/日=朝午前夜\n塾カード(月夜・水夜)はルール違反対象外。夜90分以内。\n\n';
+    const slotRule = '【スロットルール（共通）】朝=漢字・基礎力のみ/平日午前不可/月=朝のみ(夜に学校の宿題のみOK・塾居残りなし)/火=朝午後夜/水=朝午後(〜16:30)/木=朝夜(プロタゴ午後OK)/金=朝午後夜/土=朝午前夜/日=朝午前夜\n塾カード(月夜・水夜)はルール違反対象外。月夜の学校の宿題はOK。水は居残りの可能性があるため水曜夜は学校の宿題も入れない。夜90分以内。\n土日のサッカーと同スロットに勉強カードがある場合は時間の競合確認を促す。サッカーが入っていない場合は勉強の分散を提案する。\n\n';
     prompt += slotRule;
 
     if (isPreGnorev) {
