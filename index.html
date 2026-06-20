@@ -3665,11 +3665,17 @@ async function runMissedCheck(isPreGnorev, isGnorevWeek, gnorevDow, gnorevThisDo
             const mkBadge = (text, fallbackColor) => {
               const CARD_COLOR = {'算数':'#C1E8FB','国語':'#F2B9E4','理科':'#B6EBB0','社会':'#F9DB82','学校の宿題':'#E8E8E8'};
               const getC = (name) => {
-                if (/算数|計算マスタ|計算ルール|Nテキスト|N家庭|T確認|基礎力テスト/.test(name)) return '#C1E8FB';
-                if (/国語|漢字|言葉|音読|意味調べ|ことわざ/.test(name)) return '#F2B9E4';
-                if (/理科|グノチェック/.test(name)) return '#B6EBB0';
-                if (/社会/.test(name)) return '#F9DB82';
+                // 「教科:カード名」形式
+                const colonM = name.match(/^(算数|国語|理科|社会)[：:]/);
+                if (colonM) return CARD_COLOR[colonM[1]] || '';
+                // カード名キーワード優先
+                if (/グノチェック|確認問題|基本のまとめ|理科基礎力|理科.*復習|復習.*理科/.test(name)) return '#B6EBB0';
+                if (/用語.*確認|基礎力確認|社会.*復習|復習.*社会|歴史|鎌倉|室町/.test(name)) return '#F9DB82';
+                if (/Nテキスト|N家庭|T確認テスト|計算マスタ|計算ルール|算数.*復習|復習.*算数|基礎力テスト|基礎力復習/.test(name)) return '#C1E8FB';
+                if (/漢字|言葉|単元音読|意味調べ|ことわざ|国語.*復習|復習.*国語/.test(name)) return '#F2B9E4';
                 if (/学校の宿題|宿題/.test(name)) return '#E8E8E8';
+                if (/塾|プロタゴ|サッカー/.test(name)) return '#D6C3AA';
+                if (/グノレブ|テスト振り返り/.test(name)) return '#fce4f8';
                 return fallbackColor || '#eee';
               };
               const frag = document.createDocumentFragment();
@@ -3836,6 +3842,7 @@ async function runBalanceCheck() {
       prompt += '◆ルール: 4教科復習均等/理科基礎力週1回OK/グノチェック不要/算数基礎力・漢字毎朝必須\n\n';
       if (gnorevDow === 3) {
         prompt += '◆水曜グノレブ前週ベストパターン(7/1実績): 火午後=理科復習40分 / 木夜=算数復習30+理科復習30 / 金午後=社会前半30+理科復習30・夜=算数復習40+基礎力復習20 / 土午前=計算マスタ20+国語言葉前半15+漢字復習15・夜=算数復習40 / 日午前=算数復習30+理科復習30・夜=計算マスタ20+理科基礎力15 / 翌週月=塾のみ / 翌週火朝=漢字復習2・午後=算数基礎力復習20+言葉後半15・夜=社会後半20 / 当日朝=漢字のみ\n\n';
+        prompt += '◆水曜グノレブ前週の追加ルール:\n・グノレブ1週間前の水曜に塾の確認テストがあるため、その前日（火曜）の午後に理科:確認問題と理科:基本のまとめを必ず入れる\n・火曜夜は国語:単元音読・国語:意味調べ・社会:単元音読を通常どおり入れる\n\n';
       } else {
         prompt += '◆月曜グノレブ前週ベストパターン(6/1実績): 火夜=社会前半30+国語言葉30 / 水〜日朝=漢字間違い15 / 金午後=社会後半30・夜=算数復習40+理科復習30 / 土夜=算数復習40+基礎力復習20 / 日午前=算数復習30+理科復習30・夜=計算ルール15+復習30 / 当日午後=社会のみ(軽め)\n\n';
       }
@@ -3852,7 +3859,7 @@ async function runBalanceCheck() {
       }
       prompt += '◆チェック観点: 1.スロット違反 2.' + afterLabel + 'の振り返りがベストパターンに近いか 3.テスト前後の負荷バランス 4.漢字毎日/算数基礎力毎日/振り返り90分 5.アドバイス\n\n';
     } else {
-      prompt += '【今週のモード: 通常週】\n算数:朝基礎力/木金夜Nテキスト/金土夜N家庭/土日午前計算マスタ 国語:朝漢字/単元音読週1 理科:基礎力週2(木土)/金グノチェック 社会:単元音読優先\n\n';
+      prompt += '【今週のモード: 通常週】\n算数:朝基礎力/木金夜Nテキスト/金土夜N家庭/計算マスタ=土日のどこかで2日に分けて行う(スロット問わず) 国語:朝漢字/単元音読週1 理科:基礎力週2(木土)/金グノチェック 社会:単元音読優先\n\n';
       prompt += '◆チェック観点:\n1. ルール違反: スロット違反（平日午前・月午後夜・水夜・木午後）がないか\n2. 負荷・バランス: 特定の日に集中しすぎ/夜90分超/教科の偏り\n3. 確認OK: 漢字毎日/算数基礎力毎日/理科基礎力週2回/国語単元音読週1\n4. アドバイス: 改善提案\n\n';
     }
 
@@ -3993,21 +4000,19 @@ async function runBalanceCheck() {
                   return '';
                 };
                 const getCardColor = (cardName) => {
-                  // 「教科:〇〇」形式はコロン前の教科で色決定
+                  // 1. 「教科:カード名」形式はコロン前の教科を最優先
                   const colonMatch = cardName.match(/^(算数|国語|理科|社会|学校)[：:]/);
                   if (colonMatch) return getCardColorBySubject(colonMatch[1]);
-                  // 行の教科色を使う
-                  const subjColorFromRow = SUBJ_COLOR2[item.subject] || '';
-                  if (subjColorFromRow && item.subject !== '-') return subjColorFromRow;
-                  // 教科が"-"のときはキーワード判定
-                  if (/算数|計算マスタ|計算ルール|Nテキスト|N家庭学習|T確認テスト/.test(cardName)) return '#C1E8FB';
-                  if (/国語|漢字|言葉|ことわざ|意味調べ|単元音読|音読/.test(cardName)) return '#F2B9E4';
-                  if (/理科|グノチェック/.test(cardName)) return '#B6EBB0';
-                  if (/社会/.test(cardName)) return '#F9DB82';
+                  // 2. カード名のキーワードで教科を判定（行の教科より優先）
+                  if (/グノチェック|確認問題|基本のまとめ|理科基礎力|理科.*復習|復習.*理科/.test(cardName)) return '#B6EBB0';
+                  if (/用語.*確認|基礎力確認|社会.*復習|復習.*社会|歴史|鎌倉|室町|単元音読.*社会/.test(cardName)) return '#F9DB82';
+                  if (/Nテキスト|N家庭|T確認テスト|計算マスタ|計算ルール|算数.*復習|復習.*算数|基礎力テスト|基礎力復習/.test(cardName)) return '#C1E8FB';
+                  if (/漢字|言葉|単元音読|意味調べ|ことわざ|国語.*復習|復習.*国語/.test(cardName)) return '#F2B9E4';
                   if (/学校の宿題|宿題/.test(cardName)) return '#E8E8E8';
                   if (/塾|プロタゴ|サッカー/.test(cardName)) return '#D6C3AA';
                   if (/グノレブ|テスト振り返り/.test(cardName)) return '#fce4f8';
-                  return '';
+                  // 3. 最後に行の教科色にフォールバック
+                  return SUBJ_COLOR2[item.subject] || '';
                 };
                 // 「」や『』で囲まれた語句、またはカード名っぽい語句をバッジに変換
                 const renderDetailWithBadges = (text) => {
