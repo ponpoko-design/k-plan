@@ -3785,7 +3785,7 @@ async function runBalanceCheck() {
         if (!simpleMode) {
           const thead = document.createElement('tr');
           thead.style.cssText = 'background:' + st.bg + ';';
-          [['日付','22%'],['スロット','16%'],['教科','16%'],['内容','46%']].forEach(([h,w]) => {
+          [['日付','20%'],['スロット','15%'],['科','10%'],['内容','55%']].forEach(([h,w]) => {
             const th = document.createElement('th');
             th.style.cssText = 'padding:5px 6px;text-align:left;color:#888;font-weight:600;border-bottom:1px solid ' + st.border + ';width:' + w + ';';
             th.textContent = h;
@@ -3804,11 +3804,12 @@ async function runBalanceCheck() {
             tr.appendChild(td);
           } else {
             const subjColor = SUBJ_COLOR[item.subject] || '';
+            const subjShort = {'算数':'算','国語':'国','理科':'理','社会':'社','予定':'予','習い事':'習'};
             [
-              {val: item.date||'-',    style:'padding:5px 6px;color:#555;white-space:nowrap;'},
-              {val: item.slot||'-',    style:'padding:5px 6px;color:#555;white-space:nowrap;'},
-              {val: item.subject||'-', style:'padding:5px 6px;', badge: subjColor && item.subject !== '-'},
-              {val: item.detail||'-',  style:'padding:5px 6px;color:#333;line-height:1.5;', isDetail: true},
+              {val: item.date||'-',    style:'padding:5px 4px;color:#555;white-space:nowrap;'},
+              {val: item.slot||'-',    style:'padding:5px 4px;color:#555;white-space:nowrap;'},
+              {val: (subjShort[item.subject]||item.subject||'-'), style:'padding:5px 4px;text-align:center;', badge: subjColor && item.subject !== '-'},
+              {val: item.detail||'-',  style:'padding:5px 4px;color:#333;line-height:1.5;', isDetail: true},
             ].forEach(c => {
               const td = document.createElement('td');
               td.style.cssText = c.style + 'border-bottom:1px solid #f0f0f0;';
@@ -3819,18 +3820,34 @@ async function runBalanceCheck() {
                 td.appendChild(sp);
               } else if (c.isDetail) {
                 // detail欄: 「カード名」パターンをバッジに変換
-                const SUBJ_COLOR2 = {'算数':'#C1E8FB','国語':'#F2B9E4','理科':'#B6EBB0','社会':'#F9DB82','予定':'#F5F4E4','習い事':'#D6C3AA','テスト':'#fce4f8'};
+                const SUBJ_COLOR2 = {'算数':'#C1E8FB','国語':'#F2B9E4','理科':'#B6EBB0','社会':'#F9DB82','予定':'#F5F4E4','習い事':'#D6C3AA','テスト':'#fce4f8','学校':'#E8E8E8','宿題':'#E8E8E8'};
                 // カード名に対応する教科色を返す
-                // ★行の教科色を最優先。キーワードは教科が"-"のときのみ使う
+                // 「教科:カード名」形式のバッジは教科名で色を決める
+                // それ以外は行の教科色を使う
+                const getCardColorBySubject = (subjectName) => {
+                  if (!subjectName) return '';
+                  if (/算数/.test(subjectName)) return '#C1E8FB';
+                  if (/国語/.test(subjectName)) return '#F2B9E4';
+                  if (/理科/.test(subjectName)) return '#B6EBB0';
+                  if (/社会/.test(subjectName)) return '#F9DB82';
+                  if (/学校|宿題/.test(subjectName)) return '#E8E8E8';
+                  if (/塾|プロタゴ|サッカー/.test(subjectName)) return '#D6C3AA';
+                  if (/グノレブ|テスト/.test(subjectName)) return '#fce4f8';
+                  return '';
+                };
                 const getCardColor = (cardName) => {
-                  // 行に教科が設定されていればその色を使う
+                  // 「教科:〇〇」形式はコロン前の教科で色決定
+                  const colonMatch = cardName.match(/^(算数|国語|理科|社会|学校)[：:]/);
+                  if (colonMatch) return getCardColorBySubject(colonMatch[1]);
+                  // 行の教科色を使う
                   const subjColorFromRow = SUBJ_COLOR2[item.subject] || '';
                   if (subjColorFromRow && item.subject !== '-') return subjColorFromRow;
-                  // 教科が"-"のときはカード名からキーワード判定
+                  // 教科が"-"のときはキーワード判定
                   if (/算数|計算マスタ|計算ルール|Nテキスト|N家庭学習|T確認テスト/.test(cardName)) return '#C1E8FB';
                   if (/国語|漢字|言葉|ことわざ|意味調べ|単元音読|音読/.test(cardName)) return '#F2B9E4';
                   if (/理科|グノチェック/.test(cardName)) return '#B6EBB0';
                   if (/社会/.test(cardName)) return '#F9DB82';
+                  if (/学校の宿題|宿題/.test(cardName)) return '#E8E8E8';
                   if (/塾|プロタゴ|サッカー/.test(cardName)) return '#D6C3AA';
                   if (/グノレブ|テスト振り返り/.test(cardName)) return '#fce4f8';
                   return '';
@@ -3860,7 +3877,7 @@ async function runBalanceCheck() {
                         '単元音読','意味調べ','グノレブ振り返り','グノレブ解き直し',
                         '言葉 復習前半','言葉 復習後半','漢字復習','漢字 復習',
                         '用語/基礎力確認','用語確認','基礎問題','確認問題','基本のまとめ',
-                        'N間違い','振り返り','復習前半','復習後半'
+                        'N間違い','振り返り','復習前半','復習後半','学校の宿題'
                       ];
                       let remaining = part;
                       let node = document.createDocumentFragment();
