@@ -337,7 +337,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
     /* 左端リサイズハンドル */
     #balanceCheckPanel * {
       box-sizing: border-box;
-      font-size: 12px;
+      font-size: 13px;
       line-height: 1.5;
     }
     #balanceCheckPanelHdr span,
@@ -360,7 +360,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
     #balanceCheckMessages table {
       table-layout: fixed;
       width: 100%;
-      font-size: 12px;
+      font-size: 13px;
     }
     #balanceCheckMessages table td,
     #balanceCheckMessages table th {
@@ -368,12 +368,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
       white-space: normal;
       overflow-wrap: break-word;
       vertical-align: top;
-      padding: 6px 5px;
-      line-height: 1.5;
-      font-size: 12px;
+      padding: 7px 6px;
+      line-height: 1.6;
+      font-size: 13px;
     }
     #balanceCheckMessages {
-      font-size: 12px;
+      font-size: 13px;
     }
     /* スマホ幅調整ボタン */
     #balanceCheckWidthBtns {
@@ -3711,7 +3711,10 @@ async function runBalanceCheck() {
     prompt += '      "date": "6/22(月)" などの日付曜日（該当なければ"-"）,\n';
     prompt += '      "slot": "朝" "午前" "午後" "夜" のいずれか（該当なければ"-"）,\n';
     prompt += '      "subject": "算数" "国語" "理科" "社会" のいずれか（該当なければ"-"）,\n';
-    prompt += '      "detail": "内容を簡潔に1行"\n';
+    prompt += '      "detail": "内容を簡潔に1行",\n';
+    prompt += '      "best": "入れ忘れ確認カテゴリのみ: ベスト週の状況を1行（例: ベスト週では木曜夜に「Nテキスト」あり）",\n';
+    prompt += '      "current": "入れ忘れ確認カテゴリのみ: この週の状況を1行（例: この週は木曜夜に算数復習1のみでNテキストなし）"\n';
+    prompt += '      ※bestとcurrentは入れ忘れ確認カテゴリ以外は省略してOK\n';
     prompt += '    }\n';
     prompt += '  ]\n';
     prompt += '}\n';
@@ -3797,10 +3800,52 @@ async function runBalanceCheck() {
         groups[cat].forEach((item, idx) => {
           const tr = document.createElement('tr');
           tr.style.cssText = 'background:' + (idx%2===0 ? 'white' : st.bg) + ';';
+          // 入れ忘れ確認は2段表示（上段:ベスト週、罫線、下段:この週）
+          if (cat === '入れ忘れ確認' && (item.best || item.current)) {
+            // 日付・スロット・教科セル
+            const subjColor2 = SUBJ_COLOR[item.subject] || '';
+            const subjShort2 = {'算数':'算','国語':'国','理科':'理','社会':'社'};
+            [{val: item.date||'-', style:'padding:6px 5px;color:#555;white-space:nowrap;vertical-align:top;'},
+             {val: item.slot||'-', style:'padding:6px 5px;color:#555;white-space:nowrap;vertical-align:top;'},
+             {val: (subjShort2[item.subject]||item.subject||'-'), style:'padding:6px 5px;text-align:center;vertical-align:top;', badge: subjColor2 && item.subject !== '-'},
+            ].forEach(c => {
+              const td = document.createElement('td');
+              td.style.cssText = c.style + 'border-bottom:1px solid #f0f0f0;';
+              if (c.badge) {
+                const sp = document.createElement('span');
+                sp.style.cssText = 'background:' + subjColor2 + ';border-radius:4px;padding:1px 5px;font-weight:700;font-size:12px;';
+                sp.textContent = c.val;
+                td.appendChild(sp);
+              } else { td.textContent = c.val; }
+              tr.appendChild(td);
+            });
+            // 内容セル（2段）
+            const tdDetail = document.createElement('td');
+            tdDetail.style.cssText = 'padding:0;border-bottom:1px solid #f0f0f0;vertical-align:top;';
+            // 上段：ベスト週
+            const topDiv = document.createElement('div');
+            topDiv.style.cssText = 'padding:6px 6px 5px;font-size:12px;color:#666;background:#f9f9f9;';
+            topDiv.innerHTML = '<span style="font-size:10px;font-weight:700;color:#999;display:block;margin-bottom:2px;">ベスト週</span>' + (item.best || item.detail || '');
+            // 罫線
+            const divider = document.createElement('div');
+            divider.style.cssText = 'height:1px;background:#ddd;margin:0;';
+            // 下段：この週
+            const botDiv = document.createElement('div');
+            botDiv.style.cssText = 'padding:5px 6px 6px;font-size:12px;color:#333;';
+            botDiv.innerHTML = '<span style="font-size:10px;font-weight:700;color:#999;display:block;margin-bottom:2px;">この週</span>' + (item.current || item.detail || '');
+            tdDetail.appendChild(topDiv);
+            tdDetail.appendChild(divider);
+            tdDetail.appendChild(botDiv);
+            tr.appendChild(tdDetail);
+            table.appendChild(tr);
+            return;
+          }
           if (simpleMode) {
             const td = document.createElement('td');
-            td.style.cssText = 'padding:6px 8px;color:#444;line-height:1.5;';
-            td.textContent = '・' + (item.detail || '');
+            td.style.cssText = 'padding:6px 8px;color:#444;line-height:1.6;';
+            const prefixNode = document.createTextNode('・');
+            td.appendChild(prefixNode);
+            td.appendChild(renderDetailWithBadges(item.detail || ''));
             tr.appendChild(td);
           } else {
             const subjColor = SUBJ_COLOR[item.subject] || '';
