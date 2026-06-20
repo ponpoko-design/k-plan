@@ -3820,7 +3820,6 @@ async function runBalanceCheck() {
         prompt += '・月曜グノレブのベスト実績週を参照してバランスを判断\n';
       }
       prompt += '\n【ベスト実績週のスケジュール（参考・これが理想の組み方）】\n';
-      prompt += bestPreSummary + '\n';
     }
 
     if (isGnorevWeek) {
@@ -3830,7 +3829,6 @@ async function runBalanceCheck() {
       prompt += 'この週の' + dowLabel + '曜日にグノレブがあります。\n';
       prompt += 'テスト後（' + afterLabel + '）の振り返りカードが入っているか確認してください。\n';
       prompt += '\n【ベスト実績週のスケジュール（参考・テスト後の振り返りカードの理想形）】\n';
-      prompt += bestGnorevSummary + '\n';
     }
 
     prompt += '【この週のスケジュール】\n';
@@ -4009,7 +4007,7 @@ async function runBalanceCheck() {
                       const color = getCardColor(name);
                       if (color) {
                         const sp = document.createElement('span');
-                        sp.style.cssText = 'background:' + color + ';border-radius:4px;padding:1px 5px;font-size:11px;font-weight:700;display:inline-block;margin:1px 2px;white-space:nowrap;';
+                        sp.style.cssText = 'background:' + color + ';border-radius:4px;padding:1px 5px;font-size:16px;font-weight:700;display:inline-block;margin:1px 2px;white-space:nowrap;';
                         sp.textContent = name;
                         frag.appendChild(sp);
                       } else {
@@ -4033,7 +4031,7 @@ async function runBalanceCheck() {
                           if (idx > 0) node.appendChild(document.createTextNode(remaining.slice(0, idx)));
                           const sp = document.createElement('span');
                           const color = getCardColor(kw);
-                          sp.style.cssText = 'background:' + (color||'#eee') + ';border-radius:4px;padding:1px 5px;font-size:11px;font-weight:700;display:inline-block;margin:1px 2px;white-space:nowrap;';
+                          sp.style.cssText = 'background:' + (color||'#eee') + ';border-radius:4px;padding:1px 5px;font-size:16px;font-weight:700;display:inline-block;margin:1px 2px;white-space:nowrap;';
                           sp.textContent = kw;
                           node.appendChild(sp);
                           remaining = remaining.slice(idx + kw.length);
