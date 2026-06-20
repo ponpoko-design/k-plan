@@ -3477,14 +3477,21 @@ async function runBalanceCheck() {
     }
 
     prompt += '【出力形式の指示】\n';
-    prompt += '・#や##などのMarkdown見出しは使わない\n';
-    prompt += '・**太字**も使わない\n';
-    prompt += '・絵文字は✅❌⚠️💡📋のみ使ってOK\n';
-    prompt += '・箇条書きは「・」を使う\n';
-    prompt += '・カテゴリは「❌ ルール違反」「⚠️ 負荷・バランス」「✅ 確認OK」「📋 入れ忘れ確認」「💡 アドバイス」の形式で\n';
-    prompt += '・各項目は1〜2行で簡潔に\n';
-    prompt += '・問題なければ「✅ バランスよく組めています！」だけでOK\n';
-    prompt += '・敬語なし・シンプルな日本語で';
+    prompt += '以下のJSON形式のみで返してください（説明文・コードブロック不要）:\n';
+    prompt += '{\n';
+    prompt += '  "overall": "OK" または "要確認",\n';
+    prompt += '  "items": [\n';
+    prompt += '    {\n';
+    prompt += '      "category": "ルール違反" または "負荷・バランス" または "入れ忘れ確認" または "確認OK" または "アドバイス",\n';
+    prompt += '      "date": "6/22(月)" などの日付曜日（該当なければ"-"）,\n';
+    prompt += '      "slot": "朝" "午前" "午後" "夜" のいずれか（該当なければ"-"）,\n';
+    prompt += '      "subject": "算数" "国語" "理科" "社会" のいずれか（該当なければ"-"）,\n';
+    prompt += '      "detail": "内容を簡潔に1行"\n';
+    prompt += '    }\n';
+    prompt += '  ]\n';
+    prompt += '}\n';
+    prompt += '問題なければitemsは[{"category":"確認OK","date":"-","slot":"-","subject":"-","detail":"バランスよく組めています！"}]のみ。\n';
+    prompt += '敬語なし・シンプルな日本語で。';
 
     const res = await fetch('https://kota-ai-proxy.nacchukkim.workers.dev', {
       method: 'POST',
@@ -3496,54 +3503,110 @@ async function runBalanceCheck() {
       })
     });
     const data = await res.json();
-    const reply = (data.content && data.content[0] && data.content[0].text) ? data.content[0].text : 'エラーが発生しました。';
+    const replyText = (data.content && data.content[0] && data.content[0].text) ? data.content[0].text : '';
 
     msgs.removeChild(loadDiv);
 
-    const aiDiv = document.createElement('div');
-    aiDiv.style.cssText = 'display:flex;gap:8px;align-items:flex-start;';
-    const icon = document.createElement('div');
-    icon.style.cssText = 'width:30px;height:30px;border-radius:50%;background:#d4609e;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;';
-    icon.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><path d="M1 12S5 5 12 5s11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
-    const bubble = document.createElement('div');
-    bubble.style.cssText = 'background:white;border-radius:4px 14px 14px 14px;padding:12px 14px;font-size:13px;line-height:1.8;color:#333;max-width:88%;box-shadow:0 1px 4px rgba(0,0,0,0.06);';
-    // テキストをHTMLに変換（Markdown記法をシンプルなHTMLに）
-    const formatBalanceReply = (text) => {
-      const subjectColors = {
-        '算数': '#C1E8FB', '国語': '#F2B9E4', '理科': '#B6EBB0', '社会': '#F9DB82'
+    // JSONパース
+    let parsed = null;
+    try {
+      const jsonMatch = replyText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) parsed = JSON.parse(jsonMatch[0]);
+    } catch(e2) { parsed = null; }
+
+    const resultDiv = document.createElement('div');
+    resultDiv.style.cssText = 'width:100%;padding:4px 0;';
+
+    if (!parsed || !parsed.items) {
+      resultDiv.style.cssText += 'background:white;border-radius:10px;padding:12px;font-size:13px;color:#333;white-space:pre-wrap;';
+      resultDiv.textContent = replyText || 'エラーが発生しました。';
+    } else {
+      const SUBJ_COLOR = {'算数':'#C1E8FB','国語':'#F2B9E4','理科':'#B6EBB0','社会':'#F9DB82'};
+      const CAT_STYLE = {
+        'ルール違反':   {bg:'#ffeaea', border:'#e74c3c', icon:'❌', color:'#c0392b'},
+        '負荷・バランス':{bg:'#fff8ee', border:'#e67e22', icon:'⚠️', color:'#d35400'},
+        '入れ忘れ確認': {bg:'#eef6ff', border:'#2980b9', icon:'📋', color:'#1a6fa0'},
+        '確認OK':      {bg:'#eefaf3', border:'#27ae60', icon:'✅', color:'#1e8449'},
+        'アドバイス':   {bg:'#f8f0ff', border:'#8e44ad', icon:'💡', color:'#6c3483'},
       };
-      let html = text
-        .split('\n')
-        .map(line => {
-          // 教科名をカラーバッジに
-          Object.entries(subjectColors).forEach(([subj, color]) => {
-            const re = new RegExp(subj, 'g');
-            line = line.replace(re, `<span style="background:${color};border-radius:4px;padding:1px 5px;font-size:12px;font-weight:700;">${subj}</span>`);
+      const isOk = parsed.overall === 'OK';
+      const banner = document.createElement('div');
+      banner.style.cssText = 'padding:9px 14px;border-radius:10px;font-size:13px;font-weight:700;margin-bottom:8px;text-align:center;background:' + (isOk ? '#eefaf3' : '#ffeaea') + ';color:' + (isOk ? '#1e8449' : '#c0392b') + ';';
+      banner.textContent = isOk ? '✅ バランスよく組めています！' : '⚠️ 確認が必要な項目があります';
+      resultDiv.appendChild(banner);
+
+      const groups = {};
+      parsed.items.forEach(item => {
+        const cat = item.category || 'アドバイス';
+        if (!groups[cat]) groups[cat] = [];
+        groups[cat].push(item);
+      });
+
+      ['ルール違反','負荷・バランス','入れ忘れ確認','確認OK','アドバイス'].forEach(cat => {
+        if (!groups[cat] || groups[cat].length === 0) return;
+        const st = CAT_STYLE[cat] || CAT_STYLE['アドバイス'];
+        const simpleMode = (cat === '確認OK' || cat === 'アドバイス');
+
+        const header = document.createElement('div');
+        header.style.cssText = 'font-size:12px;font-weight:700;color:' + st.color + ';margin:8px 0 3px;';
+        header.textContent = st.icon + ' ' + cat;
+        resultDiv.appendChild(header);
+
+        const table = document.createElement('table');
+        table.style.cssText = 'width:100%;border-collapse:collapse;font-size:12px;';
+
+        if (!simpleMode) {
+          const thead = document.createElement('tr');
+          thead.style.cssText = 'background:' + st.bg + ';';
+          [['日付','18%'],['スロット','14%'],['教科','14%'],['内容','54%']].forEach(([h,w]) => {
+            const th = document.createElement('th');
+            th.style.cssText = 'padding:5px 6px;text-align:left;color:#888;font-weight:600;border-bottom:1px solid ' + st.border + ';width:' + w + ';';
+            th.textContent = h;
+            thead.appendChild(th);
           });
-          // カテゴリ行（❌ ⚠️ ✅ 💡で始まる行）を太字・色付き
-          if (/^[❌⚠️✅💡📋]/.test(line)) {
-            const isError = line.startsWith('❌');
-            const isWarn = line.startsWith('⚠️');
-            const isOk = line.startsWith('✅');
-            const isClipboard = line.startsWith('📋');
-            const color = isError ? '#e74c3c' : isWarn ? '#e67e22' : isOk ? '#27ae60' : isClipboard ? '#2980b9' : '#8e44ad';
-            line = `<div style="font-weight:700;color:${color};margin-top:10px;margin-bottom:4px;">${line}</div>`;
-          } else if (line.startsWith('・')) {
-            line = `<div style="padding-left:4px;margin:2px 0;">${line}</div>`;
-          } else if (line.trim() === '') {
-            line = '<div style="height:4px;"></div>';
+          table.appendChild(thead);
+        }
+
+        groups[cat].forEach((item, idx) => {
+          const tr = document.createElement('tr');
+          tr.style.cssText = 'background:' + (idx%2===0 ? 'white' : st.bg) + ';';
+          if (simpleMode) {
+            const td = document.createElement('td');
+            td.style.cssText = 'padding:6px 8px;color:#444;line-height:1.5;';
+            td.textContent = '・' + (item.detail || '');
+            tr.appendChild(td);
           } else {
-            line = `<div>${line}</div>`;
+            const subjColor = SUBJ_COLOR[item.subject] || '';
+            [
+              {val: item.date||'-',    style:'padding:5px 6px;color:#555;white-space:nowrap;'},
+              {val: item.slot||'-',    style:'padding:5px 6px;color:#555;white-space:nowrap;'},
+              {val: item.subject||'-', style:'padding:5px 6px;', badge: subjColor && item.subject !== '-'},
+              {val: item.detail||'-',  style:'padding:5px 6px;color:#333;line-height:1.4;'},
+            ].forEach(c => {
+              const td = document.createElement('td');
+              td.style.cssText = c.style + 'border-bottom:1px solid #f0f0f0;';
+              if (c.badge) {
+                const sp = document.createElement('span');
+                sp.style.cssText = 'background:' + subjColor + ';border-radius:4px;padding:1px 6px;font-weight:700;';
+                sp.textContent = c.val;
+                td.appendChild(sp);
+              } else {
+                td.textContent = c.val;
+              }
+              tr.appendChild(td);
+            });
           }
-          return line;
-        })
-        .join('');
-      return html;
-    };
-    bubble.innerHTML = formatBalanceReply(reply);
-    aiDiv.appendChild(icon);
-    aiDiv.appendChild(bubble);
-    msgs.appendChild(aiDiv);
+          table.appendChild(tr);
+        });
+
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'border:1px solid ' + st.border + ';border-radius:8px;overflow:hidden;margin-bottom:6px;';
+        wrap.appendChild(table);
+        resultDiv.appendChild(wrap);
+      });
+    }
+
+    msgs.appendChild(resultDiv);
     msgs.scrollTop = msgs.scrollHeight;
 
   } catch(e) {
