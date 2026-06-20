@@ -335,6 +335,15 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
     }
     #balanceCheckPanelHdr:active { cursor: grabbing; }
     /* 左端リサイズハンドル */
+    #balanceCheckPanel * {
+      box-sizing: border-box;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    #balanceCheckPanelHdr span,
+    #balanceCheckPanelHdr button {
+      font-size: inherit !important;
+    }
     #balanceCheckResizeHandle {
       position: absolute;
       left: 0; top: 0; bottom: 0;
@@ -351,14 +360,20 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
     #balanceCheckMessages table {
       table-layout: fixed;
       width: 100%;
+      font-size: 12px;
     }
     #balanceCheckMessages table td,
     #balanceCheckMessages table th {
       word-break: break-all;
       white-space: normal;
-      overflow-wrap: anywhere;
-      overflow: visible;
+      overflow-wrap: break-word;
       vertical-align: top;
+      padding: 6px 5px;
+      line-height: 1.5;
+      font-size: 12px;
+    }
+    #balanceCheckMessages {
+      font-size: 12px;
     }
     /* スマホ幅調整ボタン */
     #balanceCheckWidthBtns {
@@ -380,7 +395,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
     <div style="background:#d4609e;padding:12px 14px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;" id="balanceCheckPanelHdr">
       <div style="display:flex;align-items:center;gap:8px;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12S5 5 12 5s11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
-        <span style="font-size:15px;font-weight:700;color:white;">全体バランスチェック</span>
+        <span style="font-size:14px !important;font-weight:700;color:white;line-height:1.3;">全体バランスチェック</span>
       </div>
       <div style="display:flex;align-items:center;gap:6px;">
         <div id="balanceCheckWidthBtns">
@@ -393,10 +408,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
     <div style="padding:12px 14px;border-bottom:1px solid #f0e0f5;flex-shrink:0;">
       <div style="display:flex;gap:6px;align-items:center;">
         <button onclick="balanceCheckWeekOffset(-1)" style="background:#fce8f6;border:none;border-radius:8px;width:30px;height:30px;cursor:pointer;color:#d4609e;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M8 2L4 6l4 4" stroke="#d4609e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-        <div id="balanceCheckWeekLabel" style="flex:1;text-align:center;font-size:13px;font-weight:700;color:#1a2744;"></div>
+        <div id="balanceCheckWeekLabel" style="flex:1;text-align:center;font-size:12px;font-weight:700;color:#1a2744;"></div>
         <button onclick="balanceCheckWeekOffset(1)" style="background:#fce8f6;border:none;border-radius:8px;width:30px;height:30px;cursor:pointer;color:#d4609e;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2l4 4-4 4" stroke="#d4609e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
-      <button onclick="runBalanceCheck()" id="balanceCheckRunBtn" style="width:100%;margin-top:8px;background:#d4609e;border:none;color:white;border-radius:9999px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;">この週をチェック ✨</button>
+      <button onclick="runBalanceCheck()" id="balanceCheckRunBtn" style="width:100%;margin-top:8px;background:#d4609e;border:none;color:white;border-radius:9999px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;">この週をチェック ✨</button>
     </div>
     <div id="balanceCheckMessages" style="flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px;">
       <div style="color:#bbb;font-size:13px;text-align:center;margin-top:20px;">チェックボタンを押すと、AIがこの週のスケジュールを確認します</div>
@@ -3802,31 +3817,59 @@ async function runBalanceCheck() {
                 sp.textContent = c.val;
                 td.appendChild(sp);
               } else if (c.isDetail) {
-                // detail欄: 「教科：カード名」パターンをバッジに変換
+                // detail欄: 「カード名」パターンをバッジに変換
                 const SUBJ_COLOR2 = {'算数':'#C1E8FB','国語':'#F2B9E4','理科':'#B6EBB0','社会':'#F9DB82','予定':'#F5F4E4','習い事':'#D6C3AA','テスト':'#fce4f8'};
-                const badgeRe = /([算国理社予習テ][数語科会定事ス][\S]*?)(?=[（「、。\s]|$)/g;
-                // シンプルにコロン前後でカード名を検出: 「理科：グノチェック」→バッジ
-                const colonMatch = c.val.match(/^(.+?)[:：](.+)$/);
-                if (colonMatch) {
-                  const subj2 = colonMatch[1].trim();
-                  const cardName = colonMatch[2].trim();
-                  const sc = SUBJ_COLOR2[subj2] || '#eee';
-                  const sp = document.createElement('span');
-                  sp.style.cssText = 'background:' + sc + ';border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700;white-space:nowrap;display:inline-block;';
-                  sp.textContent = subj2 + '：' + cardName;
-                  td.appendChild(sp);
-                } else {
-                  // カード名単体をバッジに（教科色で）
-                  const sc = SUBJ_COLOR2[item.subject] || '';
-                  if (sc && item.subject !== '-') {
-                    const sp = document.createElement('span');
-                    sp.style.cssText = 'background:' + sc + ';border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700;white-space:nowrap;display:inline-block;margin-right:4px;';
-                    sp.textContent = c.val;
-                    td.appendChild(sp);
-                  } else {
-                    td.textContent = c.val;
-                  }
-                }
+                // カード名に対応する教科色を返す
+                const getCardColor = (cardName) => {
+                  if (/算数|計算|Nテキスト|N家庭|基礎力テスト|計算マスタ|計算ルール|T確認/.test(cardName)) return '#C1E8FB';
+                  if (/国語|漢字|音読|意味調べ|言葉|ことわざ/.test(cardName)) return '#F2B9E4';
+                  if (/理科|グノチェック|電気|月|てこ|星|人体/.test(cardName)) return '#B6EBB0';
+                  if (/社会|歴史|鎌倉|室町|院政/.test(cardName)) return '#F9DB82';
+                  if (/塾|プロタゴ|サッカー/.test(cardName)) return '#D6C3AA';
+                  if (/グノレブ|テスト/.test(cardName)) return '#fce4f8';
+                  return SUBJ_COLOR2[item.subject] || '';
+                };
+                // 「」や『』で囲まれた語句、またはカード名っぽい語句をバッジに変換
+                const renderDetailWithBadges = (text) => {
+                  const frag = document.createDocumentFragment();
+                  // 「〇〇」 パターンを検出
+                  const parts = text.split(/(「[^」]+」)/g);
+                  parts.forEach(part => {
+                    if (part.startsWith('「') && part.endsWith('」')) {
+                      const name = part.slice(1, -1);
+                      const color = getCardColor(name);
+                      if (color) {
+                        const sp = document.createElement('span');
+                        sp.style.cssText = 'background:' + color + ';border-radius:4px;padding:1px 5px;font-size:11px;font-weight:700;display:inline-block;margin:1px 2px;white-space:nowrap;';
+                        sp.textContent = name;
+                        frag.appendChild(sp);
+                      } else {
+                        frag.appendChild(document.createTextNode(part));
+                      }
+                    } else {
+                      // カード名キーワードをバッジに（計算マスタ、Nテキスト等）
+                      const cardKeywords = ['計算マスタ','計算ルール','Nテキスト','N家庭学習','T確認テスト','グノチェック','基礎力テスト','テスト振り返り','単元音読','意味調べ','グノレブ振り返り'];
+                      let remaining = part;
+                      let node = document.createDocumentFragment();
+                      cardKeywords.forEach(kw => {
+                        const idx = remaining.indexOf(kw);
+                        if (idx >= 0) {
+                          if (idx > 0) node.appendChild(document.createTextNode(remaining.slice(0, idx)));
+                          const sp = document.createElement('span');
+                          const color = getCardColor(kw);
+                          sp.style.cssText = 'background:' + (color||'#eee') + ';border-radius:4px;padding:1px 5px;font-size:11px;font-weight:700;display:inline-block;margin:1px 2px;white-space:nowrap;';
+                          sp.textContent = kw;
+                          node.appendChild(sp);
+                          remaining = remaining.slice(idx + kw.length);
+                        }
+                      });
+                      if (remaining) node.appendChild(document.createTextNode(remaining));
+                      frag.appendChild(node);
+                    }
+                  });
+                  return frag;
+                };
+                td.appendChild(renderDetailWithBadges(c.val));
               } else {
                 td.textContent = c.val;
               }
