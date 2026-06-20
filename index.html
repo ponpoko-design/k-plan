@@ -3592,7 +3592,9 @@ async function runBalanceCheck() {
 
   try {
     const rules = await loadAiRules();
-    const scheduleSummary = buildScheduleSummary(balanceCheckMonday, 1);
+    const _rawSummary = buildScheduleSummary(balanceCheckMonday, 1);
+    // 長すぎる場合は制限（1000文字）
+    const scheduleSummary = _rawSummary.length > 1000 ? _rawSummary.slice(0, 1000) + '...' : _rawSummary;
 
     const mon = new Date(balanceCheckMonday);
     const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
@@ -3635,7 +3637,10 @@ async function runBalanceCheck() {
     }
     const bestPreKey = gnorevDow + '';
     if (isPreGnorev && !runBalanceCheck._bestPreCache[bestPreKey]) {
-      runBalanceCheck._bestPreCache[bestPreKey] = buildScheduleSummary(bestPreMonday, 1);
+      // ベストサマリーはグノレブ前週の要点のみ（全カードではなく教科別件数）
+      const fullSummary = buildScheduleSummary(bestPreMonday, 1);
+      // 長すぎる場合は先頭800文字に制限
+      runBalanceCheck._bestPreCache[bestPreKey] = fullSummary.length > 800 ? fullSummary.slice(0, 800) + '...' : fullSummary;
     }
     const bestPreSummary = isPreGnorev ? (runBalanceCheck._bestPreCache[bestPreKey] || '') : '';
 
@@ -3725,7 +3730,8 @@ async function runBalanceCheck() {
     prompt += '}\n';
     prompt += '問題なければitemsは[{"category":"確認OK","date":"-","slot":"-","subject":"-","detail":"バランスよく組めています！"}]のみ。\n';
     prompt += 'detailの中でカード名・タスク名を引用するときは必ず「」で囲むこと（例:「計算マスタ」「言葉 復習前半」）。\n';
-    prompt += '敬語なし・シンプルな日本語で。';
+    prompt += '敬語なし・シンプルな日本語で。\n';
+    prompt += '重要度の高いものだけ最大8件に絞ること。';
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 45000); // 45秒タイムアウト
@@ -3735,7 +3741,7 @@ async function runBalanceCheck() {
       signal: controller.signal,
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 2000,
+        max_tokens: 1200,
         messages: [{ role: 'user', content: prompt }]
       })
     });
