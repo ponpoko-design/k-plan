@@ -3592,7 +3592,8 @@ async function runBalanceCheck() {
 
   try {
     const rules = await loadAiRules();
-    const scheduleSummary = buildScheduleSummary(balanceCheckMonday, 1);
+    const _rawSummary = buildScheduleSummary(balanceCheckMonday, 1);
+    const scheduleSummary = _rawSummary.length > 1200 ? _rawSummary.slice(0, 1200) + '...' : _rawSummary;
 
     const mon = new Date(balanceCheckMonday);
     const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
@@ -3666,41 +3667,31 @@ async function runBalanceCheck() {
 
     if (isPreGnorev) {
       const dowLabel = gnorevDow === 3 ? '水' : '月';
-      prompt += '【グノレブ前週モード】\n';
-      prompt += '翌週' + dowLabel + '曜日にグノレブがあります。通常週と以下が異なります:\n';
+      prompt += '【グノレブ前週モード】翌週' + dowLabel + 'グノレブ。\n';
       if (gnorevDow === 3) {
-        prompt += '・理科基礎力テストが週2回なくてもOK（復習優先）\n';
-        prompt += '・グノチェック（金曜）より復習カードを優先\n';
-        prompt += '・4教科バランスの基準は下記ベスト実績週を参照\n';
+        prompt += '通常と違う点: 理科基礎力テスト週2回不要/グノチェックより復習優先\n';
+        prompt += 'ベスト週の理想: 火=理科復習40分午後 / 木=算数・理科各30分夜 / 金=社会・理科各30分午後+算数60分夜 / 土=算数計算マスタ+国語言葉+漢字午前+算数40分夜 / 日=算数・理科各30分午前+算数・理科夜 / 火=漢字復習2朝+算数基礎力+言葉後半午後+社会夜 / 当日朝=漢字のみ\n';
       } else {
-        prompt += '・月曜グノレブのベスト実績週を参照してバランスを判断\n';
+        prompt += 'ベスト週の理想: 火=社会・国語言葉復習夜 / 金=社会後半午後+算数・理科夜 / 土=算数復習+基礎力夜 / 日=算数・理科午前+算数・理科夜 / 当日午後=社会のみ\n';
       }
-      prompt += '\n【ベスト実績週のスケジュール（参考・これが理想の組み方）】\n';
-      prompt += bestPreSummary + '\n';
     }
 
     if (isGnorevWeek) {
       const dowLabel = gnorevThisDow === 3 ? '水' : '月';
       const afterLabel = gnorevThisDow === 3 ? '木曜以降' : '火曜以降';
-      prompt += '【グノレブ当日週モード】\n';
-      prompt += 'この週の' + dowLabel + '曜日にグノレブがあります。\n';
-      prompt += 'テスト後（' + afterLabel + '）の振り返りカードが入っているか確認してください。\n';
-      prompt += '\n【ベスト実績週のスケジュール（参考・テスト後の振り返りカードの理想形）】\n';
-      prompt += bestGnorevSummary + '\n';
+      prompt += '【グノレブ当日週モード】この週の' + dowLabel + 'グノレブ。' + afterLabel + 'の振り返りカード確認。\n';
+      if (gnorevThisDow === 3) {
+        prompt += '振り返り理想: 翌木=算数振り返り+新単元音読夜 / 翌土=理科・社会・国語振り返り\n';
+      } else {
+        prompt += '振り返り理想: 翌火=新単元音読 / 翌水午前=全教科振り返り\n';
+      }
     }
 
     prompt += '【この週のスケジュール】\n';
     prompt += scheduleSummary + '\n';
 
     if (isPreGnorev || isGnorevWeek) {
-      prompt += '【ベスト週との比較チェック（必須）】\n';
-      prompt += '上記のベスト実績週に入っているカード（教科・内容・スロット）と、この週のスケジュールを比較してください。\n';
-      if (isGnorevWeek) {
-        const afterLabel2 = gnorevThisDow === 3 ? '木曜以降' : '火曜以降';
-        prompt += 'グノレブ当日週は' + afterLabel2 + 'の振り返りカードに絞って比較してください。\n';
-      }
-      prompt += 'ベスト週にあってこの週にないカードは「入れ忘れ確認」として必ず全件指摘してください。\n';
-      prompt += '除外してOK: 漢字・算数基礎力テストなど毎朝の固定タスク / 塾・サッカー・プロタゴなどの習い事 / 学校の宿題\n\n';
+      prompt += 'ベスト週の理想と比較し、欠けているカードを「入れ忘れ確認」で指摘。除外OK: 漢字・基礎力・塾・サッカー・宿題\n\n';
     }
 
     prompt += '【出力形式】\n';
