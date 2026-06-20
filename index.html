@@ -4973,56 +4973,89 @@ function buildScheduleSummary(targetMonday, weeksCount) {
     const wk = mon.toISOString().slice(0,10);
     summary += `\n【${wk}週】\n`;
     const wkData = localOverrides[wk] || {};
-    const hiddenSet = new Set(Object.keys(wkData.hidden || {}));
+
+    // getTasksForWeekと同じロジックで非表示判定
+    // 1. EXCEPTION_DATA: repeat_key + dayIdx で非表示判定
+    const hiddenByRepeatKey = {};
+    if (typeof EXCEPTION_DATA !== 'undefined') {
+      EXCEPTION_DATA.forEach(e => {
+        const eDate = new Date(e.date);
+        const eWk = (() => {
+          const d2 = new Date(eDate);
+          const day = d2.getDay();
+          const diff = day === 0 ? 6 : day - 1;
+          d2.setDate(d2.getDate() - diff);
+          return d2.toISOString().slice(0,10);
+        })();
+        if (eWk !== wk) return;
+        const dayIdx = [0,1,2,3,4,5,6].findIndex(i => {
+          const dt2 = new Date(mon); dt2.setDate(mon.getDate() + i);
+          return dt2.toDateString() === eDate.toDateString();
+        });
+        if (dayIdx < 0) return;
+        if (e.is_hidden === 'yes' && e.repeat_key) {
+          hiddenByRepeatKey[e.repeat_key + '_' + dayIdx] = true;
+        }
+      });
+    }
+
+    // 2. weeklyDeleted
+    const weeklyDeletedSet = new Set();
+    (localOverrides.weeklyDeleted || []).forEach(d => {
+      const applies = d.fromDate === null || d.fromDate === undefined ? true : wk >= d.fromDate;
+      if (applies) weeklyDeletedSet.add(d.uid + '_' + d.dayIdx);
+    });
+
+    // 3. weeklyMoves hidden
+    const weeklyMovedHidden = new Set();
+    (localOverrides.weeklyMoves || []).filter(mv => !mv.fromDate || wk >= mv.fromDate)
+      .forEach(mv => weeklyMovedHidden.add(mv.origUid + '_' + mv.origDayIdx));
+
+    // 4. localHidden
+    const localHidden = wkData.hidden || {};
 
     for (let d = 0; d < 7; d++) {
       const dt = new Date(mon); dt.setDate(mon.getDate() + d);
       const dateStr = `${dt.getMonth()+1}/${dt.getDate()}(${DAY_LABELS[d]})`;
       const dayItems = [];
 
-      // EXCEPTION_DATA: その週だけの例外。is_hidden:yesはRAW_DATAの該当repeat_keyを非表示にする
-      const exceptionHiddenKeys = new Set();
-      const exceptionAddItems = [];
+      // RAW_DATA: getTasksForWeekと同じ判定
+      RAW_DATA.forEach(item => {
+        if (item.display_type !== 'weekly') return;
+        if (item.weekday_index !== d) return;
+        const key = (item.repeat_key || item.uid) + '_' + d;
+        if (hiddenByRepeatKey[key]) return;
+        if (localHidden[item.uid + '_' + d]) return;
+        if (weeklyMovedHidden.has(item.uid + '_' + d)) return;
+        if (weeklyDeletedSet.has(item.uid + '_' + d)) return;
+        dayItems.push({slot: item.slot, subject: item.subject, unit: item.unit_name, time: item.study_time});
+      });
+
+      // EXCEPTION_DATA: is_hidden:no の追加分
       if (typeof EXCEPTION_DATA !== 'undefined') {
         EXCEPTION_DATA.forEach(item => {
           const itemDate = new Date(item.date);
-          if (itemDate.toDateString() === dt.toDateString()) {
-            if (item.is_hidden === 'yes') {
-              exceptionHiddenKeys.add(item.repeat_key);
-            } else {
-              exceptionAddItems.push(item);
-            }
-          }
+          if (itemDate.toDateString() !== dt.toDateString()) return;
+          if (item.is_hidden === 'yes') return;
+          if (localHidden[item.uid + '_' + d]) return;
+          dayItems.push({slot: item.slot, subject: item.subject, unit: item.unit_name, time: item.study_time});
         });
       }
 
-      // RAW_DATA（weeklyの繰り返しタスク）: 曜日が一致 かつ hiddenでない かつ例外で非表示でない
-      RAW_DATA.forEach(item => {
-        if (item.weekday_index === d && !hiddenSet.has(item.uid) && !exceptionHiddenKeys.has(item.repeat_key)) {
-          dayItems.push({slot: item.slot, subject: item.subject, unit: item.unit_name, time: item.study_time});
-        }
-      });
-
-      // EXCEPTION_DATA追加分（is_hidden:no）
-      exceptionAddItems.forEach(item => {
-        if (!hiddenSet.has(item.uid)) {
-          dayItems.push({slot: item.slot, subject: item.subject, unit: item.unit_name, time: item.study_time});
-        }
-      });
-
-      // OVERRIDE_DATA（一時的な変更・追加）: 日付が一致
+      // OVERRIDE_DATA: 日付一致
       OVERRIDE_DATA.forEach(item => {
         const itemDate = new Date(item.date);
-        if (itemDate.toDateString() === dt.toDateString() && !hiddenSet.has(item.uid)) {
-          dayItems.push({slot: item.slot, subject: item.subject, unit: item.unit_name, time: item.study_time});
-        }
+        if (itemDate.toDateString() !== dt.toDateString()) return;
+        if (item.is_hidden === 'yes') return;
+        if (localHidden[item.uid]) return;
+        dayItems.push({slot: item.slot, subject: item.subject, unit: item.unit_name, time: item.study_time});
       });
 
-      // localOverrides.added: dayIdxが一致 かつ is_hiddenでない
+      // localOverrides.added
       (wkData.added || []).forEach(item => {
-        if (item._dayIdx === d && item.is_hidden !== 'yes') {
-          dayItems.push({slot: item.slot, subject: item.subject, unit: item.unit_name, time: item.study_time});
-        }
+        if (item._dayIdx !== d) return;
+        if (item.is_hidden === 'yes') return;
+        dayItems.push({slot: item.slot, subject: item.subject, unit: item.unit_name, time: item.study_time});
       });
 
       if (dayItems.length > 0) {
