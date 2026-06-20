@@ -3375,49 +3375,43 @@ async function runBalanceCheck() {
     const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 
     const prompt = `あなたはこうたくん（小学5年生・グノーブル塾）の学習スケジュールをチェックするAIです。
-以下のスケジュールを見て、問題点や気になる点を指摘してください。
 
-━━━━━━━━━━━━━━━━━━━━━━━━
 【チェック対象週】
 ${fmt(mon)}（月）〜${fmt(sun)}（日）
 
-【スロット使用ルール（絶対守ること）】
-- 朝（morning）: 漢字・算数基礎力テストのみ
-- 平日の午前（am）: 学校中なので使用不可（土日の午前はOK）
-- 月曜: 朝のみ（午後・夜とも不可。塾16:30出発、帰宅後勉強なし）
+【スロット使用ルール】
+- 朝: 漢字・算数基礎力テストのみ
+- 平日午前（am）: 学校中なので不可（土日午前はOK）
+- 月曜: 朝のみ。夜に学校の宿題が残る場合は塾前に終わらせる想定で残してOK。午後・夜は基本不可
 - 火曜: 朝・午後・夜OK
-- 水曜: 朝・午後（〜16:30）のみ（夜不可。塾帰り）
-- 木曜: 朝・夜のみ（午後不可。プロタゴ16:50〜18:00）
+- 水曜: 朝・午後（〜16:30）のみ。水曜の学校の宿題は午後（塾前にマスト）。夜不可
+- 木曜: 朝・夜のみ。プロタゴ（プログラミング）は木曜午後に入っていてOK（ルール違反ではない）
 - 金曜: 朝・午後・夜OK
-- 土曜: 朝・午前（9:00〜15:30）・夜（18:00〜）のみ（サッカーあり）
-- 日曜: 朝・午前（〜12:00）・夜（18:00〜）のみ（サッカーあり）
+- 土曜: 朝・午前（9:00〜15:30）・夜（18:00〜）のみ。午後不可
+- 日曜: 朝・午前（〜12:00）・夜（18:00〜）のみ。午後不可
 
 【学習量の目安】
-現在の固定タスク量がちょうどよい基準。それより大幅に多い日は負荷過多として指摘。
+- 塾なし日の夜: 合計90分以内（バッファ込み）
+- それ以外: 現在の固定タスク量が基準。大幅超過は指摘
 
 【教科バランスの基準】
-- 算数: 毎朝基礎力テスト必須。Nテキスト（木金夜）・N家庭学習（金土夜）・計算マスタ（土日午前）
-- 国語: 毎朝漢字必須。単元音読・意味調べ毎週
+- 算数: 毎朝基礎力テスト。Nテキスト（木金夜）・N家庭学習（金土夜）・計算マスタ（土日午前）
+- 国語: 毎朝漢字。単元音読・意味調べ毎週
 - 理科: 基礎力テスト週2回（木・土が理想）。グノチェック金曜
-- 社会: 得意教科。単元音読優先
+- 社会: 単元音読優先
 
-━━━━━━━━━━━━━━━━━━━━━━━━
 【この週のスケジュール】
 ${scheduleSummary}
 
-━━━━━━━━━━━━━━━━━━━━━━━━
-【チェック観点】
-1. スロットルール違反（平日午前・月曜午後夜・水曜夜・木曜午後）がないか
-2. 特定の日に負荷が集中しすぎていないか
-3. 教科の偏りがないか（算数だけ多い、理科が少なすぎ等）
-4. 漢字・算数基礎力テストが毎日入っているか
-5. 理科基礎力テストが週2回入っているか
-6. 全体的に無理のない1週間になっているか
-
-問題なければ「バランスよく組めています！」と伝えてください。
-問題がある場合は箇条書きで具体的に指摘してください。
-最後に一言アドバイスを添えてください。
-日本語で簡潔に。箇条書き（・や→を使う）でまとめること。長い説明は不要。問題なければ一言でOK。`;
+【出力形式の指示】
+- #や##や###などのMarkdown見出しは使わない
+- **太字**も使わない
+- 絵文字は✅❌⚠️💡のみ使ってOK
+- 箇条書きは「・」を使う
+- カテゴリは「❌ ルール違反」「⚠️ 負荷・バランス」「✅ 確認OK」「💡 アドバイス」の形式で
+- 各項目は1〜2行で簡潔に
+- 問題なければ「✅ バランスよく組めています！」だけでOK
+- 敬語なし・シンプルな日本語で`;
 
     const res = await fetch('https://kota-ai-proxy.nacchukkim.workers.dev', {
       method: 'POST',
@@ -3439,8 +3433,40 @@ ${scheduleSummary}
     icon.style.cssText = 'width:30px;height:30px;border-radius:50%;background:#d4609e;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;';
     icon.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><path d="M1 12S5 5 12 5s11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
     const bubble = document.createElement('div');
-    bubble.style.cssText = 'background:white;border-radius:4px 14px 14px 14px;padding:12px 14px;font-size:13px;line-height:1.7;color:#333;max-width:85%;box-shadow:0 1px 4px rgba(0,0,0,0.06);white-space:pre-wrap;';
-    bubble.textContent = reply;
+    bubble.style.cssText = 'background:white;border-radius:4px 14px 14px 14px;padding:12px 14px;font-size:13px;line-height:1.8;color:#333;max-width:88%;box-shadow:0 1px 4px rgba(0,0,0,0.06);';
+    // テキストをHTMLに変換（Markdown記法をシンプルなHTMLに）
+    const formatBalanceReply = (text) => {
+      const subjectColors = {
+        '算数': '#C1E8FB', '国語': '#F2B9E4', '理科': '#B6EBB0', '社会': '#F9DB82'
+      };
+      let html = text
+        .split('\n')
+        .map(line => {
+          // 教科名をカラーバッジに
+          Object.entries(subjectColors).forEach(([subj, color]) => {
+            const re = new RegExp(subj, 'g');
+            line = line.replace(re, `<span style="background:${color};border-radius:4px;padding:1px 5px;font-size:12px;font-weight:700;">${subj}</span>`);
+          });
+          // カテゴリ行（❌ ⚠️ ✅ 💡で始まる行）を太字・色付き
+          if (/^[❌⚠️✅💡]/.test(line)) {
+            const isError = line.startsWith('❌');
+            const isWarn = line.startsWith('⚠️');
+            const isOk = line.startsWith('✅');
+            const color = isError ? '#e74c3c' : isWarn ? '#e67e22' : isOk ? '#27ae60' : '#8e44ad';
+            line = `<div style="font-weight:700;color:${color};margin-top:10px;margin-bottom:4px;">${line}</div>`;
+          } else if (line.startsWith('・')) {
+            line = `<div style="padding-left:4px;margin:2px 0;">${line}</div>`;
+          } else if (line.trim() === '') {
+            line = '<div style="height:4px;"></div>';
+          } else {
+            line = `<div>${line}</div>`;
+          }
+          return line;
+        })
+        .join('');
+      return html;
+    };
+    bubble.innerHTML = formatBalanceReply(reply);
     aiDiv.appendChild(icon);
     aiDiv.appendChild(bubble);
     msgs.appendChild(aiDiv);
