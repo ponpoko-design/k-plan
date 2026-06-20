@@ -3716,6 +3716,7 @@ async function runBalanceCheck() {
     prompt += '  ]\n';
     prompt += '}\n';
     prompt += '問題なければitemsは[{"category":"確認OK","date":"-","slot":"-","subject":"-","detail":"バランスよく組めています！"}]のみ。\n';
+    prompt += 'detailの中でカード名・タスク名を引用するときは必ず「」で囲むこと（例:「計算マスタ」「言葉 復習前半」）。\n';
     prompt += '敬語なし・シンプルな日本語で。';
 
     const res = await fetch('https://kota-ai-proxy.nacchukkim.workers.dev', {
@@ -3820,14 +3821,19 @@ async function runBalanceCheck() {
                 // detail欄: 「カード名」パターンをバッジに変換
                 const SUBJ_COLOR2 = {'算数':'#C1E8FB','国語':'#F2B9E4','理科':'#B6EBB0','社会':'#F9DB82','予定':'#F5F4E4','習い事':'#D6C3AA','テスト':'#fce4f8'};
                 // カード名に対応する教科色を返す
+                // ★行の教科色を最優先。キーワードは教科が"-"のときのみ使う
                 const getCardColor = (cardName) => {
-                  if (/算数|計算|Nテキスト|N家庭|基礎力テスト|計算マスタ|計算ルール|T確認/.test(cardName)) return '#C1E8FB';
-                  if (/国語|漢字|音読|意味調べ|言葉|ことわざ/.test(cardName)) return '#F2B9E4';
-                  if (/理科|グノチェック|電気|月|てこ|星|人体/.test(cardName)) return '#B6EBB0';
-                  if (/社会|歴史|鎌倉|室町|院政/.test(cardName)) return '#F9DB82';
+                  // 行に教科が設定されていればその色を使う
+                  const subjColorFromRow = SUBJ_COLOR2[item.subject] || '';
+                  if (subjColorFromRow && item.subject !== '-') return subjColorFromRow;
+                  // 教科が"-"のときはカード名からキーワード判定
+                  if (/算数|計算マスタ|計算ルール|Nテキスト|N家庭学習|T確認テスト/.test(cardName)) return '#C1E8FB';
+                  if (/国語|漢字|言葉|ことわざ|意味調べ|単元音読|音読/.test(cardName)) return '#F2B9E4';
+                  if (/理科|グノチェック/.test(cardName)) return '#B6EBB0';
+                  if (/社会/.test(cardName)) return '#F9DB82';
                   if (/塾|プロタゴ|サッカー/.test(cardName)) return '#D6C3AA';
-                  if (/グノレブ|テスト/.test(cardName)) return '#fce4f8';
-                  return SUBJ_COLOR2[item.subject] || '';
+                  if (/グノレブ|テスト振り返り/.test(cardName)) return '#fce4f8';
+                  return '';
                 };
                 // 「」や『』で囲まれた語句、またはカード名っぽい語句をバッジに変換
                 const renderDetailWithBadges = (text) => {
@@ -3848,7 +3854,14 @@ async function runBalanceCheck() {
                       }
                     } else {
                       // カード名キーワードをバッジに（計算マスタ、Nテキスト等）
-                      const cardKeywords = ['計算マスタ','計算ルール','Nテキスト','N家庭学習','T確認テスト','グノチェック','基礎力テスト','テスト振り返り','単元音読','意味調べ','グノレブ振り返り'];
+                      const cardKeywords = [
+                        '計算マスタ','計算ルール','Nテキスト','N家庭学習','T確認テスト',
+                        'グノチェック','基礎力テスト','基礎力復習','テスト振り返り',
+                        '単元音読','意味調べ','グノレブ振り返り','グノレブ解き直し',
+                        '言葉 復習前半','言葉 復習後半','漢字復習','漢字 復習',
+                        '用語/基礎力確認','用語確認','基礎問題','確認問題','基本のまとめ',
+                        'N間違い','振り返り','復習前半','復習後半'
+                      ];
                       let remaining = part;
                       let node = document.createDocumentFragment();
                       cardKeywords.forEach(kw => {
