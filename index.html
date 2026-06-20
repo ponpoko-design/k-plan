@@ -3374,6 +3374,43 @@ async function runBalanceCheck() {
     const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
     const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 
+    // グノレブ前週かどうかを判定（翌週にグノレブがあるか）
+    const nextMonday = new Date(balanceCheckMonday); nextMonday.setDate(balanceCheckMonday.getDate() + 7);
+    const nextWk = nextMonday.toISOString().slice(0,10);
+    const findGnorev = (wk) => {
+      const wkData = localOverrides[wk] || {};
+      const fromAdded = (wkData.added || []).find(t => t.unit_name && t.unit_name.includes('グノレブ'));
+      if (fromAdded) return new Date(fromAdded._fromDateExact || fromAdded.date || '');
+      const fromOverride = OVERRIDE_DATA.find(t => {
+        if (!t.unit_name || !t.unit_name.includes('グノレブ')) return false;
+        const d = new Date(t.date);
+        const dWk = (() => { const x = new Date(d); const dy = x.getDay(); x.setDate(x.getDate() - (dy===0?6:dy-1)); return x.toISOString().slice(0,10); })();
+        return dWk === wk;
+      });
+      if (fromOverride) return new Date(fromOverride.date);
+      return null;
+    };
+    const gnorevNextWeek = findGnorev(nextWk);
+    const isPreGnorev = !!gnorevNextWeek;
+    const gnorevDow = gnorevNextWeek ? gnorevNextWeek.getDay() : null; // 1=月, 3=水
+
+    // グノレブ前週のベスト実績スケジュール
+    const bestPreMonday = gnorevDow === 3
+      ? new Date('2026-06-22T00:00:00')  // 7/1水グノレブの前週
+      : new Date('2026-05-25T00:00:00'); // 6/1月グノレブの前週
+    const bestPreSummary = isPreGnorev ? buildScheduleSummary(bestPreMonday, 1) : '';
+
+    // この週にグノレブがあるか（テスト当日〜残り日程の振り返りチェック用）
+    const gnorevThisWeek = findGnorev(wk);
+    const isGnorevWeek = !!gnorevThisWeek;
+    const gnorevThisDow = gnorevThisWeek ? gnorevThisWeek.getDay() : null;
+
+    // グノレブ週のベスト実績（振り返りカード含む同じ週）
+    const bestGnorevMonday = gnorevThisDow === 3
+      ? new Date('2026-06-29T00:00:00')  // 7/1水グノレブ当日週の月曜
+      : new Date('2026-06-01T00:00:00'); // 6/1月グノレブ当日週の月曜
+    const bestGnorevSummary = isGnorevWeek ? buildScheduleSummary(bestGnorevMonday, 1) : '';
+
     const prompt = `あなたはこうたくん（小学5年生・グノーブル塾）の学習スケジュールをチェックするAIです。
 
 【チェック対象週】
@@ -3400,15 +3437,37 @@ ${fmt(mon)}（月）〜${fmt(sun)}（日）
 - 理科: 基礎力テスト週2回（木・土が理想）。グノチェック金曜
 - 社会: 単元音読優先
 
-【この週のスケジュール】
+${isPreGnorev ? `【⚠️ グノレブ前週モード】
+翌週${gnorevDow===3?'水':'月'}曜日にグノレブがあります。通常週と以下が異なります:
+${gnorevDow===3 ? `・理科基礎力テストが週2回なくてもOK（復習優先）
+・グノチェック（金曜）より復習カードを優先
+・4教科バランスの基準は下記ベスト実績週を参照` : `・月曜グノレブのベスト実績週を参照してバランスを判断`}
+
+【ベスト実績週のスケジュール（参考・これが理想の組み方）】
+${bestPreSummary}
+` : ''}${isGnorevWeek ? `【⚠️ グノレブ当日週モード】
+この週の${gnorevThisDow===3?'水':'月'}曜日にグノレブがあります。
+テスト後（${gnorevThisDow===3?'木曜以降':'火曜以降'}）の振り返りカードが入っているか確認してください。
+
+【ベスト実績週のスケジュール（参考・テスト後の振り返りカードの理想形）】
+${bestGnorevSummary}
+` : ''}【この週のスケジュール】
 ${scheduleSummary}
 
-【出力形式の指示】
+${(isPreGnorev || isGnorevWeek) ? `【ベスト週との比較チェック（必須）】
+上記のベスト実績週に入っているカード（教科・内容・スロット）と、この週のスケジュールを比較してください。
+${isGnorevWeek ? `グノレブ当日週の場合、${gnorevThisDow===3?'木曜以降':'火曜以降'}の振り返りカードに絞って比較してください。` : ''}
+ベスト週にあってこの週にないカードは「📋 入れ忘れ確認」として必ず全件指摘してください。
+ただし以下は除外してOK:
+・漢字・算数基礎力テストなど毎朝の固定タスク
+・塾カード・サッカー・プロタゴなどの習い事
+・「学校の宿題」
+` : ''}【出力形式の指示】
 - #や##や###などのMarkdown見出しは使わない
 - **太字**も使わない
 - 絵文字は✅❌⚠️💡のみ使ってOK
 - 箇条書きは「・」を使う
-- カテゴリは「❌ ルール違反」「⚠️ 負荷・バランス」「✅ 確認OK」「💡 アドバイス」の形式で
+- カテゴリは「❌ ルール違反」「⚠️ 負荷・バランス」「✅ 確認OK」「📋 入れ忘れ確認」「💡 アドバイス」の形式で
 - 各項目は1〜2行で簡潔に
 - 問題なければ「✅ バランスよく組めています！」だけでOK
 - 敬語なし・シンプルな日本語で`;
@@ -3448,11 +3507,12 @@ ${scheduleSummary}
             line = line.replace(re, `<span style="background:${color};border-radius:4px;padding:1px 5px;font-size:12px;font-weight:700;">${subj}</span>`);
           });
           // カテゴリ行（❌ ⚠️ ✅ 💡で始まる行）を太字・色付き
-          if (/^[❌⚠️✅💡]/.test(line)) {
+          if (/^[❌⚠️✅💡📋]/.test(line)) {
             const isError = line.startsWith('❌');
             const isWarn = line.startsWith('⚠️');
             const isOk = line.startsWith('✅');
-            const color = isError ? '#e74c3c' : isWarn ? '#e67e22' : isOk ? '#27ae60' : '#8e44ad';
+            const isClipboard = line.startsWith('📋');
+            const color = isError ? '#e74c3c' : isWarn ? '#e67e22' : isOk ? '#27ae60' : isClipboard ? '#2980b9' : '#8e44ad';
             line = `<div style="font-weight:700;color:${color};margin-top:10px;margin-bottom:4px;">${line}</div>`;
           } else if (line.startsWith('・')) {
             line = `<div style="padding-left:4px;margin:2px 0;">${line}</div>`;
