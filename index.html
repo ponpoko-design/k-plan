@@ -3765,7 +3765,11 @@ async function runBalanceCheck() {
     const resultDiv = document.createElement('div');
     resultDiv.style.cssText = 'width:100%;padding:4px 0;';
 
-    console.log('BALANCE CHECK parsed:', parsed, 'replyText:', replyText.slice(0,200));
+    console.log('BALANCE CHECK parsed:', parsed);
+    console.log('replyText full:', replyText);
+    console.log('start idx:', replyText.indexOf('{'), 'end idx:', replyText.lastIndexOf('}'));
+    const _s = replyText.indexOf('{'), _e = replyText.lastIndexOf('}');
+    if (_s !== -1 && _e > _s) console.log('sliced:', replyText.slice(_s, _e+1).slice(0,300));
     if (!parsed || !parsed.items) {
       resultDiv.style.cssText += 'background:white;border-radius:10px;padding:12px;font-size:13px;color:#333;white-space:pre-wrap;';
       resultDiv.textContent = replyText || 'エラーが発生しました。';
