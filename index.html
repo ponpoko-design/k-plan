@@ -300,28 +300,71 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
       </div>      </div>
     </div>
   </div>
-  <!-- 全体バランスチェックモーダル -->
-  <div class="modal-bg" id="balanceCheckModal" style="z-index:210;">
-    <div class="modal" style="width:min(420px,96vw);height:min(680px,92dvh);display:flex;flex-direction:column;">
-      <div class="modal-hdr" style="background:#d4609e;padding:16px 20px;flex-shrink:0;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12S5 5 12 5s11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
-          <span style="font-size:17px;font-weight:700;">全体バランスチェック</span>
-        </div>
-        <button class="modal-close" ontouchend="event.preventDefault();closeBalanceCheckModal();" onclick="closeBalanceCheckModal()">×</button>
+  <!-- 全体バランスチェック サイドパネル/ボトムシート -->
+  <style>
+    #balanceCheckPanel {
+      position: fixed;
+      z-index: 300;
+      background: white;
+      box-shadow: -4px 0 24px rgba(0,0,0,0.13);
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+    }
+    /* PC・iPad横: 右サイドパネル */
+    @media (min-width: 700px) {
+      #balanceCheckPanel {
+        top: 0; right: 0; bottom: 0;
+        width: 380px;
+        border-radius: 16px 0 0 16px;
+        transform: translateX(100%);
+      }
+      #balanceCheckPanel.open {
+        transform: translateX(0);
+      }
+    }
+    /* iPhone・iPad縦: ボトムシート */
+    @media (max-width: 699px) {
+      #balanceCheckPanel {
+        left: 0; right: 0; bottom: 0;
+        height: 60dvh;
+        border-radius: 16px 16px 0 0;
+        transform: translateY(100%);
+        box-shadow: 0 -4px 24px rgba(0,0,0,0.13);
+      }
+      #balanceCheckPanel.open {
+        transform: translateY(0);
+      }
+      /* スワイプハンドル */
+      #balanceCheckPanel::before {
+        content: '';
+        display: block;
+        width: 40px; height: 4px;
+        background: #ddd;
+        border-radius: 2px;
+        margin: 10px auto 0;
+        flex-shrink: 0;
+      }
+    }
+  </style>
+  <div id="balanceCheckPanel">
+    <div style="background:#d4609e;padding:14px 16px;flex-shrink:0;border-radius:16px 0 0 0;display:flex;align-items:center;justify-content:space-between;" id="balanceCheckPanelHdr">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12S5 5 12 5s11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+        <span style="font-size:15px;font-weight:700;color:white;">全体バランスチェック</span>
       </div>
-      <div style="padding:14px 16px;border-bottom:1px solid #f0e0f5;flex-shrink:0;">
-        <div style="font-size:12px;color:#888;margin-bottom:8px;">チェックする週</div>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <button onclick="balanceCheckWeekOffset(-1)" style="background:#fce8f6;border:none;border-radius:8px;padding:6px 12px;font-size:14px;cursor:pointer;color:#d4609e;font-weight:700;">◀</button>
-          <div id="balanceCheckWeekLabel" style="flex:1;text-align:center;font-size:14px;font-weight:700;color:#1a2744;"></div>
-          <button onclick="balanceCheckWeekOffset(1)" style="background:#fce8f6;border:none;border-radius:8px;padding:6px 12px;font-size:14px;cursor:pointer;color:#d4609e;font-weight:700;">▶</button>
-        </div>
-        <button onclick="runBalanceCheck()" id="balanceCheckRunBtn" style="width:100%;margin-top:10px;background:#d4609e;border:none;color:white;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;">この週をチェック ✨</button>
+      <button ontouchend="event.preventDefault();closeBalanceCheckModal();" onclick="closeBalanceCheckModal()" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:50%;width:28px;height:28px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">×</button>
+    </div>
+    <div style="padding:12px 14px;border-bottom:1px solid #f0e0f5;flex-shrink:0;">
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button onclick="balanceCheckWeekOffset(-1)" style="background:#fce8f6;border:none;border-radius:8px;padding:5px 10px;font-size:13px;cursor:pointer;color:#d4609e;font-weight:700;">◀</button>
+        <div id="balanceCheckWeekLabel" style="flex:1;text-align:center;font-size:13px;font-weight:700;color:#1a2744;"></div>
+        <button onclick="balanceCheckWeekOffset(1)" style="background:#fce8f6;border:none;border-radius:8px;padding:5px 10px;font-size:13px;cursor:pointer;color:#d4609e;font-weight:700;">▶</button>
       </div>
-      <div id="balanceCheckMessages" style="flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px;">
-        <div style="color:#bbb;font-size:13px;text-align:center;margin-top:20px;">チェックボタンを押すと、AIがこの週のスケジュールを確認します</div>
-      </div>
+      <button onclick="runBalanceCheck()" id="balanceCheckRunBtn" style="width:100%;margin-top:8px;background:#d4609e;border:none;color:white;border-radius:9999px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;">この週をチェック ✨</button>
+    </div>
+    <div id="balanceCheckMessages" style="flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px;">
+      <div style="color:#bbb;font-size:13px;text-align:center;margin-top:20px;">チェックボタンを押すと、AIがこの週のスケジュールを確認します</div>
     </div>
   </div>
 
@@ -3205,10 +3248,13 @@ function updateUndoBtn() {
 function updateFloatingClose() {
   const btn = document.getElementById('floatingCloseBtn');
   if (!btn) return;
+  const balancePanel = document.getElementById('balanceCheckPanel');
+  const balancePanelIsOpen = balancePanel && balancePanel.classList.contains('open');
   const anyOpen = document.querySelector('.modal-bg.open');
   // ruleChatModal・imageImportModalは自前の×ボタンがあるので浮きXは非表示
-  const hideFloating = anyOpen && (anyOpen.id === 'ruleChatModal' || anyOpen.id === 'imageImportModal' || anyOpen.id === 'balanceCheckModal');
-  btn.style.display = (anyOpen && !hideFloating) ? 'flex' : 'none';
+  const balancePanelOpen = document.getElementById('balanceCheckPanel') && document.getElementById('balanceCheckPanel').classList.contains('open');
+  const hideFloating = (anyOpen && (anyOpen.id === 'ruleChatModal' || anyOpen.id === 'imageImportModal')) || balancePanelOpen;
+  btn.style.display = ((anyOpen || balancePanelIsOpen) && !hideFloating) ? 'flex' : 'none';
   const undoBtn = document.getElementById('floatingUndoBtn');
   if (undoBtn) {
     undoBtn.style.display = anyOpen ? 'none' : 'flex';
@@ -3216,6 +3262,9 @@ function updateFloatingClose() {
 }
 
 function closeAnyModal() {
+  // balanceCheckPanelは.modal-bgではないので先にチェック
+  const panel = document.getElementById('balanceCheckPanel');
+  if (panel && panel.classList.contains('open')) { closeBalanceCheckModal(); return; }
   const openModal = document.querySelector('.modal-bg.open');
   if (!openModal) return;
   const id = openModal.id;
@@ -3224,6 +3273,7 @@ function closeAnyModal() {
   else if (id === 'aiModal') closeAIModal();
   else if (id === 'ruleChatModal') closeRuleChatModal();
   else if (id === 'balanceCheckModal') closeBalanceCheckModal();
+  // balanceCheckPanelはmodal-bgではないので別途チェック
   else if (id === 'gnorevModal') closeGnorevModal();
   else if (id === 'imageImportModal') closeImageImportModal();
   else if (id === 'deleteConfirmModal') closeDeleteConfirm();
@@ -3331,12 +3381,15 @@ let balanceCheckMonday = null;
 function openBalanceCheckModal() {
   balanceCheckMonday = new Date(currentMonday);
   updateBalanceCheckWeekLabel();
-  document.getElementById('balanceCheckModal').classList.add('open');
+  document.getElementById('balanceCheckPanel').classList.add('open');
+  // ヘッダーの角丸をメディアに合わせて調整
+  const hdr = document.getElementById('balanceCheckPanelHdr');
+  if (hdr) hdr.style.borderRadius = window.innerWidth >= 700 ? '16px 0 0 0' : '0';
   updateFloatingClose();
 }
 
 function closeBalanceCheckModal() {
-  document.getElementById('balanceCheckModal').classList.remove('open');
+  document.getElementById('balanceCheckPanel').classList.remove('open');
   updateFloatingClose();
 }
 
@@ -3582,7 +3635,7 @@ async function runBalanceCheck() {
               {val: item.date||'-',    style:'padding:5px 6px;color:#555;white-space:nowrap;'},
               {val: item.slot||'-',    style:'padding:5px 6px;color:#555;white-space:nowrap;'},
               {val: item.subject||'-', style:'padding:5px 6px;', badge: subjColor && item.subject !== '-'},
-              {val: item.detail||'-',  style:'padding:5px 6px;color:#333;line-height:1.4;'},
+              {val: item.detail||'-',  style:'padding:5px 6px;color:#333;line-height:1.5;', isDetail: true},
             ].forEach(c => {
               const td = document.createElement('td');
               td.style.cssText = c.style + 'border-bottom:1px solid #f0f0f0;';
@@ -3591,6 +3644,32 @@ async function runBalanceCheck() {
                 sp.style.cssText = 'background:' + subjColor + ';border-radius:4px;padding:1px 6px;font-weight:700;';
                 sp.textContent = c.val;
                 td.appendChild(sp);
+              } else if (c.isDetail) {
+                // detail欄: 「教科：カード名」パターンをバッジに変換
+                const SUBJ_COLOR2 = {'算数':'#C1E8FB','国語':'#F2B9E4','理科':'#B6EBB0','社会':'#F9DB82','予定':'#F5F4E4','習い事':'#D6C3AA','テスト':'#fce4f8'};
+                const badgeRe = /([算国理社予習テ][数語科会定事ス][\S]*?)(?=[（「、。\s]|$)/g;
+                // シンプルにコロン前後でカード名を検出: 「理科：グノチェック」→バッジ
+                const colonMatch = c.val.match(/^(.+?)[:：](.+)$/);
+                if (colonMatch) {
+                  const subj2 = colonMatch[1].trim();
+                  const cardName = colonMatch[2].trim();
+                  const sc = SUBJ_COLOR2[subj2] || '#eee';
+                  const sp = document.createElement('span');
+                  sp.style.cssText = 'background:' + sc + ';border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700;white-space:nowrap;display:inline-block;';
+                  sp.textContent = subj2 + '：' + cardName;
+                  td.appendChild(sp);
+                } else {
+                  // カード名単体をバッジに（教科色で）
+                  const sc = SUBJ_COLOR2[item.subject] || '';
+                  if (sc && item.subject !== '-') {
+                    const sp = document.createElement('span');
+                    sp.style.cssText = 'background:' + sc + ';border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700;white-space:nowrap;display:inline-block;margin-right:4px;';
+                    sp.textContent = c.val;
+                    td.appendChild(sp);
+                  } else {
+                    td.textContent = c.val;
+                  }
+                }
               } else {
                 td.textContent = c.val;
               }
