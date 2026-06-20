@@ -306,49 +306,35 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
       position: fixed;
       z-index: 300;
       background: white;
-      box-shadow: -4px 0 24px rgba(0,0,0,0.13);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.18);
       display: flex;
       flex-direction: column;
-      transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+      border-radius: 14px;
+      width: min(360px, 92vw);
+      height: min(560px, 75dvh);
+      top: 60px;
+      right: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.95);
+      transition: opacity 0.2s, transform 0.2s;
+      user-select: none;
     }
-    /* PC・iPad横: 右サイドパネル */
-    @media (min-width: 700px) {
-      #balanceCheckPanel {
-        top: 0; right: 0; bottom: 0;
-        width: 380px;
-        border-radius: 16px 0 0 16px;
-        transform: translateX(100%);
-      }
-      #balanceCheckPanel.open {
-        transform: translateX(0);
-      }
+    #balanceCheckPanel.open {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1);
     }
-    /* iPhone・iPad縦: ボトムシート */
-    @media (max-width: 699px) {
-      #balanceCheckPanel {
-        left: 0; right: 0; bottom: 0;
-        height: 60dvh;
-        border-radius: 16px 16px 0 0;
-        transform: translateY(100%);
-        box-shadow: 0 -4px 24px rgba(0,0,0,0.13);
-      }
-      #balanceCheckPanel.open {
-        transform: translateY(0);
-      }
-      /* スワイプハンドル */
-      #balanceCheckPanel::before {
-        content: '';
-        display: block;
-        width: 40px; height: 4px;
-        background: #ddd;
-        border-radius: 2px;
-        margin: 10px auto 0;
-        flex-shrink: 0;
-      }
+    #balanceCheckPanelHdr {
+      cursor: grab;
+      border-radius: 14px 14px 0 0 !important;
+    }
+    #balanceCheckPanelHdr:active {
+      cursor: grabbing;
     }
   </style>
   <div id="balanceCheckPanel">
-    <div style="background:#d4609e;padding:14px 16px;flex-shrink:0;border-radius:16px 0 0 0;display:flex;align-items:center;justify-content:space-between;" id="balanceCheckPanelHdr">
+    <div style="background:#d4609e;padding:12px 14px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;" id="balanceCheckPanelHdr">
       <div style="display:flex;align-items:center;gap:8px;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12S5 5 12 5s11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
         <span style="font-size:15px;font-weight:700;color:white;">全体バランスチェック</span>
@@ -3381,10 +3367,16 @@ let balanceCheckMonday = null;
 function openBalanceCheckModal() {
   balanceCheckMonday = new Date(currentMonday);
   updateBalanceCheckWeekLabel();
-  document.getElementById('balanceCheckPanel').classList.add('open');
-  // ヘッダーの角丸をメディアに合わせて調整
-  const hdr = document.getElementById('balanceCheckPanelHdr');
-  if (hdr) hdr.style.borderRadius = window.innerWidth >= 700 ? '16px 0 0 0' : '0';
+  const panel = document.getElementById('balanceCheckPanel');
+  // 初回位置をリセット（画面右上）
+  if (!panel.dataset.positioned) {
+    panel.style.top = '60px';
+    panel.style.right = '16px';
+    panel.style.left = 'auto';
+    panel.style.bottom = 'auto';
+    panel.dataset.positioned = '1';
+  }
+  panel.classList.add('open');
   updateFloatingClose();
 }
 
@@ -3392,6 +3384,67 @@ function closeBalanceCheckModal() {
   document.getElementById('balanceCheckPanel').classList.remove('open');
   updateFloatingClose();
 }
+
+// フローティングパネルのドラッグ移動
+(function() {
+  let dragging = false;
+  let startX, startY, startLeft, startTop;
+
+  function getPanel() { return document.getElementById('balanceCheckPanel'); }
+  function getHdr()   { return document.getElementById('balanceCheckPanelHdr'); }
+
+  function onDown(ex, ey) {
+    const panel = getPanel();
+    const rect = panel.getBoundingClientRect();
+    dragging = true;
+    startX = ex; startY = ey;
+    startLeft = rect.left;
+    startTop = rect.top;
+    panel.style.left = rect.left + 'px';
+    panel.style.top  = rect.top  + 'px';
+    panel.style.right  = 'auto';
+    panel.style.bottom = 'auto';
+    panel.style.transition = 'none';
+  }
+
+  function onMove(ex, ey) {
+    if (!dragging) return;
+    const panel = getPanel();
+    const dx = ex - startX, dy = ey - startY;
+    const maxL = window.innerWidth  - panel.offsetWidth;
+    const maxT = window.innerHeight - panel.offsetHeight;
+    panel.style.left = Math.max(0, Math.min(startLeft + dx, maxL)) + 'px';
+    panel.style.top  = Math.max(0, Math.min(startTop  + dy, maxT)) + 'px';
+  }
+
+  function onUp() {
+    if (!dragging) return;
+    dragging = false;
+    const panel = getPanel();
+    panel.style.transition = '';
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const hdr = getHdr();
+    if (!hdr) return;
+    // マウス
+    hdr.addEventListener('mousedown',  e => { e.preventDefault(); onDown(e.clientX, e.clientY); });
+    document.addEventListener('mousemove', e => onMove(e.clientX, e.clientY));
+    document.addEventListener('mouseup',   () => onUp());
+    // タッチ
+    hdr.addEventListener('touchstart', e => {
+      const t = e.touches[0];
+      onDown(t.clientX, t.clientY);
+    }, {passive: true});
+    document.addEventListener('touchmove', e => {
+      if (!dragging) return;
+      e.preventDefault();
+      const t = e.touches[0];
+      onMove(t.clientX, t.clientY);
+    }, {passive: false});
+    document.addEventListener('touchend', () => onUp());
+  });
+})();
 
 function updateBalanceCheckWeekLabel() {
   const mon = new Date(balanceCheckMonday);
