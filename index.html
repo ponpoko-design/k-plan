@@ -3673,8 +3673,7 @@ async function runBalanceCheck() {
       } else {
         prompt += '・月曜グノレブのベスト実績週を参照してバランスを判断\n';
       }
-      prompt += '\n【ベスト実績週のスケジュール（参考・これが理想の組み方）】\n';
-      prompt += bestPreSummary + '\n';
+
     }
 
     if (isGnorevWeek) {
@@ -3683,8 +3682,7 @@ async function runBalanceCheck() {
       prompt += '【グノレブ当日週モード】\n';
       prompt += 'この週の' + dowLabel + '曜日にグノレブがあります。\n';
       prompt += 'テスト後（' + afterLabel + '）の振り返りカードが入っているか確認してください。\n';
-      prompt += '\n【ベスト実績週のスケジュール（参考・テスト後の振り返りカードの理想形）】\n';
-      prompt += bestGnorevSummary + '\n';
+
     }
 
     prompt += '【この週のスケジュール】\n';
