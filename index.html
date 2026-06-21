@@ -4553,7 +4553,7 @@ ${socImgs.length ? `- 社会単元表: ${socImgs.length}枚` : ''}
   "lessons": [
     {
       "date": "YYYY-MM-DD",
-      "type": "算理" または "国社" または "GW講習" または "夏期講習" または "休講日",
+      "type": "算理" または "国社" または "グノレブ" または "GW講習" または "夏期講習" または "休講日",
       "unit_math": 単元番号(数値) または null,
       "unit_sci": 単元番号(数値) または null,
       "unit_jp": 単元番号(数値) または null,
@@ -4575,6 +4575,7 @@ ${socImgs.length ? `- 社会単元表: ${socImgs.length}枚` : ''}
 注意:
 - 授業カレンダーの各セルに書かれた「国・社 13」「算・理 14」などから日付と単元番号を読み取る
 - 月曜夜が「国社（国語・社会）」、水曜夜が「算理（算数・理科）」
+- グノレブ（実力確認テスト）と記載のある日は type: "グノレブ" にする
 - 休講日と記載がある日は is_holiday: true にする
 - GW講習・夏期講習は typeをそれぞれ "GW講習" "夏期講習" にする
 - 単元表から番号→名前の対応を各 _units に入れる
@@ -4652,8 +4653,8 @@ function showImgConfirmModal(parsed) {
   // リスト
   const listEl = document.getElementById('imgConfirmList');
   listEl.innerHTML = '';
-  const TYPE_COLOR = { '算理':'#C1E8FB', '国社':'#F2B9E4', 'GW講習':'#D6C3AA', '夏期講習':'#D6C3AA' };
-  const TYPE_LABEL = { '算理':'算・理', '国社':'国・社', 'GW講習':'GW講習', '夏期講習':'夏期講習' };
+  const TYPE_COLOR = { '算理':'#C1E8FB', '国社':'#F2B9E4', 'グノレブ':'#F104BA', 'GW講習':'#D6C3AA', '夏期講習':'#D6C3AA' };
+  const TYPE_LABEL = { '算理':'算・理', '国社':'国・社', 'グノレブ':'グノレブ', 'GW講習':'GW講習', '夏期講習':'夏期講習' };
   lessons.forEach(l => {
     const [y,m,d] = l.date.split('-').map(Number);
     const dow = ['日','月','火','水','木','金','土'][new Date(y,m-1,d).getDay()];
@@ -4668,10 +4669,11 @@ function showImgConfirmModal(parsed) {
     if (l.unit_name_soc)  parts.push(`社: ${l.unit_name_soc}`);
     const unitStr = parts.join('　');
 
+    const textColor = l.type === 'グノレブ' ? '#fff' : '#1a2744';
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-radius:8px;background:#f8f9fc;border:1px solid #eee;';
     row.innerHTML = `
-      <div style="flex-shrink:0;background:${color};color:#1a2744;font-size:12px;font-weight:700;border-radius:4px;padding:3px 7px;min-width:44px;text-align:center;">${typeLabel}</div>
+      <div style="flex-shrink:0;background:${color};color:${textColor};font-size:12px;font-weight:700;border-radius:4px;padding:3px 7px;min-width:44px;text-align:center;">${typeLabel}</div>
       <div style="flex:1;min-width:0;">
         <div style="font-size:13px;font-weight:700;color:#1a2744;">${m}/${d}（${dow}）</div>
         ${unitStr ? `<div style="font-size:11px;color:#666;margin-top:2px;white-space:pre-wrap;">${unitStr}</div>` : ''}
@@ -4821,6 +4823,25 @@ async function applyLessonDataToCalendar(parsed) {
       };
       if (existPlanIdx >= 0) lo.added[existPlanIdx] = planCard;
       else lo.added.push(planCard);
+      return;
+    }
+
+    // ── グノレブ：テストカード（ピンク）を登録 ──
+    if (lesson.type === 'グノレブ') {
+      const uid = 'juku_gnolev_' + lesson.date;
+      const existIdx = lo.added.findIndex(a => a.uid === uid);
+      const card = {
+        uid, color: '#F104BA',
+        weekday: DAYS_JP[dayIdx], weekday_index: dayIdx,
+        slot: 'night', subject: 'テスト',
+        unit_name: 'グノレブ',
+        note: lesson.note || '',
+        study_time: null, display_type: 'one_time',
+        repeat_key: null, is_hidden: 'no', order: 1,
+        _dayIdx: dayIdx, _slotIdx: 4
+      };
+      if (existIdx >= 0) lo.added[existIdx] = card;
+      else lo.added.push(card);
       return;
     }
 
