@@ -4630,40 +4630,33 @@ async function runImageAnalysis(mode) {
     const toMonth = document.getElementById('imgToMonth').value;
     const periodNote = `このカレンダーの対象期間は ${fromYear}年${fromMonth}月 〜 ${toYear}年${toMonth}月 です。日付の年はこの期間に基づいて判断してください。`;
 
-    // Claude API へのプロンプト構築（全画像を順番に追加）
+    // Claude API へのプロンプト構築（modeに応じた画像のみ送る）
     const imageContent = [];
-    if (calImgs.length) {
-      imageContent.push({ type: 'text', text: `【授業カレンダー画像 ${calImgs.length}枚】` });
-      calImgs.forEach(img => imageContent.push({ type: 'image', source: { type: 'base64', media_type: img.type, data: img.b64 } }));
-    }
-    if (mathImgs.length) {
+    imageContent.push({ type: 'text', text: `【授業カレンダー画像 ${calImgs.length}枚】` });
+    calImgs.forEach(img => imageContent.push({ type: 'image', source: { type: 'base64', media_type: img.type, data: img.b64 } }));
+
+    if (mode === 'sanri') {
       imageContent.push({ type: 'text', text: `【算数単元表 ${mathImgs.length}枚】` });
       mathImgs.forEach(img => imageContent.push({ type: 'image', source: { type: 'base64', media_type: img.type, data: img.b64 } }));
-    }
-    if (sciImgs.length) {
       imageContent.push({ type: 'text', text: `【理科単元表 ${sciImgs.length}枚】` });
       sciImgs.forEach(img => imageContent.push({ type: 'image', source: { type: 'base64', media_type: img.type, data: img.b64 } }));
-    }
-    if (jpImgs.length) {
+    } else {
       imageContent.push({ type: 'text', text: `【国語単元表 ${jpImgs.length}枚】` });
       jpImgs.forEach(img => imageContent.push({ type: 'image', source: { type: 'base64', media_type: img.type, data: img.b64 } }));
-    }
-    if (socImgs.length) {
       imageContent.push({ type: 'text', text: `【社会単元表 ${socImgs.length}枚】` });
       socImgs.forEach(img => imageContent.push({ type: 'image', source: { type: 'base64', media_type: img.type, data: img.b64 } }));
     }
+
+    const modePrompt = mode === 'sanri'
+      ? `今回は「算・理（水曜）」の授業カードを登録します。カレンダーから「算・理 XX」の授業日を読み取ってください。type は必ず "算理" にしてください。`
+      : `今回は「国・社（月曜）」の授業カードを登録します。カレンダーから「国・社 XX」の授業日を読み取ってください。type は必ず "国社" にしてください。`;
+
     imageContent.push({
       type: 'text',
       text: `あなたは中学受験塾グノーブルの授業カレンダーと単元表を読み取るAIです。
 
 ${periodNote}
-
-送った画像の構成:
-- 授業カレンダー: ${calImgs.length}枚（月ごとの授業日程）
-- 算数単元表: ${mathImgs.length}枚
-${sciImgs.length ? `- 理科単元表: ${sciImgs.length}枚` : ''}
-${jpImgs.length ? `- 国語単元表: ${jpImgs.length}枚` : ''}
-${socImgs.length ? `- 社会単元表: ${socImgs.length}枚` : ''}
+${modePrompt}
 
 以下のJSONのみを返してください（説明文・マークダウン不要・コードブロック不要）：
 
@@ -4684,22 +4677,20 @@ ${socImgs.length ? `- 社会単元表: ${socImgs.length}枚` : ''}
       "note": "補足があれば"
     }
   ],
-  "math_units": { "12": "量の変化とグラフ（1）" },
-  "sci_units": { "13": "理科の単元名" },
-  "jp_units": { "10": "国語の単元名" },
-  "soc_units": { "10": "社会の単元名" }
+  "math_units": { "20": "算数の単元名" },
+  "sci_units": { "20": "理科の単元名" },
+  "jp_units": { "20": "国語の単元名" },
+  "soc_units": { "20": "社会の単元名" }
 }
 
 注意:
-- 授業カレンダーの各セルに書かれた「国・社 13」「算・理 14」などから日付と単元番号を読み取る
-- 月曜夜が「国社（国語・社会）」、水曜夜が「算理（算数・理科）」
-- グノレブ（実力確認テスト）と記載のある日は type: "グノレブ" にする
+- カレンダーの各セルに書かれた「国・社 20」「算・理 20」などから日付と単元番号を読み取る
+- グノレブ（GnoRev）と記載のある日は type: "グノレブ" にする（グノレブは月曜か水曜）
 - 休講日と記載がある日は is_holiday: true にする
-- GW講習・夏期講習は typeをそれぞれ "GW講習" "夏期講習" にする
+- GW講習・夏期講習はそれぞれ type: "GW講習" "夏期講習" にする
 - 単元表から番号→名前の対応を各 _units に入れる
-- 日付は必ず YYYY-MM-DD 形式（年は2026年が基本）
+- 日付は必ず YYYY-MM-DD 形式
 - JSONのみ出力。前後に余計な文字を一切含めないこと`
-    });
 
     const response = await fetch('https://kota-ai-proxy.nacchukkim.workers.dev', {
       method: 'POST',
@@ -4872,7 +4863,8 @@ async function applyLessonDataToCalendar(parsed) {
       const unitNameB = lesson.unit_name_sci || (unitSciNum ? sciUnits[String(unitSciNum)] : '') ||
                         lesson.unit_name_soc || (unitSocNum ? socUnits[String(unitSocNum)] : '');
       const labelBase = isSanki ? '塾（算･理）' : '塾（国･社）';
-      const newName = unitNum ? (isSanki ? `塾（算･理${unitNum}）` : `塾（国･社${unitNum}）`) : labelBase;
+      const displayNum = isSanki ? unitNum : (unitJpNum || unitSocNum);
+      const newName = displayNum ? (isSanki ? `塾（算･理${displayNum}）` : `塾（国･社${displayNum}）`) : labelBase;
       const labelA = isSanki ? '算' : '国';
       const labelB = isSanki ? '理' : '社';
       const noteStr = [unitNameA ? `${labelA}: ${unitNameA}` : '', unitNameB ? `${labelB}: ${unitNameB}` : ''].filter(Boolean).join('\n');
