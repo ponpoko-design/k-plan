@@ -540,6 +540,28 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
     </div>
   </div>
 
+  <!-- 画像インポート 確認モーダル -->
+  <div class="modal-bg" id="imgConfirmModal" style="z-index:215;">
+    <div class="modal" style="width:min(440px,96vw);max-height:90vh;">
+      <div class="modal-hdr" style="background:#1a2744;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          <span>読み取り結果の確認</span>
+        </div>
+        <button class="modal-close" onclick="closeImgConfirmModal()">×</button>
+      </div>
+      <div class="modal-body" style="padding:18px;">
+        <div id="imgConfirmPeriod" style="font-size:14px;font-weight:700;color:#1a2744;background:#f0f2f8;border-radius:8px;padding:10px 14px;margin-bottom:14px;"></div>
+        <div style="font-size:12px;color:#888;margin-bottom:8px;">以下の授業カードを登録します</div>
+        <div id="imgConfirmList" style="display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow-y:auto;"></div>
+        <div class="modal-actions" style="margin-top:16px;">
+          <button onclick="closeImgConfirmModal()" style="flex:1;background:white;border:2px solid #ccc;color:#888;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">戻る</button>
+          <button onclick="confirmAndApplyLessons()" style="flex:2;background:#1a2744;border:none;color:white;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">この内容で登録する</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- グノレブ予定モーダル -->  <div class="modal-bg" id="gnorevModal" style="z-index:200;">
     <div class="modal" style="width:min(420px,96vw);">
       <div class="modal-hdr" style="background:#9b59b6;">
@@ -4424,6 +4446,8 @@ function openImageImportModal() {
 }
 function closeImageImportModal() {
   document.getElementById('imageImportModal').classList.remove('open');
+  document.getElementById('imgConfirmModal').classList.remove('open');
+  _pendingParsed = null;
   openAIModal();
 }
 
@@ -4563,7 +4587,7 @@ ${socImgs.length ? `- 社会単元表: ${socImgs.length}枚` : ''}
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 4000,
+        max_tokens: 8000,
         messages: [{ role: 'user', content: imageContent }]
       })
     });
@@ -4590,17 +4614,15 @@ ${socImgs.length ? `- 社会単元表: ${socImgs.length}枚` : ''}
       const clean = textBlock.text.replace(/```json\s*|```\s*/g, '').trim();
       parsed = JSON.parse(clean);
     } catch (e) {
-      throw new Error('AIの応答をJSONとして解析できませんでした: ' + textBlock.text.slice(0, 300));
+      const len = textBlock.text.length;
+      throw new Error(`JSONの解析に失敗（${len}文字・途中切れの可能性）: ` + textBlock.text.slice(-100));
     }
 
     if (bar) bar.style.width = '100%';
 
-    // カレンダーへの反映
-    await applyLessonDataToCalendar(parsed);
-
-    closeImageImportModal();
-    showToast('✓ 予定を自動入力しました！', 3000);
-    render();
+    // 確認モーダルへ
+    document.getElementById('imageImportModal').classList.remove('open');
+    showImgConfirmModal(parsed);
 
   } catch (e) {
     console.error('画像解析エラー:', e);
@@ -4608,6 +4630,73 @@ ${socImgs.length ? `- 社会単元表: ${socImgs.length}枚` : ''}
     document.getElementById('imgAnalyzeBtn').style.display = '';
     showToast('エラー: ' + e.message, 5000);
   }
+}
+
+let _pendingParsed = null;
+
+function showImgConfirmModal(parsed) {
+  _pendingParsed = parsed;
+  const lessons = (parsed.lessons || []).filter(l => !l.is_holiday && l.type !== '休講日');
+
+  // 期間
+  const dates = lessons.map(l => l.date).filter(Boolean).sort();
+  const periodEl = document.getElementById('imgConfirmPeriod');
+  if (dates.length) {
+    const fmt = d => { const [y,m,day] = d.split('-'); return `${parseInt(m)}月${parseInt(day)}日`; };
+    const yr = dates[0].split('-')[0].slice(2);
+    periodEl.textContent = `📅 期間：${yr}年 ${fmt(dates[0])} 〜 ${fmt(dates[dates.length-1])}（${lessons.length}件）`;
+  } else {
+    periodEl.textContent = '授業データが見つかりませんでした';
+  }
+
+  // リスト
+  const listEl = document.getElementById('imgConfirmList');
+  listEl.innerHTML = '';
+  const TYPE_COLOR = { '算理':'#C1E8FB', '国社':'#F2B9E4', 'GW講習':'#D6C3AA', '夏期講習':'#D6C3AA' };
+  const TYPE_LABEL = { '算理':'算・理', '国社':'国・社', 'GW講習':'GW講習', '夏期講習':'夏期講習' };
+  lessons.forEach(l => {
+    const [y,m,d] = l.date.split('-').map(Number);
+    const dow = ['日','月','火','水','木','金','土'][new Date(y,m-1,d).getDay()];
+    const color = TYPE_COLOR[l.type] || '#eee';
+    const typeLabel = TYPE_LABEL[l.type] || l.type;
+
+    // 単元名を組み立て
+    const parts = [];
+    if (l.unit_name_math) parts.push(`算: ${l.unit_name_math}`);
+    if (l.unit_name_sci)  parts.push(`理: ${l.unit_name_sci}`);
+    if (l.unit_name_jp)   parts.push(`国: ${l.unit_name_jp}`);
+    if (l.unit_name_soc)  parts.push(`社: ${l.unit_name_soc}`);
+    const unitStr = parts.join('　');
+
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-radius:8px;background:#f8f9fc;border:1px solid #eee;';
+    row.innerHTML = `
+      <div style="flex-shrink:0;background:${color};color:#1a2744;font-size:12px;font-weight:700;border-radius:4px;padding:3px 7px;min-width:44px;text-align:center;">${typeLabel}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:700;color:#1a2744;">${m}/${d}（${dow}）</div>
+        ${unitStr ? `<div style="font-size:11px;color:#666;margin-top:2px;white-space:pre-wrap;">${unitStr}</div>` : ''}
+      </div>`;
+    listEl.appendChild(row);
+  });
+
+  document.getElementById('imgConfirmModal').classList.add('open');
+}
+
+function closeImgConfirmModal() {
+  document.getElementById('imgConfirmModal').classList.remove('open');
+  // 画像選択モーダルに戻る（解析済み状態で）
+  document.getElementById('imgAnalyzing').style.display = 'none';
+  document.getElementById('imgAnalyzeBtn').style.display = '';
+  document.getElementById('imageImportModal').classList.add('open');
+}
+
+async function confirmAndApplyLessons() {
+  if (!_pendingParsed) return;
+  document.getElementById('imgConfirmModal').classList.remove('open');
+  await applyLessonDataToCalendar(_pendingParsed);
+  _pendingParsed = null;
+  showToast('✓ 予定を自動入力しました！', 3000);
+  render();
 }
 
 async function applyLessonDataToCalendar(parsed) {
