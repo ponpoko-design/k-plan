@@ -498,7 +498,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
           </div>
         </div>
 
-        <!-- 授業カレンダー画像（複数可） -->
+        <!-- 授業カレンダー画像（共通） -->
         <div style="margin-bottom:14px;">
           <div style="font-size:13px;font-weight:700;color:#1a2744;margin-bottom:8px;">① 授業カレンダー画像 <span style="font-weight:400;color:#888;">（複数枚OK）</span></div>
           <label style="display:flex;align-items:center;justify-content:center;gap:8px;border:2px dashed #ddd;border-radius:10px;padding:14px;cursor:pointer;background:#fafafa;transition:border-color .2s;" onmouseover="this.style.borderColor='#378add'" onmouseout="this.style.borderColor='#ddd'">
@@ -509,48 +509,75 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
           <div id="calPreviews" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
         </div>
 
-        <!-- 算数単元表（複数可） -->
-        <div style="margin-bottom:14px;">
-          <div style="font-size:13px;font-weight:700;color:#1a2744;margin-bottom:8px;">② 算数の単元表画像 <span style="font-weight:400;color:#888;">（複数枚OK）</span></div>
-          <label style="display:flex;align-items:center;justify-content:center;gap:8px;border:2px dashed #ddd;border-radius:10px;padding:14px;cursor:pointer;background:#fafafa;transition:border-color .2s;" onmouseover="this.style.borderColor='#C1E8FB'" onmouseout="this.style.borderColor='#ddd'">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            <span style="font-size:13px;color:#888;">タップして選択（複数選択可）</span>
-            <input type="file" id="mathImgInput" accept="image/*" multiple style="display:none;" onchange="previewImgMulti(this,'mathPreviews')">
-          </label>
-          <div id="mathPreviews" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
+        <!-- 算理セクション -->
+        <div style="background:#EEF6FF;border-radius:12px;padding:14px;margin-bottom:4px;">
+          <div style="font-size:12px;font-weight:700;color:#378add;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+            <span style="background:#C1E8FB;border-radius:4px;padding:2px 8px;color:#1a2744;">算・理</span>
+            <span>水曜の塾カードを登録</span>
+          </div>
+
+          <!-- 算数単元表 -->
+          <div style="margin-bottom:12px;">
+            <div style="font-size:13px;font-weight:700;color:#1a2744;margin-bottom:8px;">② 算数の単元表画像 <span style="font-weight:400;color:#888;">（複数枚OK）</span></div>
+            <label style="display:flex;align-items:center;justify-content:center;gap:8px;border:2px dashed #C1E8FB;border-radius:10px;padding:12px;cursor:pointer;background:white;transition:border-color .2s;" onmouseover="this.style.borderColor='#378add'" onmouseout="this.style.borderColor='#C1E8FB'">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <span style="font-size:13px;color:#888;">タップして選択（複数選択可）</span>
+              <input type="file" id="mathImgInput" accept="image/*" multiple style="display:none;" onchange="previewImgMulti(this,'mathPreviews')">
+            </label>
+            <div id="mathPreviews" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
+          </div>
+
+          <!-- 理科単元表 -->
+          <div style="margin-bottom:12px;">
+            <div style="font-size:13px;font-weight:700;color:#1a2744;margin-bottom:8px;">③ 理科の単元表画像 <span style="font-weight:400;color:#888;">（複数枚OK）</span></div>
+            <label style="display:flex;align-items:center;justify-content:center;gap:8px;border:2px dashed #B6EBB0;border-radius:10px;padding:12px;cursor:pointer;background:white;transition:border-color .2s;" onmouseover="this.style.borderColor='#4caf50'" onmouseout="this.style.borderColor='#B6EBB0'">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <span style="font-size:13px;color:#888;">タップして選択（複数選択可）</span>
+              <input type="file" id="sciImgInput" accept="image/*" multiple style="display:none;" onchange="previewImgMulti(this,'sciPreviews')">
+            </label>
+            <div id="sciPreviews" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
+          </div>
+
+          <button id="imgAnalyzeBtnSanri" onclick="runImageAnalysis('sanri')" style="width:100%;background:#378add;border:none;color:white;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;opacity:0.4;pointer-events:none;">算・理を読み取って登録</button>
         </div>
 
-        <!-- 理科単元表（複数可） -->
-        <div style="margin-bottom:14px;">
-          <div style="font-size:13px;font-weight:700;color:#1a2744;margin-bottom:8px;">③ 理科の単元表画像 <span style="font-weight:400;color:#888;">（複数枚OK）</span></div>
-          <label style="display:flex;align-items:center;justify-content:center;gap:8px;border:2px dashed #ddd;border-radius:10px;padding:14px;cursor:pointer;background:#fafafa;transition:border-color .2s;" onmouseover="this.style.borderColor='#B6EBB0'" onmouseout="this.style.borderColor='#ddd'">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            <span style="font-size:13px;color:#888;">タップして選択（複数選択可）</span>
-            <input type="file" id="sciImgInput" accept="image/*" multiple style="display:none;" onchange="previewImgMulti(this,'sciPreviews')">
-          </label>
-          <div id="sciPreviews" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
+        <!-- 罫線 -->
+        <div style="display:flex;align-items:center;gap:10px;margin:16px 0;">
+          <div style="flex:1;height:1px;background:#ddd;"></div>
+          <div style="font-size:12px;color:#aaa;font-weight:700;">または</div>
+          <div style="flex:1;height:1px;background:#ddd;"></div>
         </div>
 
-        <!-- 国語単元表（複数可） -->
-        <div style="margin-bottom:14px;">
-          <div style="font-size:13px;font-weight:700;color:#1a2744;margin-bottom:8px;">④ 国語の単元表画像 <span style="font-weight:400;color:#888;">（複数枚OK）</span></div>
-          <label style="display:flex;align-items:center;justify-content:center;gap:8px;border:2px dashed #ddd;border-radius:10px;padding:14px;cursor:pointer;background:#fafafa;transition:border-color .2s;" onmouseover="this.style.borderColor='#F2B9E4'" onmouseout="this.style.borderColor='#ddd'">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            <span style="font-size:13px;color:#888;">タップして選択（複数選択可）</span>
-            <input type="file" id="jpImgInput" accept="image/*" multiple style="display:none;" onchange="previewImgMulti(this,'jpPreviews')">
-          </label>
-          <div id="jpPreviews" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
-        </div>
+        <!-- 国社セクション -->
+        <div style="background:#FFF5FB;border-radius:12px;padding:14px;margin-bottom:4px;">
+          <div style="font-size:12px;font-weight:700;color:#c0569a;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+            <span style="background:#F2B9E4;border-radius:4px;padding:2px 8px;color:#1a2744;">国・社</span>
+            <span>月曜の塾カードを登録</span>
+          </div>
 
-        <!-- 社会単元表（複数可） -->
-        <div style="margin-bottom:20px;">
-          <div style="font-size:13px;font-weight:700;color:#1a2744;margin-bottom:8px;">⑤ 社会の単元表画像 <span style="font-weight:400;color:#888;">（複数枚OK）</span></div>
-          <label style="display:flex;align-items:center;justify-content:center;gap:8px;border:2px dashed #ddd;border-radius:10px;padding:14px;cursor:pointer;background:#fafafa;transition:border-color .2s;" onmouseover="this.style.borderColor='#F9DB82'" onmouseout="this.style.borderColor='#ddd'">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            <span style="font-size:13px;color:#888;">タップして選択（複数選択可）</span>
-            <input type="file" id="socImgInput" accept="image/*" multiple style="display:none;" onchange="previewImgMulti(this,'socPreviews')">
-          </label>
-          <div id="socPreviews" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
+          <!-- 国語単元表 -->
+          <div style="margin-bottom:12px;">
+            <div style="font-size:13px;font-weight:700;color:#1a2744;margin-bottom:8px;">④ 国語の単元表画像 <span style="font-weight:400;color:#888;">（複数枚OK）</span></div>
+            <label style="display:flex;align-items:center;justify-content:center;gap:8px;border:2px dashed #F2B9E4;border-radius:10px;padding:12px;cursor:pointer;background:white;transition:border-color .2s;" onmouseover="this.style.borderColor='#c0569a'" onmouseout="this.style.borderColor='#F2B9E4'">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <span style="font-size:13px;color:#888;">タップして選択（複数選択可）</span>
+              <input type="file" id="jpImgInput" accept="image/*" multiple style="display:none;" onchange="previewImgMulti(this,'jpPreviews')">
+            </label>
+            <div id="jpPreviews" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
+          </div>
+
+          <!-- 社会単元表 -->
+          <div style="margin-bottom:12px;">
+            <div style="font-size:13px;font-weight:700;color:#1a2744;margin-bottom:8px;">⑤ 社会の単元表画像 <span style="font-weight:400;color:#888;">（複数枚OK）</span></div>
+            <label style="display:flex;align-items:center;justify-content:center;gap:8px;border:2px dashed #F9DB82;border-radius:10px;padding:12px;cursor:pointer;background:white;transition:border-color .2s;" onmouseover="this.style.borderColor='#f5a623'" onmouseout="this.style.borderColor='#F9DB82'">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <span style="font-size:13px;color:#888;">タップして選択（複数選択可）</span>
+              <input type="file" id="socImgInput" accept="image/*" multiple style="display:none;" onchange="previewImgMulti(this,'socPreviews')">
+            </label>
+            <div id="socPreviews" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
+          </div>
+
+          <button id="imgAnalyzeBtnKokusya" onclick="runImageAnalysis('kokusya')" style="width:100%;background:#c0569a;border:none;color:white;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;opacity:0.4;pointer-events:none;">国・社を読み取って登録</button>
         </div>
 
         <!-- 解析中インジケーター -->
@@ -561,9 +588,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
           <div style="margin-top:12px;height:4px;background:#eee;border-radius:2px;overflow:hidden;"><div id="imgAnalyzingBar" style="height:4px;background:#1a2744;border-radius:2px;width:0%;transition:width 2s ease;"></div></div>
         </div>
 
-        <div class="modal-actions">
+        <div class="modal-actions" style="margin-top:16px;">
           <button onclick="closeImageImportModal()" style="flex:1;background:white;border:2px solid #ccc;color:#888;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">やめる</button>
-          <button id="imgAnalyzeBtn" onclick="runImageAnalysis()" style="flex:2;background:#1a2744;border:none;color:white;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">AIで読み取って自動入力</button>
         </div>
       </div>
     </div>
@@ -4491,7 +4517,7 @@ function openImageImportModal() {
     if (el) el.innerHTML = '';
   });
   document.getElementById('imgAnalyzing').style.display = 'none';
-  document.getElementById('imgAnalyzeBtn').style.display = '';
+  updateImgButtons();
   document.getElementById('imageImportModal').classList.add('open');
 }
 function closeImageImportModal() {
@@ -4522,6 +4548,7 @@ function previewImgMulti(input, containerId) {
     };
     reader.readAsDataURL(file);
   });
+  updateImgButtons();
 }
 
 async function fileToBase64(file) {
@@ -4533,17 +4560,49 @@ async function fileToBase64(file) {
   });
 }
 
-async function runImageAnalysis() {
+function updateImgButtons() {
+  const hasCal = document.getElementById('calImgInput').files.length > 0;
+  const hasMath = document.getElementById('mathImgInput').files.length > 0;
+  const hasSci = document.getElementById('sciImgInput').files.length > 0;
+  const hasJp = document.getElementById('jpImgInput').files.length > 0;
+  const hasSoc = document.getElementById('socImgInput').files.length > 0;
+
+  const btnSanri = document.getElementById('imgAnalyzeBtnSanri');
+  const btnKoku = document.getElementById('imgAnalyzeBtnKokusya');
+
+  const sanriOk = hasCal && hasMath && hasSci;
+  const kokuOk = hasCal && hasJp && hasSoc;
+
+  if (btnSanri) {
+    btnSanri.style.opacity = sanriOk ? '1' : '0.4';
+    btnSanri.style.pointerEvents = sanriOk ? 'auto' : 'none';
+  }
+  if (btnKoku) {
+    btnKoku.style.opacity = kokuOk ? '1' : '0.4';
+    btnKoku.style.pointerEvents = kokuOk ? 'auto' : 'none';
+  }
+}
+
+async function runImageAnalysis(mode) {
   const calFiles2 = document.getElementById('calImgInput').files;
   const mathFiles2 = document.getElementById('mathImgInput').files;
-  if (!calFiles2.length || !mathFiles2.length) {
-    showToast('① 授業カレンダーと ② 算数単元表の画像を選んでください', 3000);
-    return;
+  const sciFiles2 = document.getElementById('sciImgInput').files;
+  const jpFiles2 = document.getElementById('jpImgInput').files;
+  const socFiles2 = document.getElementById('socImgInput').files;
+
+  if (mode === 'sanri' && (!calFiles2.length || !mathFiles2.length || !sciFiles2.length)) {
+    showToast('カレンダー・算数・理科の画像を選んでください', 3000); return;
+  }
+  if (mode === 'kokusya' && (!calFiles2.length || !jpFiles2.length || !socFiles2.length)) {
+    showToast('カレンダー・国語・社会の画像を選んでください', 3000); return;
   }
 
   // UI: 解析中表示
   document.getElementById('imgAnalyzing').style.display = 'block';
-  document.getElementById('imgAnalyzeBtn').style.display = 'none';
+  const btnSanri = document.getElementById('imgAnalyzeBtnSanri');
+  const btnKoku = document.getElementById('imgAnalyzeBtnKokusya');
+  if (btnSanri) { btnSanri.style.opacity = '0.4'; btnSanri.style.pointerEvents = 'none'; }
+  if (btnKoku) { btnKoku.style.opacity = '0.4'; btnKoku.style.pointerEvents = 'none'; }
   const bar = document.getElementById('imgAnalyzingBar');
   setTimeout(() => { if (bar) bar.style.width = '70%'; }, 100);
 
@@ -4687,7 +4746,7 @@ ${socImgs.length ? `- 社会単元表: ${socImgs.length}枚` : ''}
   } catch (e) {
     console.error('画像解析エラー:', e);
     document.getElementById('imgAnalyzing').style.display = 'none';
-    document.getElementById('imgAnalyzeBtn').style.display = '';
+    updateImgButtons();
     showToast('エラー: ' + e.message, 5000);
   }
 }
@@ -4745,9 +4804,8 @@ function showImgConfirmModal(parsed) {
 
 function closeImgConfirmModal() {
   document.getElementById('imgConfirmModal').classList.remove('open');
-  // 画像選択モーダルに戻る（解析済み状態で）
   document.getElementById('imgAnalyzing').style.display = 'none';
-  document.getElementById('imgAnalyzeBtn').style.display = '';
+  updateImgButtons();
   document.getElementById('imageImportModal').classList.add('open');
 }
 
