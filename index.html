@@ -5731,6 +5731,32 @@ function buildScheduleSummary(targetMonday, weeksCount) {
         dayItems.push({slot: item.slot, subject: item.subject, unit: item.unit_name, time: item.study_time});
       });
 
+      // weeklyMoves: 移動先タスクをこの曜日に追加
+      const activeMoves = (localOverrides.weeklyMoves || []).filter(mv =>
+        !mv.fromDate || wk >= mv.fromDate
+      );
+      activeMoves.forEach(mv => {
+        if (mv.toDay !== d) return;
+        if (localHidden[mv.moveUid + '_' + d]) return;
+        const origTask = RAW_DATA.find(t => t.uid === mv.origUid)
+          || (localOverrides.weeklyMovesTasks || []).find(t => t.uid === mv.origUid);
+        if (!origTask) return;
+        dayItems.push({slot: mv.toSlot, subject: origTask.subject, unit: origTask.unit_name, time: origTask.study_time});
+      });
+
+      // weeklyAdded: one_time→weeklyに変換されたタスク
+      (localOverrides.weeklyAdded || []).forEach(t => {
+        if (t.fromDate && wk < t.fromDate) return;
+        if (t.toDate && wk > t.toDate) return;
+        if (t._rrKind === 'monthly' && t._monthDay) {
+          if (dt.getDate() !== t._monthDay) return;
+        } else {
+          if (t.weekday_index !== d) return;
+        }
+        if (localHidden[t.uid + '_' + d]) return;
+        dayItems.push({slot: t.slot, subject: t.subject, unit: t.unit_name, time: t.study_time});
+      });
+
       if (dayItems.length > 0) {
         summary += `  ${dateStr}: `;
         const slotOrder = {plan:0,morning:1,am:2,pm:3,night:4};
