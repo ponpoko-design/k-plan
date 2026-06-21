@@ -3849,13 +3849,34 @@ async function runBalanceCheck() {
         const fromAdded = (wkData.added || []).find(t => {
           if (!t.unit_name || !t.unit_name.includes('グノレブ')) return false;
           if (t.unit_name.includes('振り返り')) return false;
-          // このカードの実際の日付が wk の週に入っているか確認
-          const taskDate = new Date(t._fromDateExact || t.date || '');
-          if (isNaN(taskDate)) return false;
-          const taskWk = (() => { const x = new Date(taskDate); const dy = x.getDay(); x.setDate(x.getDate() - (dy===0?6:dy-1)); return x.toISOString().slice(0,10); })();
-          return taskWk === wk;
+          // 日付情報がある場合は日付で週を確認
+          if (t._fromDateExact || t.date) {
+            const taskDate = new Date(t._fromDateExact || t.date);
+            if (!isNaN(taskDate)) {
+              const taskWk = (() => { const x = new Date(taskDate); const dy = x.getDay(); x.setDate(x.getDate() - (dy===0?6:dy-1)); const jst = new Date(x.getTime()+9*60*60*1000); return jst.toISOString().slice(0,10); })();
+              return taskWk === wk;
+            }
+          }
+          // 日付情報がない場合は_dayIdxと週キーから計算
+          if (t._dayIdx !== undefined) {
+            const candidateWkDate = new Date(candidateWk + 'T00:00:00');
+            const taskDate = new Date(candidateWkDate);
+            taskDate.setDate(candidateWkDate.getDate() + t._dayIdx);
+            const taskWk = (() => { const x = new Date(taskDate); const dy = x.getDay(); x.setDate(x.getDate() - (dy===0?6:dy-1)); const jst = new Date(x.getTime()+9*60*60*1000); return jst.toISOString().slice(0,10); })();
+            if (taskWk === wk) return true;
+          }
+          return false;
         });
-        if (fromAdded) return new Date(fromAdded._fromDateExact || fromAdded.date || '');
+        if (fromAdded) {
+          // 返却する日付を_dayIdxから計算
+          if (fromAdded._fromDateExact || fromAdded.date) return new Date(fromAdded._fromDateExact || fromAdded.date);
+          if (fromAdded._dayIdx !== undefined) {
+            const candidateWkDate = new Date(candidateWk + 'T00:00:00');
+            const d = new Date(candidateWkDate);
+            d.setDate(candidateWkDate.getDate() + fromAdded._dayIdx);
+            return d;
+          }
+        }
       }
       const fromOverride = OVERRIDE_DATA.find(t => {
         if (!t.unit_name || !t.unit_name.includes('グノレブ')) return false;
