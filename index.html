@@ -475,7 +475,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
           <label style="display:flex;align-items:center;justify-content:center;gap:8px;border:2px dashed #ddd;border-radius:10px;padding:14px;cursor:pointer;background:#fafafa;transition:border-color .2s;" onmouseover="this.style.borderColor='#378add'" onmouseout="this.style.borderColor='#ddd'">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             <span style="font-size:13px;color:#888;">タップして選択（複数選択可）</span>
-            <input type="file" id="calImgInput" accept="image/*" multiple style="display:none;" onchange="previewImgMulti(this,'calPreviews');checkAutoAnalyze()">
+            <input type="file" id="calImgInput" accept="image/*" multiple style="display:none;" onchange="previewImgMulti(this,'calPreviews')">
           </label>
           <div id="calPreviews" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
         </div>
@@ -486,7 +486,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
           <label style="display:flex;align-items:center;justify-content:center;gap:8px;border:2px dashed #ddd;border-radius:10px;padding:14px;cursor:pointer;background:#fafafa;transition:border-color .2s;" onmouseover="this.style.borderColor='#C1E8FB'" onmouseout="this.style.borderColor='#ddd'">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             <span style="font-size:13px;color:#888;">タップして選択（複数選択可）</span>
-            <input type="file" id="mathImgInput" accept="image/*" multiple style="display:none;" onchange="previewImgMulti(this,'mathPreviews');checkAutoAnalyze()">
+            <input type="file" id="mathImgInput" accept="image/*" multiple style="display:none;" onchange="previewImgMulti(this,'mathPreviews')">
           </label>
           <div id="mathPreviews" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
         </div>
@@ -497,7 +497,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
           <label style="display:flex;align-items:center;justify-content:center;gap:8px;border:2px dashed #ddd;border-radius:10px;padding:14px;cursor:pointer;background:#fafafa;transition:border-color .2s;" onmouseover="this.style.borderColor='#B6EBB0'" onmouseout="this.style.borderColor='#ddd'">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             <span style="font-size:13px;color:#888;">タップして選択（複数選択可）</span>
-            <input type="file" id="sciImgInput" accept="image/*" multiple style="display:none;" onchange="previewImgMulti(this,'sciPreviews');checkAutoAnalyze()">
+            <input type="file" id="sciImgInput" accept="image/*" multiple style="display:none;" onchange="previewImgMulti(this,'sciPreviews')">
           </label>
           <div id="sciPreviews" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
         </div>
@@ -508,7 +508,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
           <label style="display:flex;align-items:center;justify-content:center;gap:8px;border:2px dashed #ddd;border-radius:10px;padding:14px;cursor:pointer;background:#fafafa;transition:border-color .2s;" onmouseover="this.style.borderColor='#F2B9E4'" onmouseout="this.style.borderColor='#ddd'">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             <span style="font-size:13px;color:#888;">タップして選択（複数選択可）</span>
-            <input type="file" id="jpImgInput" accept="image/*" multiple style="display:none;" onchange="previewImgMulti(this,'jpPreviews');checkAutoAnalyze()">
+            <input type="file" id="jpImgInput" accept="image/*" multiple style="display:none;" onchange="previewImgMulti(this,'jpPreviews')">
           </label>
           <div id="jpPreviews" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
         </div>
@@ -519,14 +519,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
           <label style="display:flex;align-items:center;justify-content:center;gap:8px;border:2px dashed #ddd;border-radius:10px;padding:14px;cursor:pointer;background:#fafafa;transition:border-color .2s;" onmouseover="this.style.borderColor='#F9DB82'" onmouseout="this.style.borderColor='#ddd'">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             <span style="font-size:13px;color:#888;">タップして選択（複数選択可）</span>
-            <input type="file" id="socImgInput" accept="image/*" multiple style="display:none;" onchange="previewImgMulti(this,'socPreviews');checkAutoAnalyze()">
+            <input type="file" id="socImgInput" accept="image/*" multiple style="display:none;" onchange="previewImgMulti(this,'socPreviews')">
           </label>
           <div id="socPreviews" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
-        </div>
-
-        <!-- 自動開始バナー（5枚揃ったとき表示） -->
-        <div id="imgAutoReadyBanner" style="display:none;background:#e8f5e9;border:1.5px solid #81c784;border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:#2e7d32;font-weight:700;text-align:center;">
-          ✅ 5種類の画像がそろいました！自動で解析を開始します…
         </div>
 
         <!-- 解析中インジケーター -->
@@ -4425,8 +4420,6 @@ function openImageImportModal() {
   });
   document.getElementById('imgAnalyzing').style.display = 'none';
   document.getElementById('imgAnalyzeBtn').style.display = '';
-  const banner = document.getElementById('imgAutoReadyBanner');
-  if (banner) banner.style.display = 'none';
   document.getElementById('imageImportModal').classList.add('open');
 }
 function closeImageImportModal() {
@@ -4466,21 +4459,6 @@ async function fileToBase64(file) {
   });
 }
 
-function checkAutoAnalyze() {
-  const ids = ['calImgInput','mathImgInput','sciImgInput','jpImgInput','socImgInput'];
-  const allFilled = ids.every(id => {
-    const el = document.getElementById(id);
-    return el && el.files && el.files.length > 0;
-  });
-  const banner = document.getElementById('imgAutoReadyBanner');
-  if (allFilled) {
-    if (banner) banner.style.display = 'block';
-    setTimeout(() => { runImageAnalysis(); }, 1200);
-  } else {
-    if (banner) banner.style.display = 'none';
-  }
-}
-
 async function runImageAnalysis() {
   const calFiles2 = document.getElementById('calImgInput').files;
   const mathFiles2 = document.getElementById('mathImgInput').files;
@@ -4490,8 +4468,6 @@ async function runImageAnalysis() {
   }
 
   // UI: 解析中表示
-  const banner = document.getElementById('imgAutoReadyBanner');
-  if (banner) banner.style.display = 'none';
   document.getElementById('imgAnalyzing').style.display = 'block';
   document.getElementById('imgAnalyzeBtn').style.display = 'none';
   const bar = document.getElementById('imgAnalyzingBar');
@@ -4586,7 +4562,7 @@ ${socImgs.length ? `- 社会単元表: ${socImgs.length}枚` : ''}
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 4000,
         messages: [{ role: 'user', content: imageContent }]
       })
