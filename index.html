@@ -3838,67 +3838,46 @@ async function runBalanceCheck() {
       const d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2])+7);
       return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
     })();
-    const findGnorev = (wk) => {
-      // wkキーの前後7日分も検索（週キーのずれに対応）
-      const wkDate = new Date(wk + 'T00:00:00');
-      const candidateWks = [wk];
-      for (let i = 1; i <= 7; i++) {
-        const d1 = new Date(wkDate); d1.setDate(wkDate.getDate() - i);
-        const d2 = new Date(wkDate); d2.setDate(wkDate.getDate() + i);
-        candidateWks.push(d1.toISOString().slice(0,10));
-        candidateWks.push(d2.toISOString().slice(0,10));
-      }
-      // localOverrides内の全週キーを検索
-      for (const candidateWk of candidateWks) {
-        const wkData = localOverrides[candidateWk] || {};
-        const fromAdded = (wkData.added || []).find(t => {
-          if (!t.unit_name || !t.unit_name.includes('グノレブ')) return false;
-          if (t.unit_name.includes('振り返り')) return false;
-          // 日付情報がある場合は日付で週を確認
+    const findGnorev = (targetWk) => {
+      // targetWkの月〜日の日付範囲を計算
+      const twParts = targetWk.split('-');
+      const twMonday = new Date(parseInt(twParts[0]), parseInt(twParts[1])-1, parseInt(twParts[2]));
+      const twSunday = new Date(twMonday); twSunday.setDate(twMonday.getDate() + 6);
+
+      // 全localOverridesを検索
+      for (const ck of Object.keys(localOverrides)) {
+        const added = (localOverrides[ck].added || []);
+        for (const t of added) {
+          if (!t.unit_name || !t.unit_name.includes('グノレブ')) continue;
+          if (t.unit_name.includes('振り返り')) continue;
+
+          // 実際の日付を計算
+          let taskDate = null;
           if (t._fromDateExact || t.date) {
-            const taskDate = new Date(t._fromDateExact || t.date);
-            if (!isNaN(taskDate)) {
-              const taskWk = (() => { const x = new Date(taskDate); const dy = x.getDay(); x.setDate(x.getDate() - (dy===0?6:dy-1)); const jst = new Date(x.getTime()+9*60*60*1000); return jst.toISOString().slice(0,10); })();
-              return taskWk === wk;
-            }
+            taskDate = new Date(t._fromDateExact || t.date);
+          } else if (t.weekday_index !== undefined) {
+            // 週キー（日曜起点）+ weekday_index+1 = 月〜土
+            const ckParts = ck.split('-');
+            const ckSun = new Date(parseInt(ckParts[0]), parseInt(ckParts[1])-1, parseInt(ckParts[2]));
+            taskDate = new Date(ckSun);
+            taskDate.setDate(ckSun.getDate() + t.weekday_index + 1);
           }
-          // 日付情報がない場合はweekday_indexと週キーから計算
-          // weekday_index: 0=月,1=火,2=水,3=木,4=金,5=土,6=日
-          if (t.weekday_index !== undefined) {
-            // 週キー（日曜起点）+ weekday_index+1日 = 実際の日付
-            const ckParts = candidateWk.split('-');
-            const wkSunday = new Date(parseInt(ckParts[0]), parseInt(ckParts[1])-1, parseInt(ckParts[2]));
-            const taskDate = new Date(wkSunday);
-            taskDate.setDate(wkSunday.getDate() + t.weekday_index + 1);
-            // taskDateの月曜日を計算（JS: getDay()=0は日曜）
-            const jsDay = taskDate.getDay(); // 0=日,1=月,...,6=土
-            const daysToMon = jsDay === 0 ? 6 : jsDay - 1;
-            const taskWkMonday = new Date(taskDate);
-            taskWkMonday.setDate(taskDate.getDate() - daysToMon);
-            const taskWk = taskWkMonday.getFullYear() + '-' +
-              String(taskWkMonday.getMonth()+1).padStart(2,'0') + '-' +
-              String(taskWkMonday.getDate()).padStart(2,'0');
-            if (taskWk === wk) return true;
-          }
-          return false;
-        });
-        if (fromAdded) {
-          if (fromAdded._fromDateExact || fromAdded.date) return new Date(fromAdded._fromDateExact || fromAdded.date);
-          if (fromAdded.weekday_index !== undefined) {
-            const ckParts = candidateWk.split('-');
-            const wkSunday = new Date(parseInt(ckParts[0]), parseInt(ckParts[1])-1, parseInt(ckParts[2]));
-            const d = new Date(wkSunday);
-            d.setDate(wkSunday.getDate() + fromAdded.weekday_index + 1);
-            return d;
+
+          if (!taskDate || isNaN(taskDate)) continue;
+
+          // targetWkの月〜日の範囲内か確認
+          if (taskDate >= twMonday && taskDate <= twSunday) {
+            return taskDate;
           }
         }
       }
+
+      // OVERRIDE_DATAも検索
       const fromOverride = OVERRIDE_DATA.find(t => {
         if (!t.unit_name || !t.unit_name.includes('グノレブ')) return false;
         if (t.unit_name.includes('振り返り')) return false;
         const d = new Date(t.date);
-        const dWk = (() => { const x = new Date(d); const dy = x.getDay(); x.setDate(x.getDate() - (dy===0?6:dy-1)); return x.toISOString().slice(0,10); })();
-        return dWk === wk;
+        return d >= twMonday && d <= twSunday;
       });
       if (fromOverride) return new Date(fromOverride.date);
       return null;
