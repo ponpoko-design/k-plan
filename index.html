@@ -3894,6 +3894,7 @@ async function runBalanceCheck() {
       return null;
     };
     const gnorevNextWeek = findGnorev(nextWk);
+    console.log('[DEBUG] nextWk:', nextWk, 'gnorevNextWeek:', gnorevNextWeek, 'isPreGnorev:', !!gnorevNextWeek);
     const isPreGnorev = !!gnorevNextWeek;
     const gnorevDow = gnorevNextWeek ? gnorevNextWeek.getDay() : null; // 1=月, 3=水
 
