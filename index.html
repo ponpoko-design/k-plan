@@ -3575,12 +3575,20 @@ async function runMissedCheck(isPreGnorev, isGnorevWeek, gnorevDow, gnorevThisDo
       ? buildScheduleSummary(bestPreMonday, 1)
       : buildScheduleSummary(bestGnorevMonday, 1);
 
-    // 水曜グノレブ前週の場合、ベスト週サマリーから朝スロットの漢字関連を除去
+    // 水曜グノレブ前週の場合、ベスト週サマリーから朝スロットを丸ごと除去
     let filteredBestSummary = bestSummary;
     if (isPreGnorev && gnorevDow === 3) {
       filteredBestSummary = bestSummary.split('\n').map(line => {
-        // 朝スロットの行から漢字間違い復習・漢字復習を除外
-        return line.replace(/朝\/国語:[^|\n]*漢字[^|\n]*(\||$)/g, '').replace(/\|\s*$/, '').replace(/^\s*6\/[0-9]+\([月火水木金土日]\):\s*$/, '');
+        // 各行の朝スロット部分（朝/...）を含むカードを全て除去
+        const parts = line.split(' | ');
+        const filtered = parts.filter(p => !p.includes('朝/'));
+        if (filtered.length === 0) return '';
+        // 日付プレフィックスを保持
+        const prefix = line.match(/^\s+[0-9]+\/[0-9]+\([月火水木金土日]\): /);
+        if (prefix && filtered.length === parts.length) return line;
+        if (prefix && filtered.length === 0) return '';
+        if (prefix) return prefix[0] + filtered.join(' | ');
+        return filtered.join(' | ');
       }).filter(l => l.trim()).join('\n');
     }
 
@@ -3600,7 +3608,10 @@ async function runMissedCheck(isPreGnorev, isGnorevWeek, gnorevDow, gnorevThisDo
     }
     missedPrompt += '\n【ベスト実績週】\n' + filteredBestSummary;
     missedPrompt += '\n【この週のスケジュール】\n' + scheduleSummary;
-    missedPrompt += '\n\n除外OK: 漢字・算数基礎力テストなど毎朝固定タスク / 塾・サッカー・プロタゴ / 学校の宿題\n';
+    const morningExclude = (isPreGnorev && gnorevDow === 3)
+      ? '朝スロット全て（水曜グノレブ前週は朝スロット比較禁止） / '
+      : '';
+    missedPrompt += '\n\n除外OK: ' + morningExclude + '漢字・算数基礎力テストなど毎朝固定タスク / 塾・サッカー・プロタゴ / 学校の宿題\n';
     missedPrompt += '\n最初の文字は { 最後の文字は } であること。コードブロック禁止。\n';
     missedPrompt += 'JSON配列のみ返す:\n[{"date":"6/25(木)など or -","slot":"朝/午前/午後/夜","subject":"算数/国語/理科/社会","best":"ベスト週の状況1行","current":"この週の状況1行","detail":"内容1行"}]';
 
