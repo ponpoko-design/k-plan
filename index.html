@@ -3575,14 +3575,11 @@ async function runMissedCheck(isPreGnorev, isGnorevWeek, gnorevDow, gnorevThisDo
       ? buildScheduleSummary(bestPreMonday, 1)
       : buildScheduleSummary(bestGnorevMonday, 1);
 
-    // 水曜グノレブ前週の場合、ベスト週サマリーから朝スロットを丸ごと除去
-    let filteredBestSummary = bestSummary;
-    if (isPreGnorev && gnorevDow === 3) {
-      filteredBestSummary = bestSummary.split('\n').map(line => {
-        // 【週】行はそのまま通す
+    // 朝スロットを除去する関数
+    function removeMorningSlots(summary) {
+      return summary.split('\n').map(line => {
         if (line.includes('週】')) return line;
-        // 日付行: 朝/を含むセグメントを除去
-        const dateMatch = line.match(/^(\s+\S+\s*:\s*)(.*)/);
+        const dateMatch = line.match(/^(\s+\S.*?:\s*)(.*)/);
         if (dateMatch) {
           const prefix = dateMatch[1];
           const segs = dateMatch[2].split(' | ').filter(s => !s.startsWith('朝/'));
@@ -3591,6 +3588,14 @@ async function runMissedCheck(isPreGnorev, isGnorevWeek, gnorevDow, gnorevThisDo
         }
         return line;
       }).filter(l => l.trim()).join('\n');
+    }
+
+    // 水曜グノレブ前週の場合、ベスト週・この週の両方から朝スロットを丸ごと除去
+    let filteredBestSummary = bestSummary;
+    let filteredScheduleSummary = scheduleSummary;
+    if (isPreGnorev && gnorevDow === 3) {
+      filteredBestSummary = removeMorningSlots(bestSummary);
+      filteredScheduleSummary = removeMorningSlots(scheduleSummary);
     }
 
     let missedPrompt = '以下のベスト実績週と今週のスケジュールを比較して、入れ忘れているカードを指摘してください。\n\n';
@@ -3608,7 +3613,7 @@ async function runMissedCheck(isPreGnorev, isGnorevWeek, gnorevDow, gnorevThisDo
       missedPrompt += '【月曜グノレブ前週 朝ルール】水〜日の朝に漢字間違い復習15分が入っているか確認する（月・火の朝は不要）。\n\n';
     }
     missedPrompt += '\n【ベスト実績週】\n' + filteredBestSummary;
-    missedPrompt += '\n【この週のスケジュール】\n' + scheduleSummary;
+    missedPrompt += '\n【この週のスケジュール】\n' + filteredScheduleSummary;
     const morningExclude = (isPreGnorev && gnorevDow === 3)
       ? '朝スロット全て（水曜グノレブ前週は朝スロット比較禁止） / '
       : '';
