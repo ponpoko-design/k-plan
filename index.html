@@ -4350,6 +4350,23 @@ function closeRuleChatModal() {
   openAIModal();
 }
 
+function renderMarkdown(text) {
+  const esc = text
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;');
+  return esc
+    .replace(/^### (.+)$/gm, '<div style="font-weight:700;font-size:13px;color:#1a2744;margin:10px 0 4px;">$1</div>')
+    .replace(/^## (.+)$/gm,  '<div style="font-weight:700;font-size:14px;color:#1a2744;border-bottom:1.5px solid #dde1ea;padding-bottom:4px;margin:12px 0 6px;">$1</div>')
+    .replace(/^# (.+)$/gm,   '<div style="font-weight:700;font-size:15px;color:#1a2744;margin:12px 0 6px;">$1</div>')
+    .replace(/^---+$/gm, '<hr style="border:none;border-top:1px solid #e0e3ea;margin:8px 0;">')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/^[・\-] (.+)$/gm, '<div style="display:flex;gap:6px;margin:2px 0;"><span style="color:#378add;flex-shrink:0;">・</span><span>$1</span></div>')
+    .replace(/^(\d+)\. (.+)$/gm, '<div style="display:flex;gap:6px;margin:2px 0;"><span style="color:#378add;font-weight:700;flex-shrink:0;">$1.</span><span>$2</span></div>')
+    .replace(/\n/g, '<br>');
+}
+
 async function sendRuleChatMessage() {
   var input = document.getElementById('ruleChatInput');
   var text = input.value.trim();
@@ -4512,7 +4529,7 @@ async function sendRuleChatMessage() {
     icon.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M12 2v4M8 2h8"/><circle cx="9" cy="13" r="1.5" fill="white" stroke="none"/><circle cx="15" cy="13" r="1.5" fill="white" stroke="none"/><line x1="9" y1="17" x2="15" y2="17"/><line x1="7" y1="8" x2="7" y2="6"/><line x1="17" y1="8" x2="17" y2="6"/></svg>';
     var bubble = document.createElement('div');
     bubble.style.cssText = 'background:white;border-radius:4px 14px 14px 14px;padding:12px 14px;font-size:13px;line-height:1.6;color:#333;max-width:85%;box-shadow:0 1px 4px rgba(0,0,0,0.06);';
-    bubble.textContent = reply;
+    bubble.innerHTML = renderMarkdown(reply);
     aiDiv.appendChild(icon);
     aiDiv.appendChild(bubble);
     msgs.appendChild(aiDiv);
