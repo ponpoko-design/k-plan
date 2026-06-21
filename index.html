@@ -3787,7 +3787,6 @@ async function runBalanceCheck() {
   try {
     const rules = await loadAiRules();
     const scheduleSummary = buildScheduleSummary(balanceCheckMonday, 1);
-    console.log('[DEBUG] scheduleSummary:', scheduleSummary);
 
     const mon = new Date(balanceCheckMonday);
     const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
@@ -3913,10 +3912,15 @@ async function runBalanceCheck() {
     // JSONパース（コードブロック除去してから）
     let parsed = null;
     try {
-      const cleaned = replyText.replace(/```json|```/g, '').trim();
+      // コードブロック・前後の余計なテキストを除去
+      let cleaned = replyText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+      // {...}ブロックを抽出（最長マッチ）
       const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
       if (jsonMatch) parsed = JSON.parse(jsonMatch[0]);
-    } catch(e2) { parsed = null; }
+    } catch(e2) {
+      // パース失敗時は再度試行（全体をそのままパース）
+      try { parsed = JSON.parse(replyText.trim()); } catch(e3) { parsed = null; }
+    }
 
     const resultDiv = document.createElement('div');
     resultDiv.style.cssText = 'width:100%;padding:4px 0;';
