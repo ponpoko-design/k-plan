@@ -3823,8 +3823,12 @@ async function runBalanceCheck() {
     const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
     const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 
-    // この週のキー（findGnorev内で使用）
-    const wk = balanceCheckMonday.toISOString().slice(0,10);
+    // この週のキー（JST基準で計算）
+    const wk = (() => {
+      const d = new Date(balanceCheckMonday);
+      const jst = new Date(d.getTime() + 9*60*60*1000);
+      return jst.toISOString().slice(0,10);
+    })();
 
     // グノレブ前週かどうかを判定（翌週にグノレブがあるか）
     const nextMonday = new Date(balanceCheckMonday); nextMonday.setDate(balanceCheckMonday.getDate() + 7);
