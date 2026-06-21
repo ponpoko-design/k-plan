@@ -3830,11 +3830,32 @@ async function runBalanceCheck() {
     const nextMonday = new Date(balanceCheckMonday); nextMonday.setDate(balanceCheckMonday.getDate() + 7);
     const nextWk = nextMonday.toISOString().slice(0,10);
     const findGnorev = (wk) => {
-      const wkData = localOverrides[wk] || {};
-      const fromAdded = (wkData.added || []).find(t => t.unit_name && t.unit_name.includes('グノレブ'));
-      if (fromAdded) return new Date(fromAdded._fromDateExact || fromAdded.date || '');
+      // wkキーの前後7日分も検索（週キーのずれに対応）
+      const wkDate = new Date(wk + 'T00:00:00');
+      const candidateWks = [wk];
+      for (let i = 1; i <= 7; i++) {
+        const d1 = new Date(wkDate); d1.setDate(wkDate.getDate() - i);
+        const d2 = new Date(wkDate); d2.setDate(wkDate.getDate() + i);
+        candidateWks.push(d1.toISOString().slice(0,10));
+        candidateWks.push(d2.toISOString().slice(0,10));
+      }
+      // localOverrides内の全週キーを検索
+      for (const candidateWk of candidateWks) {
+        const wkData = localOverrides[candidateWk] || {};
+        const fromAdded = (wkData.added || []).find(t => {
+          if (!t.unit_name || !t.unit_name.includes('グノレブ')) return false;
+          if (t.unit_name.includes('振り返り')) return false;
+          // このカードの実際の日付が wk の週に入っているか確認
+          const taskDate = new Date(t._fromDateExact || t.date || '');
+          if (isNaN(taskDate)) return false;
+          const taskWk = (() => { const x = new Date(taskDate); const dy = x.getDay(); x.setDate(x.getDate() - (dy===0?6:dy-1)); return x.toISOString().slice(0,10); })();
+          return taskWk === wk;
+        });
+        if (fromAdded) return new Date(fromAdded._fromDateExact || fromAdded.date || '');
+      }
       const fromOverride = OVERRIDE_DATA.find(t => {
         if (!t.unit_name || !t.unit_name.includes('グノレブ')) return false;
+        if (t.unit_name.includes('振り返り')) return false;
         const d = new Date(t.date);
         const dWk = (() => { const x = new Date(d); const dy = x.getDay(); x.setDate(x.getDate() - (dy===0?6:dy-1)); return x.toISOString().slice(0,10); })();
         return dWk === wk;
