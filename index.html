@@ -2,9 +2,6 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>K-study</title>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -3578,29 +3575,6 @@ async function runMissedCheck(isPreGnorev, isGnorevWeek, gnorevDow, gnorevThisDo
       ? buildScheduleSummary(bestPreMonday, 1)
       : buildScheduleSummary(bestGnorevMonday, 1);
 
-    // 朝スロットを除去する関数
-    function removeMorningSlots(summary) {
-      return summary.split('\n').map(line => {
-        if (line.includes('週】')) return line;
-        const dateMatch = line.match(/^(\s+\S.*?:\s*)(.*)/);
-        if (dateMatch) {
-          const prefix = dateMatch[1];
-          const segs = dateMatch[2].split(' | ').filter(s => !s.startsWith('朝/'));
-          if (segs.length === 0) return '';
-          return prefix + segs.join(' | ');
-        }
-        return line;
-      }).filter(l => l.trim()).join('\n');
-    }
-
-    // 水曜グノレブ前週の場合、ベスト週・この週の両方から朝スロットを丸ごと除去
-    let filteredBestSummary = bestSummary;
-    let filteredScheduleSummary = scheduleSummary;
-    if (isPreGnorev && gnorevDow === 3) {
-      filteredBestSummary = removeMorningSlots(bestSummary);
-      filteredScheduleSummary = removeMorningSlots(scheduleSummary);
-    }
-
     let missedPrompt = '以下のベスト実績週と今週のスケジュールを比較して、入れ忘れているカードを指摘してください。\n\n';
     if (isPreGnorev) {
       const dowLabel = gnorevDow === 3 ? '水' : '月';
@@ -3610,18 +3584,9 @@ async function runMissedCheck(isPreGnorev, isGnorevWeek, gnorevDow, gnorevThisDo
       const afterLabel = gnorevThisDow === 3 ? '木曜以降' : '火曜以降';
       missedPrompt += '【グノレブ当日週】' + afterLabel + 'の振り返りカードに絞って比較。\n';
     }
-    if (isPreGnorev && gnorevDow === 3) {
-      missedPrompt += '【水曜グノレブ専用・絶対厳守】朝スロットは完全無視。ベスト週との比較で朝スロットの差異を一切指摘しないこと。代わりに「漢字復習1」「漢字復習2」「漢字復習3」の3枚が前週水曜〜当日水曜の間の朝以外のスロット（午後・夜・土日午前）に1枚ずつ入っているかを確認する。平日午前は不可。\n\n';
-    } else if (isPreGnorev && gnorevDow !== 3) {
-      missedPrompt += '【月曜グノレブ前週 朝ルール】水〜日の朝に漢字間違い復習15分が入っているか確認する（月・火の朝は不要）。\n\n';
-    }
-    missedPrompt += '\n【ベスト実績週】\n' + filteredBestSummary;
-    missedPrompt += '\n【この週のスケジュール】\n' + filteredScheduleSummary;
-    const morningExclude = (isPreGnorev && gnorevDow === 3)
-      ? '朝スロット全て（水曜グノレブ前週は朝スロット比較禁止） / '
-      : '';
-    missedPrompt += '\n\n除外OK: ' + morningExclude + '漢字・算数基礎力テストなど毎朝固定タスク / 塾・サッカー・プロタゴ / 学校の宿題\n';
-    missedPrompt += '\n【重要】ベスト週と同じ内容が入っている場合は一切出力しない。問題がある（不足・欠落・違う）場合のみ出力する。「OKです」「問題なし」「入っています」などの確認コメントは一切出力しない。差分がなければ空配列[]を返す。\n';
+    missedPrompt += '\n【ベスト実績週】\n' + bestSummary;
+    missedPrompt += '\n【この週のスケジュール】\n' + scheduleSummary;
+    missedPrompt += '\n\n除外OK: 漢字・算数基礎力テストなど毎朝固定タスク / 塾・サッカー・プロタゴ / 学校の宿題\n';
     missedPrompt += '\n最初の文字は { 最後の文字は } であること。コードブロック禁止。\n';
     missedPrompt += 'JSON配列のみ返す:\n[{"date":"6/25(木)など or -","slot":"朝/午前/午後/夜","subject":"算数/国語/理科/社会","best":"ベスト週の状況1行","current":"この週の状況1行","detail":"内容1行"}]';
 
@@ -3669,7 +3634,7 @@ async function runMissedCheck(isPreGnorev, isGnorevWeek, gnorevDow, gnorevThisDo
       table.style.cssText = 'width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;';
       const thead = document.createElement('tr');
       thead.style.cssText = 'background:#eef6ff;';
-      [['日付','20%'],['スロット','15%'],['内容','65%']].forEach(([h,w]) => {
+      [['日付','20%'],['スロット','15%'],['科','10%'],['内容','55%']].forEach(([h,w]) => {
         const th = document.createElement('th');
         th.style.cssText = 'padding:5px 5px;text-align:left;color:#888;font-weight:600;border-bottom:1px solid #2980b9;width:'+w+';';
         th.textContent = h;
@@ -3685,6 +3650,7 @@ async function runMissedCheck(isPreGnorev, isGnorevWeek, gnorevDow, gnorevThisDo
         tr.style.cssText = 'background:' + rowBg + ';';
         [{val:item.date||'-',style:'padding:5px 5px;color:#555;white-space:nowrap;vertical-align:top;'},
          {val:item.slot||'-',style:'padding:5px 5px;color:#555;white-space:nowrap;vertical-align:top;'},
+         {val:(subjShort[item.subject]||item.subject||'-'),style:'padding:5px 5px;text-align:center;vertical-align:top;',badge:sc&&item.subject!=='-'},
          {val:null,style:'padding:0;vertical-align:top;',detail:true},
         ].forEach(c => {
           const td = document.createElement('td');
@@ -3708,7 +3674,7 @@ async function runMissedCheck(isPreGnorev, isGnorevWeek, gnorevDow, gnorevThisDo
                 if (/グノチェック|確認問題|基本のまとめ|理科基礎力|理科.*復習|復習.*理科/.test(name)) return '#B6EBB0';
                 if (/用語.*確認|基礎力確認|社会.*復習|復習.*社会|歴史|鎌倉|室町/.test(name)) return '#F9DB82';
                 if (/Nテキスト|N家庭|T確認テスト|計算マスタ|計算ルール|算数.*復習|復習.*算数|基礎力テスト|基礎力復習/.test(name)) return '#C1E8FB';
-                if (/漢字|言葉|意味調べ|ことわざ|国語.*復習|復習.*国語/.test(name)) return '#F2B9E4';
+                if (/漢字|言葉|単元音読|意味調べ|ことわざ|国語.*復習|復習.*国語/.test(name)) return '#F2B9E4';
                 if (/学校の宿題|宿題/.test(name)) return '#E8E8E8';
                 if (/塾|プロタゴ|サッカー/.test(name)) return '#D6C3AA';
                 if (/グノレブ|テスト振り返り/.test(name)) return '#fce4f8';
@@ -3826,67 +3792,26 @@ async function runBalanceCheck() {
     const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
     const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 
-    // この週のキー（JST基準で計算）
-    const wk = (() => {
-      const d = new Date(balanceCheckMonday);
-      const jst = new Date(d.getTime() + 9*60*60*1000);
-      return jst.toISOString().slice(0,10);
-    })();
+    // この週のキー（findGnorev内で使用）
+    const wk = balanceCheckMonday.toISOString().slice(0,10);
 
     // グノレブ前週かどうかを判定（翌週にグノレブがあるか）
-    // wkと同じ方式：wkの日付文字列に7日加算
-    const nextWk = (() => {
-      // wkをそのまま分解して7日加算（タイムゾーン変換なし）
-      const parts = wk.split('-');
-      const d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2])+7);
-      return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-    })();
-    const findGnorev = (targetWk) => {
-      // targetWkの月〜日の日付範囲を計算
-      const twParts = targetWk.split('-');
-      const twMonday = new Date(parseInt(twParts[0]), parseInt(twParts[1])-1, parseInt(twParts[2]));
-      const twSunday = new Date(twMonday); twSunday.setDate(twMonday.getDate() + 6);
-
-      // 全localOverridesを検索
-      for (const ck of Object.keys(localOverrides)) {
-        const added = (localOverrides[ck].added || []);
-        for (const t of added) {
-          if (!t.unit_name || !t.unit_name.includes('グノレブ')) continue;
-          if (t.unit_name.includes('振り返り')) continue;
-
-          // 実際の日付を計算
-          let taskDate = null;
-          if (t._fromDateExact || t.date) {
-            taskDate = new Date(t._fromDateExact || t.date);
-          } else if (t.weekday_index !== undefined) {
-            // 週キー（日曜起点）+ weekday_index+1 = 月〜土
-            const ckParts = ck.split('-');
-            const ckSun = new Date(parseInt(ckParts[0]), parseInt(ckParts[1])-1, parseInt(ckParts[2]));
-            taskDate = new Date(ckSun);
-            taskDate.setDate(ckSun.getDate() + t.weekday_index + 1);
-          }
-
-          if (!taskDate || isNaN(taskDate)) continue;
-
-          // targetWkの月〜日の範囲内か確認
-          if (taskDate >= twMonday && taskDate <= twSunday) {
-            return taskDate;
-          }
-        }
-      }
-
-      // OVERRIDE_DATAも検索
+    const nextMonday = new Date(balanceCheckMonday); nextMonday.setDate(balanceCheckMonday.getDate() + 7);
+    const nextWk = nextMonday.toISOString().slice(0,10);
+    const findGnorev = (wk) => {
+      const wkData = localOverrides[wk] || {};
+      const fromAdded = (wkData.added || []).find(t => t.unit_name && t.unit_name.includes('グノレブ'));
+      if (fromAdded) return new Date(fromAdded._fromDateExact || fromAdded.date || '');
       const fromOverride = OVERRIDE_DATA.find(t => {
         if (!t.unit_name || !t.unit_name.includes('グノレブ')) return false;
-        if (t.unit_name.includes('振り返り')) return false;
         const d = new Date(t.date);
-        return d >= twMonday && d <= twSunday;
+        const dWk = (() => { const x = new Date(d); const dy = x.getDay(); x.setDate(x.getDate() - (dy===0?6:dy-1)); return x.toISOString().slice(0,10); })();
+        return dWk === wk;
       });
       if (fromOverride) return new Date(fromOverride.date);
       return null;
     };
     const gnorevNextWeek = findGnorev(nextWk);
-    console.log('[DEBUG] nextWk:', nextWk, 'gnorevNextWeek:', gnorevNextWeek, 'isPreGnorev:', !!gnorevNextWeek);
     const isPreGnorev = !!gnorevNextWeek;
     const gnorevDow = gnorevNextWeek ? gnorevNextWeek.getDay() : null; // 1=月, 3=水
 
@@ -3912,42 +3837,34 @@ async function runBalanceCheck() {
     prompt += '【チェック対象週】\n';
     prompt += fmt(mon) + '（月）〜' + fmt(sun) + '（日）\n\n';
     // 共通スロットルール（3モード分岐）
-    const slotRule = '【スロットルール（共通）】\n朝(morning)=漢字・基礎力のみ/平日午前(am)不可/月=朝のみ(夜に学校の宿題のみOK・塾居残りなし)/火=朝午後夜/水=朝午後(〜16:00)/木=朝夜(プロタゴ午後OK)/金=朝午後夜/土=朝+午前(am)+午後+夜/日=朝+午前(am)+午後+夜\n【重要】スケジュール中の「午前」はamスロットのこと。土日のamスロットは勉強可能。amスロットに計算マスタ等が記載されている場合は配置済みとして扱うこと。\n計算マスタは土・日それぞれ1回ずつ必要。am・pm・night・morningどのスロットに入っていても配置済みとカウントすること。土曜・日曜それぞれ1回ずつ確認し、どちらか一方に入っていない場合のみ指摘すること。\n塾カード(月夜・水夜)とグノレブカードはルール違反対象外。月夜の学校の宿題はOK。水曜夜は学校の宿題も入れない。夜90分以内。\nグノレブの日の夜は20:20頃に帰宅するため曜日にかかわらず学校の宿題を入れてよい（水曜夜でも可）。グノレブが祝日の場合は朝〜午後まで土日と同じルールを適用。\n土日にサッカーが入っているスロットはサッカー優先。同スロットに勉強カードがある場合は時間競合を指摘。サッカーが入っていない日は勉強の分散を提案する。\n【問題がある場合のみ指摘すること。問題なければそのカテゴリは出力しない。基本のスケジュール通りで特別な予定もない週は、過不足がない限りスケジュール移動を促さない。】\n\n';
+    const slotRule = '【スロットルール（共通）】\n朝(morning)=漢字・基礎力のみ/平日午前(am)不可/月=朝のみ(夜に学校の宿題のみOK・塾居残りなし)/火=朝午後夜/水=朝午後(〜16:30)/木=朝夜(プロタゴ午後OK)/金=朝午後夜/土=朝+午前(am)+夜/日=朝+午前(am)+夜\n【重要】スケジュール中の「午前」はamスロットのこと。土日のamスロットは勉強可能。amスロットに計算マスタ等が記載されている場合は配置済みとして扱うこと。\n計算マスタは土曜amまたはnight・日曜amまたはnight問わず、土曜に1回・日曜に1回入っていればOK。amスロットに入っていても配置済みと判定すること。\n塾カード(月夜・水夜)はルール違反対象外。月夜の学校の宿題はOK。水曜夜は学校の宿題も入れない。夜90分以内。\n土日のサッカーと同スロットに勉強カードがある場合は時間競合の確認を促す（大人が在宅の日は不要）。サッカーが入っていない日は勉強の分散を提案する。\n\n';
     prompt += slotRule;
 
     if (isPreGnorev) {
       const dowLabel = gnorevDow === 3 ? '水' : '月';
       prompt += '【今週のモード: グノレブ前週】翌週' + dowLabel + 'がグノレブ。\n';
+      prompt += '◆ルール: 4教科復習均等/理科基礎力週1回OK/グノチェック不要/算数基礎力・漢字毎朝必須\n\n';
       if (gnorevDow === 3) {
-        prompt += '◆【水曜グノレブ専用・朝ルール絶対厳守】朝スロットは完全無視。通常の漢字+算数基礎力テストのみで正解。朝について何も指摘しないこと。\n◆【漢字復習チェック】前週水曜〜当日水曜の間に「漢字復習1」「漢字復習2」「漢字復習3」の3枚が朝以外のスロット（午後・夜・土日の午前）に1枚ずつ入っているか確認する。平日午前は不可。\n\n';
-      }
-      prompt += '◆ルール: 4教科復習が最優先/理科基礎力テスト週1回OK（週2不要）/グノチェック不要/算数基礎力・漢字毎朝必須\n\n';
-      if (gnorevDow === 3) {
-        prompt += '◆水曜グノレブ前週ベストパターン(7/1実績):\n【朝は全日通常どおり（漢字+基礎力テスト）のみ。漢字間違い復習なし】\n火午後=理科:確認問題+理科:基本のまとめ / 火夜=国語:単元音読+国語:意味調べ+社会:単元音読 / 水午後=理科:復習1+学校の宿題 / 木夜=算数:復習1+理科:復習2 / 金午後=社会:復習前半+理科:復習3 / 金夜=算数:復習2+算数:基礎力復習 / 土午前か午後=サッカー+算数:計算マスタ+国語:言葉復習前半+国語:漢字復習1 / 土夜=学校の宿題+算数:復習3 / 日午前か午後=社会:基礎問題(30分)+算数:復習4(30分)+理科:復習4(30分) / 日夜=学校の宿題+算数:計算マスタ+理科:基礎力テスト / 翌週月=塾のみ / 翌週火朝=国語:漢字復習2 / 翌週火午後=算数:基礎力復習(20分)+国語:言葉後半(15分) / 翌週火夜=社会:後半(30分) / 当日朝=国語:漢字復習3+算数:基礎力テスト\n\n';
-        prompt += '◆水曜グノレブ前週の追加確認:\n・火曜午後に理科:確認問題・理科:基本のまとめが入っているか（水曜塾確認テスト対策）\n・火曜夜に国語:単元音読・意味調べ・社会:単元音読が入っているか\n・「漢字復習1」「漢字復習2」「漢字復習3」の3枚が前週水曜〜当日水曜の間に1枚ずつ入っているか（朝スロット以外・平日午前は不可）\n・【絶対厳守】朝スロットは一切チェックしない。何があっても朝について指摘しないこと\n\n';
+        prompt += '◆水曜グノレブ前週ベストパターン(7/1実績): 火午後=理科復習40分 / 木夜=算数復習30+理科復習30 / 金午後=社会前半30+理科復習30・夜=算数復習40+基礎力復習20 / 土午前=計算マスタ20+国語言葉前半15+漢字復習15・夜=算数復習40 / 日午前=算数復習30+理科復習30・夜=計算マスタ20+理科基礎力15 / 翌週月=塾のみ / 翌週火朝=漢字復習2・午後=算数基礎力復習20+言葉後半15・夜=社会後半20 / 当日朝=漢字のみ\n\n';
+        prompt += '◆水曜グノレブ前週の追加ルール:\n・グノレブ1週間前の水曜に塾の確認テストがあるため、その前日（火曜）の午後に理科:確認問題と理科:基本のまとめを必ず入れる\n・火曜夜は国語:単元音読・国語:意味調べ・社会:単元音読を通常どおり入れる\n\n';
       } else {
-        prompt += '◆月曜グノレブ前週ベストパターン(6/1実績):\n【朝スロット】月〜火=通常どおり(国語:漢字+算数:基礎力テスト) / 水〜日=国語:漢字間違い復習(15分)を通常の漢字と置き換え / 当日朝=国語:漢字+算数:基礎力テストのみ(軽め)\n【それ以外】火夜=社会:復習前半(30分)+国語:言葉復習(30分) / 金午後=社会:復習後半(30分) / 金夜=算数:復習(40分)+理科:復習(30分) / 土夜=算数:復習(40分)+算数:基礎力復習(20分) / 日午前=算数:復習(30分)+理科:復習(30分) / 日夜=算数:計算ルール(15分)+算数:復習(30分) / 当日午後=社会:のみ(軽め・平日の場合は別日に移動)\n\n';
-        prompt += '◆月曜グノレブ前週の追加確認:\n・火曜夜に国語:単元音読・意味調べ・社会:単元音読が入っているか（通常どおり）\n・水〜日の朝に漢字間違い復習15分が入っているか（月・火の朝には不要）\n\n';
+        prompt += '◆月曜グノレブ前週ベストパターン(6/1実績): 火夜=社会前半30+国語言葉30 / 水〜日朝=漢字間違い15 / 金午後=社会後半30・夜=算数復習40+理科復習30 / 土夜=算数復習40+基礎力復習20 / 日午前=算数復習30+理科復習30・夜=計算ルール15+復習30 / 当日午後=社会のみ(軽め)\n\n';
       }
-      const morningNote = gnorevDow === 3
-        ? '【水曜グノレブ前週・朝は完全無視】朝スロットについて何も指摘しない。漢字間違い復習の有無も確認しない。「漢字復習1」「漢字復習2」「漢字復習3」が前週水〜当日水の朝以外スロットに各1枚あるか確認する（平日午前不可）。'
-        : '【月曜グノレブ前週の朝チェック注意】水〜日の朝に漢字間違い復習15分が入っているか確認する。月・火の朝は通常どおりでOK。';
-      prompt += morningNote + '\n\n';
       prompt += '◆チェック観点: 1.スロット違反 2.4教科バランスがベストパターンに近いか 3.負荷過多 4.漢字毎日/算数基礎力毎日 5.アドバイス\n\n';
     } else if (isGnorevWeek) {
       const dowLabel2 = gnorevThisDow === 3 ? '水' : '月';
       const afterLabel = gnorevThisDow === 3 ? '木曜以降' : '火曜以降';
       prompt += '【今週のモード: グノレブ当日週】この週の' + dowLabel2 + 'がグノレブ。\n';
-      prompt += '◆ルール: 当日朝=漢字と基礎力テストのみ/テスト前=詰め込み不要/テスト後(' + afterLabel + ')=振り返りを分散して入れる/算数基礎力・漢字毎朝必須\n【重要】グノレブ当日の夜は20:20頃に帰宅するため学校の宿題を入れてよい。水曜夜の「水曜夜は学校の宿題も不可」ルールはグノレブ当日には適用しない。\n\n';
+      prompt += '◆ルール: 当日朝=漢字のみ/テスト前=詰め込み不要/テスト後(' + afterLabel + ')=振り返り入れる/算数基礎力・漢字毎朝必須\n\n';
       if (gnorevThisDow === 3) {
-        prompt += '◆水曜グノレブ当日週ベストパターン(7/1実績):\n当日朝=国語:漢字復習3+算数:基礎力テスト / 当日夜=学校の宿題 / 翌木夜=算数:振り返り(30分)+算数:Nテキスト+理科:基礎力テスト+学校の宿題 / 翌金午後=社会:単元音読+社会:用語/基礎力確認+理科:グノチェック / 翌金夜=算数:Nテキスト+算数:N家庭学習 / 翌土=理科:グノレブ振り返り+社会:グノレブ振り返り+国語:グノレブ振り返り(理科・社会・国語合計60分) / 振り返り合計=算数30+理科30+国語15+社会15=90分\n\n';
+        prompt += '◆水曜グノレブ当日週ベストパターン(7/1実績): 翌木夜=新単元音読+算数振り返り / 翌土=理科・社会・国語振り返り / 振り返り合計=算数30+理科30+国語15+社会15=90分\n\n';
       } else {
-        prompt += '◆月曜グノレブ当日週ベストパターン(6/1実績):\n当日朝=国語:漢字+算数:基礎力テストのみ(軽め) / 翌火夜=国語:単元音読+国語:意味調べ+社会:単元音読 / 翌火〜日で振り返りを分散: 算数:振り返り(30分)+理科:振り返り(30分)+国語:振り返り(15分)+社会:振り返り(15分)=合計90分\n\n';
+        prompt += '◆月曜グノレブ当日週ベストパターン(6/1実績): 翌火夜=新単元音読 / 翌水午前=全教科振り返り / 振り返り合計=算数30+理科30+国語15+社会15=90分\n\n';
       }
       prompt += '◆チェック観点: 1.スロット違反 2.' + afterLabel + 'の振り返りがベストパターンに近いか 3.テスト前後の負荷バランス 4.漢字毎日/算数基礎力毎日/振り返り90分 5.アドバイス\n\n';
     } else {
-      prompt += '【今週のモード: 通常週】\n算数:朝基礎力/木金夜Nテキスト/金土夜N家庭/計算マスタ=土曜と日曜の両方に1回ずつ必要(スロット不問) 国語:朝漢字/単元音読週1 理科:基礎力週2(木土)/金グノチェック 社会:単元音読優先\n\n';
-      prompt += '◆チェック観点:\n1. ルール違反: スロット違反（平日午前・月午後夜・水夜・木午後）がないか\n2. 負荷・バランス: 特定の日に集中しすぎ/夜90分超（いつもより明らかに多い・少ない場合のみ指摘）\n3. 確認: 漢字毎日/算数基礎力毎日/理科基礎力週2回/国語単元音読週1（不足時のみ指摘）\n4. アドバイス: 明確な改善点がある場合のみ\n\n';
+      prompt += '【今週のモード: 通常週】\n算数:朝基礎力/木金夜Nテキスト/金土夜N家庭/計算マスタ=土曜と日曜の両方に1回ずつ入っていればOK(スロット問わず・どのスロットでもよい) 国語:朝漢字/単元音読週1 理科:基礎力週2(木土)/金グノチェック 社会:単元音読優先\n計算マスタが土日のいずれかに入っていない場合のみ指摘。両日に入っていれば問題なし。\n\n';
+      prompt += '◆チェック観点:\n1. ルール違反: スロット違反（平日午前・月午後夜・水夜・木午後）がないか\n2. 負荷・バランス: 特定の日に集中しすぎ/夜90分超/教科の偏り\n3. 確認OK: 漢字毎日/算数基礎力毎日/理科基礎力週2回/国語単元音読週1\n4. アドバイス: 改善提案\n\n';
     }
 
     prompt += '【この週のスケジュール】\n' + scheduleSummary + '\n\n';
@@ -3966,7 +3883,7 @@ async function runBalanceCheck() {
     prompt += '    }\n';
     prompt += '  ]\n';
     prompt += '}\n';
-    prompt += '問題がなければそのカテゴリのitemsは出力しない。全て問題なければitemsは[{"category":"確認OK","date":"-","slot":"-","subject":"-","detail":"バランスよく組めています！"}]のみ。\n';
+    prompt += '問題なければitemsは[{"category":"確認OK","date":"-","slot":"-","subject":"-","detail":"バランスよく組めています！"}]のみ。\n';
     prompt += 'detailの中でカード名・タスク名を引用するときは必ず「」で囲むこと（例:「計算マスタ」「言葉 復習前半」）。\n';
     prompt += '【書き方ルール】\n';
     prompt += '・結論から先に書く（例:「計算マスタ」未配置→土曜夜か日曜に追加を）\n';
@@ -3994,15 +3911,10 @@ async function runBalanceCheck() {
     // JSONパース（コードブロック除去してから）
     let parsed = null;
     try {
-      // コードブロック・前後の余計なテキストを除去
-      let cleaned = replyText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-      // {...}ブロックを抽出（最長マッチ）
+      const cleaned = replyText.replace(/```json|```/g, '').trim();
       const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
       if (jsonMatch) parsed = JSON.parse(jsonMatch[0]);
-    } catch(e2) {
-      // パース失敗時は再度試行（全体をそのままパース）
-      try { parsed = JSON.parse(replyText.trim()); } catch(e3) { parsed = null; }
-    }
+    } catch(e2) { parsed = null; }
 
     const resultDiv = document.createElement('div');
     resultDiv.style.cssText = 'width:100%;padding:4px 0;';
@@ -4048,7 +3960,7 @@ async function runBalanceCheck() {
         if (!simpleMode) {
           const thead = document.createElement('tr');
           thead.style.cssText = 'background:' + st.bg + ';';
-          [['日付','20%'],['スロット','15%'],['内容','65%']].forEach(([h,w]) => {
+          [['日付','20%'],['スロット','15%'],['科','10%'],['内容','55%']].forEach(([h,w]) => {
             const th = document.createElement('th');
             th.style.cssText = 'padding:5px 6px;text-align:left;color:#888;font-weight:600;border-bottom:1px solid ' + st.border + ';width:' + w + ';';
             th.textContent = h;
@@ -4063,29 +3975,15 @@ async function runBalanceCheck() {
           if (simpleMode) {
             const td = document.createElement('td');
             td.style.cssText = 'padding:6px 8px;color:#444;line-height:1.5;';
-            const datePrefix = (item.date && item.date !== '-') ? item.date + ' ' : '';
-            td.textContent = '・' + datePrefix + (item.detail || '');
+            td.textContent = '・' + (item.detail || '');
             tr.appendChild(td);
           } else {
-            // 実際のスケジュールデータからカード名→色を引くルックアップを構築
-            // 実際のスケジュールタスク一覧を取得（色の参照用）
-            const allWeekTasks = getTasksForWeek(balanceCheckMonday);
-            // item.date と item.slot からその行のタスク群を返す関数
-            const getTasksForRow = (dateStr, slotStr) => {
-              const SLOT_MAP = {'朝':'morning','午前':'am','午後':'pm','夜':'night'};
-              const slot = SLOT_MAP[slotStr] || slotStr;
-              return allWeekTasks.filter(t => {
-                const mon2 = new Date(balanceCheckMonday);
-                const dt = new Date(mon2); dt.setDate(mon2.getDate() + (t._dayIdx||0));
-                const DAY2 = ['日','月','火','水','木','金','土'];
-                const ds = (dt.getMonth()+1) + '/' + dt.getDate() + '(' + DAY2[dt.getDay()] + ')';
-                return ds === dateStr && t.slot === slot;
-              });
-            };
-            const cardColorMap = null; // 後でitem.dateごとに動的に引く
+            const subjColor = SUBJ_COLOR[item.subject] || '';
+            const subjShort = {'算数':'算','国語':'国','理科':'理','社会':'社','予定':'予','習い事':'習'};
             [
               {val: item.date||'-',    style:'padding:5px 4px;color:#555;white-space:nowrap;'},
               {val: item.slot||'-',    style:'padding:5px 4px;color:#555;white-space:nowrap;'},
+              {val: (subjShort[item.subject]||item.subject||'-'), style:'padding:5px 4px;text-align:center;', badge: subjColor && item.subject !== '-'},
               {val: item.detail||'-',  style:'padding:5px 4px;color:#333;line-height:1.5;', isDetail: true},
             ].forEach(c => {
               const td = document.createElement('td');
@@ -4116,33 +4014,26 @@ async function runBalanceCheck() {
                   // 1. 「教科:カード名」形式はコロン前の教科を最優先
                   const colonMatch = cardName.match(/^(算数|国語|理科|社会|学校)[：:]/);
                   if (colonMatch) return getCardColorBySubject(colonMatch[1]);
-                  // 2. カード名のキーワードで教科を判定
-                  if (/グノチェック|確認問題|基本のまとめ|理科基礎力/.test(cardName)) return '#B6EBB0';
-                  if (/Nテキスト|N家庭|T確認テスト|計算マスタ|計算ルール|基礎力テスト|基礎力復習/.test(cardName)) return '#C1E8FB';
-                  if (/漢字|言葉|意味調べ|ことわざ/.test(cardName)) return '#F2B9E4';
+                  // 2. カード名のキーワードで教科を判定（行の教科より優先）
+                  if (/グノチェック|確認問題|基本のまとめ|理科基礎力|理科.*復習|復習.*理科/.test(cardName)) return '#B6EBB0';
+                  if (/用語.*確認|基礎力確認|社会.*復習|復習.*社会|歴史|鎌倉|室町|単元音読.*社会/.test(cardName)) return '#F9DB82';
+                  if (/Nテキスト|N家庭|T確認テスト|計算マスタ|計算ルール|算数.*復習|復習.*算数|基礎力テスト|基礎力復習/.test(cardName)) return '#C1E8FB';
+                  if (/漢字|言葉|単元音読|意味調べ|ことわざ|国語.*復習|復習.*国語/.test(cardName)) return '#F2B9E4';
                   if (/学校の宿題|宿題/.test(cardName)) return '#E8E8E8';
                   if (/塾|プロタゴ|サッカー/.test(cardName)) return '#D6C3AA';
                   if (/グノレブ|テスト振り返り/.test(cardName)) return '#fce4f8';
-                  return '';
+                  // 3. 最後に行の教科色にフォールバック
+                  return SUBJ_COLOR2[item.subject] || '';
                 };
                 // 「」や『』で囲まれた語句、またはカード名っぽい語句をバッジに変換
-                const renderDetailWithBadges = (text, colorMap, rowDateStr) => {
+                const renderDetailWithBadges = (text) => {
                   const frag = document.createDocumentFragment();
-                  // 実際のスケジュールデータから色を引く（日付+カード名を優先）
-                  const getColorFromMap = (name) => {
-                    if (colorMap) {
-                      const dateKey = rowDateStr + '|' + name;
-                      if (colorMap[dateKey]) return colorMap[dateKey];
-                      if (colorMap[name]) return colorMap[name];
-                    }
-                    return getCardColor(name);
-                  };
                   // 「〇〇」 パターンを検出
                   const parts = text.split(/(「[^」]+」)/g);
                   parts.forEach(part => {
                     if (part.startsWith('「') && part.endsWith('」')) {
                       const name = part.slice(1, -1);
-                      const color = getColorFromMap(name);
+                      const color = getCardColor(name);
                       if (color) {
                         const sp = document.createElement('span');
                         sp.style.cssText = 'background:' + color + ';border-radius:4px;padding:1px 5px;font-size:16px;font-weight:700;display:inline-block;margin:1px 2px;white-space:nowrap;';
@@ -4168,7 +4059,7 @@ async function runBalanceCheck() {
                         if (idx >= 0) {
                           if (idx > 0) node.appendChild(document.createTextNode(remaining.slice(0, idx)));
                           const sp = document.createElement('span');
-                          const color = getColorFromMap(kw);
+                          const color = getCardColor(kw);
                           sp.style.cssText = 'background:' + (color||'#eee') + ';border-radius:4px;padding:1px 5px;font-size:16px;font-weight:700;display:inline-block;margin:1px 2px;white-space:nowrap;';
                           sp.textContent = kw;
                           node.appendChild(sp);
@@ -4181,10 +4072,7 @@ async function runBalanceCheck() {
                   });
                   return frag;
                 };
-                const rowTasks = getTasksForRow(item.date||'', item.slot||'');
-                const rowColorMap = {};
-                rowTasks.forEach(t => { if(t.unit_name) rowColorMap[t.unit_name] = t._aiSuggest ? '#dab3ff' : (t.color||'#eee'); });
-                td.appendChild(renderDetailWithBadges(c.val, rowColorMap, item.date||''));
+                td.appendChild(renderDetailWithBadges(c.val));
               } else {
                 td.textContent = c.val;
               }
@@ -4267,16 +4155,6 @@ async function sendRuleChatMessage() {
   });
 
   var sp = 'あなたはK-studyのAIアシスタントです。こうたくん（小5）のお母さんからルールの確認・変更・相談を受けます。\n\n' +
-    '【基本スロットルール】\n' +
-    '朝(morning)=漢字・基礎力のみ / 平日午前(am)不可 / 月=朝のみ（夜は学校の宿題のみOK） / 火=朝・午後・夜 / 水=朝・午後（〜16:00） / 木=朝・夜 / 金=朝・午後・夜 / 土=朝・午前・午後・夜 / 日=朝・午前・午後・夜\n' +
-    '夜は合計90分以内。塾カード（月夜・水夜）とグノレブカードはルール違反対象外。\n' +
-    'グノレブの日の夜は20:20帰宅のため学校の宿題OK。グノレブが祝日の場合は朝〜午後まで土日ルール。\n' +
-    'サッカーが入っているスロットはサッカー優先（同スロットに勉強があれば時間競合を確認）。\n' +
-    '計算マスタは土・日それぞれ1回ずつ必要（スロット不問）。\n\n' +
-    '【グノレブ振り返り配分】\n' +
-    '合計90分: 算数30分 / 理科30分 / 国語15分 / 社会15分\n' +
-    '水曜グノレブ → 翌木夜=算数振り返り / 翌金午後=新単元音読 / 翌土=理科・社会・国語振り返り\n' +
-    '月曜グノレブ → 翌火夜=新単元音読 / 翌火〜日で振り返りを分散\n\n' +
     '【現在のルール（Firestoreから読み込み済み）】\n' +
     '塾の曜日: ' + rules.juku_days.join('・') + '\n' +
     '塾終了予定: ' + rules.juku_end + '\n' +
@@ -4878,20 +4756,16 @@ async function confirmGnorevWithAI(dateStr, range, testDate, dow) {
 起床6:00〜6:30、就寝22:30目標 / 登校8:00、帰宅15:00〜15:45
 塾: 月曜・水曜（16:30出発、17:00〜21:00、帰宅後勉強なし）
 木曜: プロタゴ（プログラミング）16:50〜18:00
-土曜サッカー: 7:30〜9:00 / 15:30〜18:00
-日曜サッカー: 12:00〜13:30 / 15:30〜18:00
+土曜サッカー: 7:30〜9:00 / 15:30〜18:00（午後スロット使用不可）
+日曜サッカー: 12:00〜13:30 / 15:30〜18:00（午後スロット使用不可）
 
 【曜日別勉強可能スロット】
-朝(morning)=漢字・基礎力のみ / 平日午前(am)不可 / 月=朝のみ（夜は学校の宿題のみOK） / 火=朝・午後・夜 / 水=朝・午後（〜16:00） / 木=朝・夜（プロタゴ午後OK） / 金=朝・午後・夜 / 土=朝・午前(am)・午後・夜 / 日=朝・午前(am)・午後・夜
-サッカーが入っているスロットはサッカー優先。同スロットに勉強を入れる場合は時間競合に注意。
-グノレブの日の夜は20:20頃に帰宅するため学校の宿題を入れてよい。
-グノレブが祝日の場合は朝〜午後まで土日と同じルール。
 \${slotsText}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
 【教科別ルール】
 算数: \${rules.subject_priority && rules.subject_priority['算数'] ? rules.subject_priority['算数'] : '毎朝基礎力テスト必須'}
-　週間詳細: 木金夜=Nテキスト / 金土夜=N家庭学習 / 土日=計算マスタ各1回・計算ルール土日どちらか / 日曜夜=N間違い直し（翌月テスト前）
+　週間詳細: 木金夜=Nテキスト / 金土夜=N家庭学習 / 土日午前=計算マスタ+計算ルール分割 / 日曜夜=N間違い直し（翌月テスト前）
 国語: \${rules.subject_priority && rules.subject_priority['国語'] ? rules.subject_priority['国語'] : '漢字毎日15分'}
 　※毎朝「漢字15分」は固定タスクで既存。追加不要
 理科: \${rules.subject_priority && rules.subject_priority['理科'] ? rules.subject_priority['理科'] : ''}
@@ -4904,8 +4778,8 @@ async function confirmGnorevWithAI(dateStr, range, testDate, dow) {
 【グノレブ後の解き直し配分（テスト翌日以降）】
 合計90分: 算数30分 / 理科30分 / 国語15分 / 社会15分
 振り返りタイミング目安:
-  水曜グノレブ → 翌木夜=算数振り返り / 翌金午後=新単元音読 / 翌土=理科・社会・国語振り返り
-  月曜グノレブ → 翌火夜=新単元音読 / 翌火〜日で振り返りを分散（合計90分）
+  水曜グノレブ → 翌木に算数振り返り+新単元音読 / 翌土に理科・社会・国語振り返り
+  月曜グノレブ → 翌火に新単元音読 / 翌水午前に全教科振り返り
 
 【ベストパターン実績（参考）】
 \${patternText}
@@ -4928,8 +4802,8 @@ async function confirmGnorevWithAI(dateStr, range, testDate, dow) {
 
 【必須制約】
 - 月・水の夜スロットは追加しない（塾帰り）
-- 土日にサッカーが入っているスロットはサッカー優先（同スロットへの追加は時間競合に注意）
-- グノレブ当日の朝は漢字と基礎力テストのみ（固定タスクで既存。追加不要）
+- 土日の午後スロット（pm）は追加しない（サッカー）
+- グノレブ当日は morningスロットのみ・軽め（漢字確認程度1件まで）
 - 毎朝の漢字・算数基礎力テストは追加しない（固定タスクで既存）
 - テスト後の振り返りカードも必ず含める
 
@@ -5839,32 +5713,6 @@ function buildScheduleSummary(targetMonday, weeksCount) {
         if (item._dayIdx !== d) return;
         if (item.is_hidden === 'yes') return;
         dayItems.push({slot: item.slot, subject: item.subject, unit: item.unit_name, time: item.study_time});
-      });
-
-      // weeklyMoves: 移動先タスクをこの曜日に追加
-      const activeMoves = (localOverrides.weeklyMoves || []).filter(mv =>
-        !mv.fromDate || wk >= mv.fromDate
-      );
-      activeMoves.forEach(mv => {
-        if (mv.toDay !== d) return;
-        if (localHidden[mv.moveUid + '_' + d]) return;
-        const origTask = RAW_DATA.find(t => t.uid === mv.origUid)
-          || (localOverrides.weeklyMovesTasks || []).find(t => t.uid === mv.origUid);
-        if (!origTask) return;
-        dayItems.push({slot: mv.toSlot, subject: origTask.subject, unit: origTask.unit_name, time: origTask.study_time});
-      });
-
-      // weeklyAdded: one_time→weeklyに変換されたタスク
-      (localOverrides.weeklyAdded || []).forEach(t => {
-        if (t.fromDate && wk < t.fromDate) return;
-        if (t.toDate && wk > t.toDate) return;
-        if (t._rrKind === 'monthly' && t._monthDay) {
-          if (dt.getDate() !== t._monthDay) return;
-        } else {
-          if (t.weekday_index !== d) return;
-        }
-        if (localHidden[t.uid + '_' + d]) return;
-        dayItems.push({slot: t.slot, subject: t.subject, unit: t.unit_name, time: t.study_time});
       });
 
       if (dayItems.length > 0) {
