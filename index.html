@@ -3857,23 +3857,28 @@ async function runBalanceCheck() {
               return taskWk === wk;
             }
           }
-          // 日付情報がない場合は_dayIdxと週キーから計算
-          if (t._dayIdx !== undefined) {
-            const candidateWkDate = new Date(candidateWk + 'T00:00:00');
-            const taskDate = new Date(candidateWkDate);
-            taskDate.setDate(candidateWkDate.getDate() + t._dayIdx);
-            const taskWk = (() => { const x = new Date(taskDate); const dy = x.getDay(); x.setDate(x.getDate() - (dy===0?6:dy-1)); const jst = new Date(x.getTime()+9*60*60*1000); return jst.toISOString().slice(0,10); })();
+          // 日付情報がない場合はweekday_indexと週キーから計算
+          // weekday_index: 0=月,1=火,2=水,3=木,4=金,5=土,6=日
+          if (t.weekday_index !== undefined) {
+            // 週キー（日曜起点）からweekday_indexで実際の日付を計算
+            // 週キーの日曜日 + (weekday_index+1)日 = 月〜土
+            const wkSunday = new Date(candidateWk + 'T00:00:00');
+            const taskDate = new Date(wkSunday);
+            taskDate.setDate(wkSunday.getDate() + t.weekday_index + 1);
+            const taskWkMonday = new Date(taskDate);
+            const dy = taskDate.getDay();
+            taskWkMonday.setDate(taskDate.getDate() - (dy===0?6:dy-1));
+            const taskWk = (() => { const jst = new Date(taskWkMonday.getTime()+9*60*60*1000); return jst.toISOString().slice(0,10); })();
             if (taskWk === wk) return true;
           }
           return false;
         });
         if (fromAdded) {
-          // 返却する日付を_dayIdxから計算
           if (fromAdded._fromDateExact || fromAdded.date) return new Date(fromAdded._fromDateExact || fromAdded.date);
-          if (fromAdded._dayIdx !== undefined) {
-            const candidateWkDate = new Date(candidateWk + 'T00:00:00');
-            const d = new Date(candidateWkDate);
-            d.setDate(candidateWkDate.getDate() + fromAdded._dayIdx);
+          if (fromAdded.weekday_index !== undefined) {
+            const wkSunday = new Date(candidateWk + 'T00:00:00');
+            const d = new Date(wkSunday);
+            d.setDate(wkSunday.getDate() + fromAdded.weekday_index + 1);
             return d;
           }
         }
