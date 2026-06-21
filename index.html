@@ -3833,9 +3833,10 @@ async function runBalanceCheck() {
     // グノレブ前週かどうかを判定（翌週にグノレブがあるか）
     // wkと同じ方式：wkの日付文字列に7日加算
     const nextWk = (() => {
-      const d = new Date(wk + 'T00:00:00');
-      d.setDate(d.getDate() + 7);
-      return d.toISOString().slice(0,10);
+      // wkをそのまま分解して7日加算（タイムゾーン変換なし）
+      const parts = wk.split('-');
+      const d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2])+7);
+      return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
     })();
     const findGnorev = (wk) => {
       // wkキーの前後7日分も検索（週キーのずれに対応）
