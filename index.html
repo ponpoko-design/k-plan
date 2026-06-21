@@ -3618,6 +3618,7 @@ async function runMissedCheck(isPreGnorev, isGnorevWeek, gnorevDow, gnorevThisDo
       ? '朝スロット全て（水曜グノレブ前週は朝スロット比較禁止） / '
       : '';
     missedPrompt += '\n\n除外OK: ' + morningExclude + '漢字・算数基礎力テストなど毎朝固定タスク / 塾・サッカー・プロタゴ / 学校の宿題\n';
+    missedPrompt += '\n【重要】ベスト週と同じ内容が入っている場合は一切出力しない。問題がある（不足・欠落・違う）場合のみ出力する。「OKです」「問題なし」「入っています」などの確認コメントは一切出力しない。差分がなければ空配列[]を返す。\n';
     missedPrompt += '\n最初の文字は { 最後の文字は } であること。コードブロック禁止。\n';
     missedPrompt += 'JSON配列のみ返す:\n[{"date":"6/25(木)など or -","slot":"朝/午前/午後/夜","subject":"算数/国語/理科/社会","best":"ベスト週の状況1行","current":"この週の状況1行","detail":"内容1行"}]';
 
