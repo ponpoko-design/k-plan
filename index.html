@@ -8,6 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>K-study</title>
 <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&family=Inter:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Zen Maru Gothic','Hiragino Sans','Yu Gothic UI',sans-serif;}
 :root{
@@ -232,11 +233,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
         <!-- 上段：提案 -->
         <button onclick="closeAIModal();openGnorevModal();" style="flex:1;width:100%;border:none;border-radius:12px;background:#EDE9FD;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:14px;padding:0 18px;text-align:left;transition:opacity .15s;box-sizing:border-box;" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
           <div style="width:40px;height:40px;border-radius:11px;background:#CEC9F6;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3C3489" stroke-width="1.8"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <i class="ti ti-sparkles" style="font-size:22px;color:#3C3489;" aria-hidden="true"></i>
           </div>
           <div style="flex:1;min-width:0;">
-            <div style="font-size:15px;font-weight:500;color:#26215C;">スケジュールを提案する</div>
-            <div style="font-size:11px;color:#534AB7;margin-top:3px;opacity:.8;">グノレブ前後 / 塾休み / 課題学習</div>
+            <div style="font-size:17px;font-weight:500;color:#26215C;">スケジュールを提案する</div>
+            <div style="font-size:13px;color:#534AB7;margin-top:3px;opacity:.8;">グノレブ前後 / 塾休み / 課題学習</div>
           </div>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7F77DD" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
@@ -247,8 +248,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#72243E" stroke-width="1.8"><path d="M1 12S5 5 12 5s11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
           </div>
           <div style="flex:1;min-width:0;">
-            <div style="font-size:15px;font-weight:500;color:#4B1528;">全体バランスをチェック</div>
-            <div style="font-size:11px;color:#993556;margin-top:3px;opacity:.8;">今週のスケジュールを確認</div>
+            <div style="font-size:17px;font-weight:500;color:#4B1528;">全体バランスをチェック</div>
+            <div style="font-size:13px;color:#993556;margin-top:3px;opacity:.8;">今週のスケジュールを確認</div>
           </div>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D4537E" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
@@ -260,8 +261,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#27500A" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
             </div>
             <div style="flex:1;min-width:0;">
-              <div style="font-size:13px;font-weight:500;color:#173404;">写真から入力</div>
-              <div style="font-size:10px;color:#3B6D11;margin-top:2px;opacity:.8;">塾カード</div>
+              <div style="font-size:15px;font-weight:500;color:#173404;line-height:1.3;">写真から<br>入力</div>
             </div>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3B6D11" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
           </button>
@@ -270,8 +270,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0C447C" stroke-width="1.8"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
             </div>
             <div style="flex:1;min-width:0;">
-              <div style="font-size:13px;font-weight:500;color:#042C53;">ルール確認</div>
-              <div style="font-size:10px;color:#185FA5;margin-top:2px;opacity:.8;">相談</div>
+              <div style="font-size:15px;font-weight:500;color:#042C53;line-height:1.3;">ルール<br>確認</div>
             </div>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
           </button>
@@ -372,7 +371,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
   </style>
   <div id="balanceCheckPanel">
     <div id="balanceCheckResizeHandle"></div>
-    <div style="background:#d4609e;padding:12px 14px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;" id="balanceCheckPanelHdr">
+    <div style="background:#993556;padding:12px 14px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;" id="balanceCheckPanelHdr">
       <div style="display:flex;align-items:center;gap:8px;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12S5 5 12 5s11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
         <span style="font-size:14px !important;font-weight:700;color:white;line-height:1.3;">全体バランスチェック</span>
@@ -401,7 +400,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
   <!-- ルール確認・相談チャットモーダル -->
   <div class="modal-bg" id="ruleChatModal" style="z-index:210;">
     <div class="modal" style="width:min(420px,96vw);height:min(680px,92dvh);display:flex;flex-direction:column;">
-      <div class="modal-hdr" style="background:#1a2744;padding:16px 20px;flex-shrink:0;">
+      <div class="modal-hdr" style="background:#185FA5;padding:16px 20px;flex-shrink:0;">
         <div style="display:flex;align-items:center;gap:10px;">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
           <span style="font-size:17px;font-weight:700;">ルール確認・相談</span>
@@ -439,7 +438,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 
   <div class="modal-bg" id="imageImportModal" style="z-index:210;">
     <div class="modal" style="width:min(440px,96vw);max-height:90vh;">
-      <div class="modal-hdr" style="background:#1a2744;">
+      <div class="modal-hdr" style="background:#3B6D11;">
         <div style="display:flex;align-items:center;gap:8px;">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
           <span>画像から予定を自動入力</span>
@@ -599,7 +598,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 
   <!-- グノレブ予定モーダル -->  <div class="modal-bg" id="gnorevModal" style="z-index:200;">
     <div class="modal" style="width:min(420px,96vw);">
-      <div class="modal-hdr" style="background:#9b59b6;">
+      <div class="modal-hdr" style="background:#534AB7;">
         <span>グノレブの予定を組む</span>
         <button class="modal-close" ontouchend="event.preventDefault();closeGnorevModal();" onclick="closeGnorevModal()">×</button>
       </div>
@@ -3527,6 +3526,7 @@ function openBalanceCheckModal() {
 function closeBalanceCheckModal() {
   document.getElementById('balanceCheckPanel').classList.remove('open');
   updateFloatingClose();
+  openAIModal();
 }
 
 // フローティングパネルのドラッグ移動
@@ -4590,7 +4590,6 @@ function closeImageImportModal() {
   _pendingParsed = null;
   openAIModal();
 }
-
 function previewImgMulti(input, containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
