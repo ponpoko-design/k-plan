@@ -2,6 +2,9 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>K-study</title>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -4061,7 +4064,8 @@ async function runBalanceCheck() {
           if (simpleMode) {
             const td = document.createElement('td');
             td.style.cssText = 'padding:6px 8px;color:#444;line-height:1.5;';
-            td.textContent = '・' + (item.detail || '');
+            const datePrefix = (item.date && item.date !== '-') ? item.date + ' ' : '';
+            td.textContent = '・' + datePrefix + (item.detail || '');
             tr.appendChild(td);
           } else {
             // 実際のスケジュールデータからカード名→色を引くルックアップを構築
@@ -4069,7 +4073,9 @@ async function runBalanceCheck() {
               const map = {};
               const allTasks = getTasksForWeek(balanceCheckMonday);
               allTasks.forEach(t => {
-                if (t.unit_name && t.color) map[t.unit_name] = t.color;
+                if (t.unit_name) {
+                  map[t.unit_name] = t._aiSuggest ? '#dab3ff' : (t.color || '#eee');
+                }
               });
               return map;
             };
