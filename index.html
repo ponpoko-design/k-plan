@@ -3865,15 +3865,19 @@ async function runBalanceCheck() {
           // 日付情報がない場合はweekday_indexと週キーから計算
           // weekday_index: 0=月,1=火,2=水,3=木,4=金,5=土,6=日
           if (t.weekday_index !== undefined) {
-            // 週キー（日曜起点）からweekday_indexで実際の日付を計算
-            // 週キーの日曜日 + (weekday_index+1)日 = 月〜土
-            const wkSunday = new Date(candidateWk + 'T00:00:00');
+            // 週キー（日曜起点）+ weekday_index+1日 = 実際の日付
+            const ckParts = candidateWk.split('-');
+            const wkSunday = new Date(parseInt(ckParts[0]), parseInt(ckParts[1])-1, parseInt(ckParts[2]));
             const taskDate = new Date(wkSunday);
             taskDate.setDate(wkSunday.getDate() + t.weekday_index + 1);
+            // taskDateの月曜日を計算（JS: getDay()=0は日曜）
+            const jsDay = taskDate.getDay(); // 0=日,1=月,...,6=土
+            const daysToMon = jsDay === 0 ? 6 : jsDay - 1;
             const taskWkMonday = new Date(taskDate);
-            const dy = taskDate.getDay();
-            taskWkMonday.setDate(taskDate.getDate() - (dy===0?6:dy-1));
-            const taskWk = (() => { const jst = new Date(taskWkMonday.getTime()+9*60*60*1000); return jst.toISOString().slice(0,10); })();
+            taskWkMonday.setDate(taskDate.getDate() - daysToMon);
+            const taskWk = taskWkMonday.getFullYear() + '-' +
+              String(taskWkMonday.getMonth()+1).padStart(2,'0') + '-' +
+              String(taskWkMonday.getDate()).padStart(2,'0');
             if (taskWk === wk) return true;
           }
           return false;
@@ -3881,7 +3885,8 @@ async function runBalanceCheck() {
         if (fromAdded) {
           if (fromAdded._fromDateExact || fromAdded.date) return new Date(fromAdded._fromDateExact || fromAdded.date);
           if (fromAdded.weekday_index !== undefined) {
-            const wkSunday = new Date(candidateWk + 'T00:00:00');
+            const ckParts = candidateWk.split('-');
+            const wkSunday = new Date(parseInt(ckParts[0]), parseInt(ckParts[1])-1, parseInt(ckParts[2]));
             const d = new Date(wkSunday);
             d.setDate(wkSunday.getDate() + fromAdded.weekday_index + 1);
             return d;
