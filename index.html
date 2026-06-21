@@ -4096,30 +4096,30 @@ async function runBalanceCheck() {
                   if (/グノレブ|テスト/.test(subjectName)) return '#fce4f8';
                   return '';
                 };
-                const getCardColor = (cardName) => {
+                const getCardColor = (cardName, subjectHint) => {
                   // 1. 「教科:カード名」形式はコロン前の教科を最優先
                   const colonMatch = cardName.match(/^(算数|国語|理科|社会|学校)[：:]/);
                   if (colonMatch) return getCardColorBySubject(colonMatch[1]);
-                  // 2. カード名のキーワードで教科を判定（行の教科より優先）
-                  if (/グノチェック|確認問題|基本のまとめ|理科基礎力|理科.*復習|復習.*理科/.test(cardName)) return '#B6EBB0';
-                  if (/用語.*確認|基礎力確認|社会.*復習|復習.*社会|歴史|鎌倉|室町|単元音読.*社会/.test(cardName)) return '#F9DB82';
-                  if (/Nテキスト|N家庭|T確認テスト|計算マスタ|計算ルール|算数.*復習|復習.*算数|基礎力テスト|基礎力復習/.test(cardName)) return '#C1E8FB';
-                  if (/漢字|言葉|単元音読|意味調べ|ことわざ|国語.*復習|復習.*国語/.test(cardName)) return '#F2B9E4';
+                  // 2. subjectHint（行の教科）が明確な場合はそれを優先
+                  if (subjectHint && SUBJ_COLOR2[subjectHint]) return SUBJ_COLOR2[subjectHint];
+                  // 3. カード名のキーワードで教科を判定（subjectHintがない場合のみ）
+                  if (/グノチェック|確認問題|基本のまとめ|理科基礎力/.test(cardName)) return '#B6EBB0';
+                  if (/Nテキスト|N家庭|T確認テスト|計算マスタ|計算ルール|基礎力テスト|基礎力復習/.test(cardName)) return '#C1E8FB';
+                  if (/漢字|言葉|意味調べ|ことわざ/.test(cardName)) return '#F2B9E4';
                   if (/学校の宿題|宿題/.test(cardName)) return '#E8E8E8';
                   if (/塾|プロタゴ|サッカー/.test(cardName)) return '#D6C3AA';
                   if (/グノレブ|テスト振り返り/.test(cardName)) return '#fce4f8';
-                  // 3. 最後に行の教科色にフォールバック
-                  return SUBJ_COLOR2[item.subject] || '';
+                  return '';
                 };
                 // 「」や『』で囲まれた語句、またはカード名っぽい語句をバッジに変換
-                const renderDetailWithBadges = (text) => {
+                const renderDetailWithBadges = (text, rowSubject) => {
                   const frag = document.createDocumentFragment();
                   // 「〇〇」 パターンを検出
                   const parts = text.split(/(「[^」]+」)/g);
                   parts.forEach(part => {
                     if (part.startsWith('「') && part.endsWith('」')) {
                       const name = part.slice(1, -1);
-                      const color = getCardColor(name);
+                      const color = getCardColor(name, rowSubject);
                       if (color) {
                         const sp = document.createElement('span');
                         sp.style.cssText = 'background:' + color + ';border-radius:4px;padding:1px 5px;font-size:16px;font-weight:700;display:inline-block;margin:1px 2px;white-space:nowrap;';
@@ -4145,7 +4145,7 @@ async function runBalanceCheck() {
                         if (idx >= 0) {
                           if (idx > 0) node.appendChild(document.createTextNode(remaining.slice(0, idx)));
                           const sp = document.createElement('span');
-                          const color = getCardColor(kw);
+                          const color = getCardColor(kw, rowSubject);
                           sp.style.cssText = 'background:' + (color||'#eee') + ';border-radius:4px;padding:1px 5px;font-size:16px;font-weight:700;display:inline-block;margin:1px 2px;white-space:nowrap;';
                           sp.textContent = kw;
                           node.appendChild(sp);
@@ -4158,7 +4158,7 @@ async function runBalanceCheck() {
                   });
                   return frag;
                 };
-                td.appendChild(renderDetailWithBadges(c.val));
+                td.appendChild(renderDetailWithBadges(c.val, item.subject));
               } else {
                 td.textContent = c.val;
               }
