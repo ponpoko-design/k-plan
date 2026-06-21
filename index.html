@@ -4616,7 +4616,17 @@ async function runImageAnalysis(mode) {
     const socFiles = Array.from((document.getElementById('socImgInput').files) || []);
 
     async function filesToB64(files) {
-      return Promise.all(files.map(async f => ({ b64: await fileToBase64(f), type: f.type || 'image/jpeg' })));
+      return Promise.all(files.map(async f => {
+        const b64 = await fileToBase64(f);
+        // 先頭バイトから実際のMIMEタイプを判定
+        const binary = atob(b64.slice(0, 16));
+        let type = 'image/jpeg'; // デフォルト
+        if (binary.charCodeAt(0) === 0x89 && binary.charCodeAt(1) === 0x50) type = 'image/png';
+        else if (binary.charCodeAt(0) === 0xFF && binary.charCodeAt(1) === 0xD8) type = 'image/jpeg';
+        else if (binary.slice(0,4) === 'GIF8') type = 'image/gif';
+        else if (binary.charCodeAt(0) === 0x52 && binary.charCodeAt(1) === 0x49) type = 'image/webp';
+        return { b64, type };
+      }));
     }
     const calImgs = await filesToB64(calFiles);
     const mathImgs = await filesToB64(mathFiles);
