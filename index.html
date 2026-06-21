@@ -469,6 +469,35 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
       <div class="modal-body" style="padding:20px 18px;">
         <div style="font-size:13px;color:#666;margin-bottom:16px;line-height:1.6;">複数枚まとめて選べます。AIが読み取って塾の予定・単元名を自動で入力します。</div>
 
+        <!-- 対象期間 -->
+        <div style="margin-bottom:18px;background:#f0f2f8;border-radius:10px;padding:12px 14px;">
+          <div style="font-size:13px;font-weight:700;color:#1a2744;margin-bottom:10px;">📅 カレンダーの対象期間</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:4px;">
+              <select id="imgFromYear" style="border:1.5px solid #ddd;border-radius:7px;padding:6px 8px;font-size:14px;font-family:inherit;background:white;color:#1a2744;font-weight:700;"></select>
+              <span style="font-size:13px;color:#666;">年</span>
+              <select id="imgFromMonth" style="border:1.5px solid #ddd;border-radius:7px;padding:6px 8px;font-size:14px;font-family:inherit;background:white;color:#1a2744;font-weight:700;">
+                <option value="1">1月</option><option value="2">2月</option><option value="3">3月</option>
+                <option value="4">4月</option><option value="5">5月</option><option value="6">6月</option>
+                <option value="7">7月</option><option value="8">8月</option><option value="9">9月</option>
+                <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
+              </select>
+              <span style="font-size:13px;color:#666;">月〜</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:4px;">
+              <select id="imgToYear" style="border:1.5px solid #ddd;border-radius:7px;padding:6px 8px;font-size:14px;font-family:inherit;background:white;color:#1a2744;font-weight:700;"></select>
+              <span style="font-size:13px;color:#666;">年</span>
+              <select id="imgToMonth" style="border:1.5px solid #ddd;border-radius:7px;padding:6px 8px;font-size:14px;font-family:inherit;background:white;color:#1a2744;font-weight:700;">
+                <option value="1">1月</option><option value="2">2月</option><option value="3">3月</option>
+                <option value="4">4月</option><option value="5">5月</option><option value="6">6月</option>
+                <option value="7">7月</option><option value="8">8月</option><option value="9">9月</option>
+                <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
+              </select>
+              <span style="font-size:13px;color:#666;">月</span>
+            </div>
+          </div>
+        </div>
+
         <!-- 授業カレンダー画像（複数可） -->
         <div style="margin-bottom:14px;">
           <div style="font-size:13px;font-weight:700;color:#1a2744;margin-bottom:8px;">① 授業カレンダー画像 <span style="font-weight:400;color:#888;">（複数枚OK）</span></div>
@@ -4431,6 +4460,27 @@ function closeAIModal() {
 
 // ===== 画像インポート機能 =====
 function openImageImportModal() {
+  // 年セレクタ初期化
+  const now = new Date();
+  const thisYear = now.getFullYear();
+  ['imgFromYear','imgToYear'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    sel.innerHTML = '';
+    for (let y = thisYear - 1; y <= thisYear + 1; y++) {
+      const opt = document.createElement('option');
+      opt.value = y;
+      opt.textContent = y + '年';
+      if (y === thisYear) opt.selected = true;
+      sel.appendChild(opt);
+    }
+  });
+  // デフォルト: 今月〜3ヶ月後
+  const fromM = now.getMonth() + 1;
+  const toDate = new Date(now.getFullYear(), now.getMonth() + 3, 1);
+  document.getElementById('imgFromMonth').value = fromM;
+  document.getElementById('imgToYear').value = toDate.getFullYear();
+  document.getElementById('imgToMonth').value = toDate.getMonth() + 1;
   // リセット
   ['calImgInput','mathImgInput','sciImgInput','jpImgInput','socImgInput'].forEach(id => {
     const el = document.getElementById(id);
@@ -4514,6 +4564,13 @@ async function runImageAnalysis() {
     const jpImgs = await filesToB64(jpFiles);
     const socImgs = await filesToB64(socFiles);
 
+    // 期間取得
+    const fromYear = document.getElementById('imgFromYear').value;
+    const fromMonth = document.getElementById('imgFromMonth').value;
+    const toYear = document.getElementById('imgToYear').value;
+    const toMonth = document.getElementById('imgToMonth').value;
+    const periodNote = `このカレンダーの対象期間は ${fromYear}年${fromMonth}月 〜 ${toYear}年${toMonth}月 です。日付の年はこの期間に基づいて判断してください。`;
+
     // Claude API へのプロンプト構築（全画像を順番に追加）
     const imageContent = [];
     if (calImgs.length) {
@@ -4539,6 +4596,8 @@ async function runImageAnalysis() {
     imageContent.push({
       type: 'text',
       text: `あなたは中学受験塾グノーブルの授業カレンダーと単元表を読み取るAIです。
+
+${periodNote}
 
 送った画像の構成:
 - 授業カレンダー: ${calImgs.length}枚（月ごとの授業日程）
