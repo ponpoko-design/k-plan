@@ -1078,6 +1078,7 @@ let localOverrides = JSON.parse(localStorage.getItem('schedule_overrides') || '{
 // {weekKey: {added:[...], hidden:{uid:true}}}
 let dragInfo = null;
 let _undoSnapshot = null; // 直前のlocalOverridesのスナップショット
+let _pendingParsed = null; // 画像インポート確認モーダル用
 let editUID = null;
 let nextUID = Date.now();
 
@@ -4691,6 +4692,7 @@ ${modePrompt}
 - 単元表から番号→名前の対応を各 _units に入れる
 - 日付は必ず YYYY-MM-DD 形式
 - JSONのみ出力。前後に余計な文字を一切含めないこと`
+    });
 
     const response = await fetch('https://kota-ai-proxy.nacchukkim.workers.dev', {
       method: 'POST',
@@ -4741,8 +4743,6 @@ ${modePrompt}
     showToast('エラー: ' + e.message, 5000);
   }
 }
-
-let _pendingParsed = null;
 
 function showImgConfirmModal(parsed) {
   _pendingParsed = parsed;
