@@ -5287,28 +5287,6 @@ async function runJukuPropose() {
       // 土日はスキップ
       if (isWeekend) return null;
 
-      // 使えるスロットを決定
-      let availableSlots;
-      if (isLongVacationWeekday || isHolidayWeekday) {
-        // 午前も使える（祝日・長期休暇平日）
-        availableSlots = ['am', 'pm', 'night'];
-      } else {
-        // 通常平日：午前不可。ただし塾休み期間なので月夜・水夜も使える
-        const dayIdx = (dow + 6) % 7; // 月=0
-        if (dayIdx === 0) {
-          // 月曜：塾休みなので夜もガッツリ使える。午後・夜
-          availableSlots = ['pm', 'night'];
-        } else if (dayIdx === 2) {
-          // 水曜：塾休みなので夜も使える。午後・夜
-          availableSlots = ['pm', 'night'];
-        } else if (dayIdx === 3) {
-          // 木曜：夜のみ（午後はプロタゴ）
-          availableSlots = ['night'];
-        } else {
-          availableSlots = ['pm', 'night'];
-        }
-      }
-
       // 塾カードがその日に入っているか確認（カレンダーの実データを見る）
       const wkMonday = getMonday(dt);
       const savedM = new Date(currentMonday);
