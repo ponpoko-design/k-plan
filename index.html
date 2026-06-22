@@ -7199,15 +7199,22 @@ async function loadFromFirestore() {
 }
 
 // Firestoreにデータを保存する（既存のsaveLocal関数を上書き）
+let _savingToFirestore = false;
 const _origSaveLocal = saveLocal;
 window.saveLocal = function() {
   _origSaveLocal();
+  _savingToFirestore = true;
   // Firestoreにも保存
   db.collection('schedules').doc('main').set({
     overrides: localOverrides,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
     updatedBy: DEVICE_ID
-  }).catch(e => console.log('Firestore保存エラー:', e));
+  }).then(() => {
+    setTimeout(() => { _savingToFirestore = false; }, 2000);
+  }).catch(e => {
+    console.log('Firestore保存エラー:', e);
+    _savingToFirestore = false;
+  });
 };
 
 // リアルタイム同期（他のデバイスの変更を受信）
@@ -7215,6 +7222,8 @@ try {
   db.collection('schedules').doc('main').onSnapshot(doc => {
     if (doc.exists) {
       const data = doc.data();
+      // 自分の保存中、または自分のデバイスからの更新はスキップ
+      if (_savingToFirestore) return;
       if (data.updatedBy === DEVICE_ID) return;
       if (data.overrides) {
         localOverrides = data.overrides;
