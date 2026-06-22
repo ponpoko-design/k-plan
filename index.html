@@ -66,8 +66,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 .card.test{background:var(--c-test);color:var(--c-test-t);}
 .card.holiday{background:var(--c-holiday);color:var(--c-holiday-t);}
 .card.kadai{background:var(--c-kadai);color:var(--c-kadai-t);}
-/* 仮カード：科目色＋点線ボーダー */
-.card.temp-card{opacity:0.82;outline:2px dashed rgba(26,39,68,0.35);outline-offset:-2px;}
+/* 仮カード：透過なし・教科色のドット枠線 */
+.card.temp-card { opacity:1; }
+.card.temp-card.math  { outline:2px dashed #378add; outline-offset:-2px; }
+.card.temp-card.jp    { outline:2px dashed #c966a8; outline-offset:-2px; }
+.card.temp-card.sci   { outline:2px dashed #4caa44; outline-offset:-2px; }
+.card.temp-card.soc   { outline:2px dashed #c8960a; outline-offset:-2px; }
 
 /* ボトムナビ */
 .bnav{background:white;border-top:1px solid #ddd;display:flex;justify-content:space-around;padding:6px 0;flex-shrink:0;height:52px;}
@@ -1343,13 +1347,10 @@ function takeSnapshot() {
   _undoSnapshot = JSON.parse(JSON.stringify(localOverrides));
   updateUndoBtn();
 }
-function getWeekKey() { return dateKeyJST(currentMonday); }
-// localOverrides[wkKey]をUTC/JST両対応で取得
+function getWeekKey() { return dateKey(currentMonday); }
+// localOverrides[wkKey]取得（後方互換）
 function getLocalForWeek(wk) {
-  if (localOverrides[wk]) return localOverrides[wk];
-  // JSTキーで見つからない場合UTC基準キーも試す（既存データとの互換）
-  const utcKey = dateKey(currentMonday);
-  return localOverrides[utcKey] || {added:[], hidden:{}};
+  return localOverrides[wk] || {added:[], hidden:{}};
 }
 
 // ===== Compute tasks for current week =====
@@ -5319,7 +5320,7 @@ function addJukuTempCards(cards, btn) {
     const dt = new Date(c.date + 'T00:00:00');
     const wi = (dt.getDay() + 6) % 7;
     const wkMonday = getMonday(dt);
-    const wkKey = dateKeyJST(wkMonday);
+    const wkKey = dateKey(wkMonday);
     if (!localOverrides[wkKey]) localOverrides[wkKey] = { added:[], hidden:[], moved:[] };
     const uid = Date.now() + '_juku_temp_' + added + '_' + Math.random().toString(36).slice(2);
     localOverrides[wkKey].added.push({
