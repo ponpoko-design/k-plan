@@ -267,7 +267,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
           </button>
           <button onclick="closeAIModal();openRuleChatModal();" style="flex:1;border:none;border-radius:12px;background:#E6F1FB;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:10px;padding:0 14px;text-align:left;transition:opacity .15s;box-sizing:border-box;" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
             <div style="width:34px;height:34px;border-radius:9px;background:#B5D4F4;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0C447C" stroke-width="1.8"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0C447C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M12 2v4M8 2h8"/><circle cx="9" cy="13" r="1.5" fill="#0C447C" stroke="none"/><circle cx="15" cy="13" r="1.5" fill="#0C447C" stroke="none"/><line x1="9" y1="17" x2="15" y2="17"/><line x1="7" y1="8" x2="7" y2="6"/><line x1="17" y1="8" x2="17" y2="6"/></svg>
             </div>
             <div style="flex:1;min-width:0;">
               <div style="font-size:15px;font-weight:500;color:#042C53;line-height:1.3;">AIと<br>チャット</div>
@@ -4498,9 +4498,16 @@ async function sendRuleChatMessage() {
         if (!fd) return;
         if (td && td < now) return;
         var end = new Date(Math.min(+threeMonthsLater, td ? +td : +threeMonthsLater));
-        // fromDateが過去の場合、同じ曜日で今日以降の最初の日に合わせる
-        var d = new Date(fd);
-        while (d < now) d.setDate(d.getDate() + 7);
+        // weekday_indexを優先、なければfromDateの曜日を使う
+        var targetDow = (t.weekday_index !== undefined && t.weekday_index !== null)
+          ? t.weekday_index  // 0=月〜6=日
+          : fd.getDay() === 0 ? 6 : fd.getDay() - 1; // JS日曜=0を月=0に変換
+        // 今日以降でtargetDowに一致する最初の日を探す
+        var d = new Date(now);
+        var jsDow = targetDow === 6 ? 0 : targetDow + 1; // 月=0→日曜=1に変換
+        while (d.getDay() !== jsDow) d.setDate(d.getDate() + 1);
+        // fromDateより前なら前に戻す
+        if (d < fd) d = new Date(fd);
         var count = 0;
         while (d <= end && count < 20) {
           var ds = (d.getMonth()+1) + '/' + d.getDate() + '(' + dowName[d.getDay()] + ')';
