@@ -5290,16 +5290,16 @@ async function runJukuPropose() {
       // 使えるスロットを決定
       let availableSlots;
       if (isLongVacationWeekday || isHolidayWeekday) {
-        // 午前も使える
+        // 午前も使える（祝日・長期休暇平日）
         availableSlots = ['am', 'pm', 'night'];
       } else {
-        // 通常平日：午前不可
+        // 通常平日：午前不可。ただし塾休み期間なので月夜・水夜も使える
         const dayIdx = (dow + 6) % 7; // 月=0
         if (dayIdx === 0) {
-          // 月曜：夜のみ（学校の宿題はあるが追加可）
-          availableSlots = ['night'];
+          // 月曜：塾休みなので夜もガッツリ使える。午後・夜
+          availableSlots = ['pm', 'night'];
         } else if (dayIdx === 2) {
-          // 水曜：午後のみ（夜は塾→塾休みなので夜も可）
+          // 水曜：塾休みなので夜も使える。午後・夜
           availableSlots = ['pm', 'night'];
         } else if (dayIdx === 3) {
           // 木曜：夜のみ（午後はプロタゴ）
@@ -5309,13 +5309,42 @@ async function runJukuPropose() {
         }
       }
 
-      // 既存タスクが少ないスロットを優先して選択
+      // 塾カードがその日に入っているか確認（カレンダーの実データを見る）
       const wkMonday = getMonday(dt);
       const savedM = new Date(currentMonday);
       currentMonday = new Date(wkMonday);
       const wkTasks = getTasksForWeek();
       currentMonday = savedM;
       const dayIdx2 = (dow + 6) % 7;
+      const hasJuku = wkTasks.some(t =>
+        t._dayIdx === dayIdx2 &&
+        t.subject === '習い事' &&
+        (t.unit_name || '').includes('塾')
+      );
+
+      // 使えるスロットを決定
+      let availableSlots;
+      if (isLongVacationWeekday || isHolidayWeekday) {
+        // 午前も使える（祝日・長期休暇平日）
+        availableSlots = ['am', 'pm', 'night'];
+      } else {
+        const dayIdx = (dow + 6) % 7; // 月=0
+        if (dayIdx === 0) {
+          // 月曜：塾があれば夜は使えない→塾なしなら午後・夜
+          availableSlots = hasJuku ? [] : ['pm', 'night'];
+        } else if (dayIdx === 2) {
+          // 水曜：塾があれば午後のみ→塾なしなら午後・夜
+          availableSlots = hasJuku ? ['pm'] : ['pm', 'night'];
+        } else if (dayIdx === 3) {
+          // 木曜：夜のみ（午後はプロタゴ）
+          availableSlots = ['night'];
+        } else {
+          availableSlots = ['pm', 'night'];
+        }
+      }
+
+      // 使えるスロットがなければスキップ
+      if (availableSlots.length === 0) return null;
       const SLOT_IDX2 = {morning:0, am:1, pm:2, night:3};
 
       // 各スロットの既存タスク数を数えて一番空いているところを選ぶ
