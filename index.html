@@ -4442,9 +4442,67 @@ async function sendRuleChatMessage() {
   var now = new Date();
   var todayStr = now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日（' + ['日','月','火','水','木','金','土'][now.getDay()] + '）';
 
+  // 先3ヶ月分のスケジュールをテキスト化
+  function buildScheduleFor3Months() {
+    var lines = [];
+    var slotName = { morning:'朝', am:'午前', pm:'午後', night:'夜', plan:'予定' };
+    var dowName = ['日','月','火','水','木','金','土'];
+    var threeMonthsLater = new Date(now.getFullYear(), now.getMonth()+3, now.getDate());
+
+    // 今日の月曜を起点に走査
+    var cur = new Date(now);
+    var curDay = cur.getDay();
+    cur.setDate(cur.getDate() - (curDay === 0 ? 6 : curDay - 1));
+
+    while (cur <= threeMonthsLater) {
+      var wk = cur.getFullYear() + '-' + String(cur.getMonth()+1).padStart(2,'0') + '-' + String(cur.getDate()).padStart(2,'0');
+      var lo = localOverrides[wk];
+      if (lo) {
+        // added（一回限りカード）
+        (lo.added || []).forEach(function(t) {
+          if (!t.unit_name || t.is_hidden === 'yes') return;
+          var d = new Date(cur);
+          d.setDate(d.getDate() + (t._dayIdx || 0));
+          if (d < now) return;
+          var ds = (d.getMonth()+1) + '/' + d.getDate() + '(' + dowName[d.getDay()] + ')';
+          lines.push(ds + ' ' + (slotName[t.slot]||t.slot) + '：' + t.unit_name + (t.note ? '（'+t.note+'）' : ''));
+        });
+      }
+      cur.setDate(cur.getDate() + 7);
+    }
+
+    // 繰り返しカード（weeklyAdded）
+    if (localOverrides.weeklyAdded) {
+      localOverrides.weeklyAdded.forEach(function(t) {
+        if (!t.unit_name || t.is_hidden === 'yes') return;
+        var fd = t.fromDate ? new Date(t.fromDate) : null;
+        var td = t.toDate ? new Date(t.toDate) : null;
+        if (fd && fd < now) fd = now;
+        if (!fd) return;
+        if (td && td < now) return;
+        var end = new Date(Math.min(threeMonthsLater, td || threeMonthsLater));
+        var d = new Date(fd);
+        var count = 0;
+        while (d <= end && count < 15) {
+          var ds = (d.getMonth()+1) + '/' + d.getDate() + '(' + dowName[d.getDay()] + ')';
+          lines.push(ds + ' ' + (slotName[t.slot]||t.slot) + '：' + t.unit_name + (t.note ? '（'+t.note+'）' : '') + '【繰返】');
+          d.setDate(d.getDate() + 7);
+          count++;
+        }
+      });
+    }
+
+    lines.sort();
+    return lines.length ? lines.join('\n') : '（登録カードなし）';
+  }
+
+  var scheduleText = buildScheduleFor3Months();
+
   var sp = 'あなたはK-studyのAIアシスタントです。こうたくん（小5）のお母さんからルールの確認・変更・相談を受けます。\n\n' +
     '【今日の日付】\n' +
     '・今日：' + todayStr + '\n\n' +
+    '【登録済みスケジュール（今日〜3ヶ月分）】\n' +
+    scheduleText + '\n\n' +
     '【回答スタイル】\n' +
     '・最初の一文はです・ます調でカジュアルに（例：「〜です！」「〜ですね！」）\n' +
     '・中身は箇条書き（・）中心\n' +
