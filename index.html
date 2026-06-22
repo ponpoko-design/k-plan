@@ -1343,13 +1343,20 @@ function takeSnapshot() {
   _undoSnapshot = JSON.parse(JSON.stringify(localOverrides));
   updateUndoBtn();
 }
-function getWeekKey() { return dateKey(currentMonday); }
+function getWeekKey() { return dateKeyJST(currentMonday); }
+// localOverrides[wkKey]をUTC/JST両対応で取得
+function getLocalForWeek(wk) {
+  if (localOverrides[wk]) return localOverrides[wk];
+  // JSTキーで見つからない場合UTC基準キーも試す（既存データとの互換）
+  const utcKey = dateKey(currentMonday);
+  return localOverrides[utcKey] || {added:[], hidden:{}};
+}
 
 // ===== Compute tasks for current week =====
 function getTasksForWeek() {
   const dates = getWeekDates();
   const wk = getWeekKey();
-  const local = localOverrides[wk] || {added:[], hidden:{}};
+  const local = getLocalForWeek(wk);
   const thisWeekMonday = getWeekKey(); // 'YYYY-MM-DD'形式の文字列
 
   // 曜日→日付マップ
