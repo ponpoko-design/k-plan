@@ -4102,6 +4102,30 @@ async function runBalanceCheck() {
       prompt += '◆チェック観点:\n1. ルール違反: スロット違反（平日午前・月午後夜・水夜・木午後）がないか\n2. 負荷・バランス: 特定の日に集中しすぎ/夜90分超（いつもより明らかに多い・少ない場合のみ指摘）\n3. 確認: 漢字毎日/算数基礎力毎日/理科基礎力週2回/国語単元音読週1（不足時のみ指摘）\n4. アドバイス: 明確な改善点がある場合のみ\n\n';
     }
 
+    // 「旅行・1日外出」系の予定を検出してプロンプトに注記
+    const ALL_DAY_KEYWORDS = ['旅行','遠足','合宿','宿泊','旅','キャンプ','修学旅行','校外学習','1日外出','一日外出','日帰り','泊'];
+    const DAY_NAMES = ['月','火','水','木','金','土','日'];
+    const allDayEvents = [];
+    for (let d = 0; d < 7; d++) {
+      const dt = new Date(mon); dt.setDate(mon.getDate() + d);
+      const tasks = getTasksForWeek(new Date(balanceCheckMonday));
+      const planTasks = tasks.filter(t => t._dayIdx === d && t.slot === 'plan' && t.subject !== '祝日');
+      planTasks.forEach(t => {
+        const name = t.unit_name || '';
+        if (ALL_DAY_KEYWORDS.some(kw => name.includes(kw))) {
+          const dateLabel = (dt.getMonth()+1) + '/' + dt.getDate() + '(' + DAY_NAMES[d] + ')';
+          allDayEvents.push({ dateLabel, name });
+        }
+      });
+    }
+    if (allDayEvents.length > 0) {
+      prompt += '【終日外出予定の注意】\n';
+      allDayEvents.forEach(ev => {
+        prompt += '・' + ev.dateLabel + '「' + ev.name + '」は終日外出のため、この日は勉強できないものとして扱うこと。この日に入っている勉強カードは他の日への移動を提案すること。\n';
+      });
+      prompt += '\n';
+    }
+
     prompt += '【この週のスケジュール】\n' + scheduleSummary + '\n\n';
 
     prompt += '【出力形式の指示】\n';
