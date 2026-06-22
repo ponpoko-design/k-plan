@@ -2301,13 +2301,13 @@ function renderCopyCal() {
   const firstDay = new Date(y,mo,1).getDay(); // 0=Sun
   const daysInMonth = new Date(y,mo+1,0).getDate();
   const monthNames=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
-  // 月曜始まりに変換
   const startOffset = (firstDay+6)%7;
   const today = new Date(); today.setHours(0,0,0,0);
   const selectedStr = document.getElementById('copyTargetDate').getAttribute('data-selected')||'';
   let grid = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;">';
-  ['月','火','水','木','金','土','日'].forEach(d=>{
-    grid+=`<div style="font-size:11px;color:#888;padding:4px 0;">${d}</div>`;
+  ['月','火','水','木','金','土','日'].forEach((d,i)=>{
+    const color=(i>=5)?'#e24b4a':'#888';
+    grid+=`<div style="font-size:11px;color:${color};padding:4px 0;">${d}</div>`;
   });
   for(let i=0;i<startOffset;i++) grid+='<div></div>';
   for(let d=1;d<=daysInMonth;d++){
@@ -2316,11 +2316,16 @@ function renderCopyCal() {
     const isToday=dt.getTime()===today.getTime();
     const isSel=dtStr===selectedStr;
     const isPast=dt<today;
+    const dow=dt.getDay();
+    const isHoliday=!!JAPAN_HOLIDAYS[dtStr];
+    const isRed=(dow===0||dow===6||isHoliday);
     let style='font-size:13px;padding:5px 2px;border-radius:50%;cursor:pointer;';
     if(isSel) style+='background:#1a2744;color:white;';
     else if(isToday) style+='border:2px solid #1a2744;color:#1a2744;font-weight:700;';
-    else if(isPast) style+='color:#888;';
-    grid+=`<div style="${style}" onclick="selectCopyDate('${dtStr}',${d},${mo+1},${y})">${d}</div>`;
+    else if(isPast) style+='color:#ccc;';
+    else if(isRed) style+='color:#e24b4a;font-weight:700;';
+    const title=isHoliday?` title="${JAPAN_HOLIDAYS[dtStr]}"` : '';
+    grid+=`<div style="${style}"${title} onclick="selectCopyDate('${dtStr}',${d},${mo+1},${y})">${d}</div>`;
   }
   grid+='</div>';
   document.getElementById('copyCalGrid').innerHTML=
@@ -2890,17 +2895,25 @@ function renderAddCal() {
   const today=new Date(); today.setHours(0,0,0,0);
   const selectedStr=document.getElementById('addSelectedDate').value||'';
   let grid='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;">';
-  ['月','火','水','木','金','土','日'].forEach(d=>{grid+=`<div style="font-size:11px;color:#888;padding:4px 0;">${d}</div>`;});
+  ['月','火','水','木','金','土','日'].forEach((d,i)=>{
+    const color=(i>=5)?'#e24b4a':'#888';
+    grid+=`<div style="font-size:11px;color:${color};padding:4px 0;">${d}</div>`;
+  });
   for(let i=0;i<startOffset;i++) grid+='<div></div>';
   for(let d=1;d<=daysInMonth;d++){
     const dt=new Date(y,mo,d); dt.setHours(0,0,0,0);
     const dtStr=y+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
     const isToday=dt.getTime()===today.getTime();
     const isSel=dtStr===selectedStr;
+    const dow=dt.getDay();
+    const isHoliday=!!JAPAN_HOLIDAYS[dtStr];
+    const isRed=(dow===0||dow===6||isHoliday);
     let style='font-size:13px;padding:5px 2px;border-radius:50%;cursor:pointer;';
     if(isSel) style+='background:#1a2744;color:white;';
     else if(isToday) style+='border:2px solid #1a2744;color:#1a2744;font-weight:700;';
-    grid+=`<div style="${style}" onclick="selectAddDate('${dtStr}')">${d}</div>`;
+    else if(isRed) style+='color:#e24b4a;font-weight:700;';
+    const title=isHoliday?` title="${JAPAN_HOLIDAYS[dtStr]}"` : '';
+    grid+=`<div style="${style}"${title} onclick="selectAddDate('${dtStr}')">${d}</div>`;
   }
   grid+='</div>';
   document.getElementById('addCalGrid').innerHTML=
@@ -2967,17 +2980,26 @@ function _renderWeeklyCal(gridId, selectedStr, onSelectFn, prevFn, nextFn, y, mo
   const startOffset=(firstDay+6)%7;
   const today=new Date(); today.setHours(0,0,0,0);
   let grid='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;">';
-  ['月','火','水','木','金','土','日'].forEach(d=>{grid+=`<div style="font-size:11px;color:#888;padding:3px 0;">${d}</div>`;});
+  ['月','火','水','木','金','土','日'].forEach((d,i)=>{
+    const color = (i>=5) ? '#e24b4a' : '#888';
+    grid+=`<div style="font-size:11px;color:${color};padding:3px 0;">${d}</div>`;
+  });
   for(let i=0;i<startOffset;i++) grid+='<div></div>';
   for(let d=1;d<=daysInMonth;d++){
     const dt=new Date(y,mo,d); dt.setHours(0,0,0,0);
     const dtStr=y+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
     const isToday=dt.getTime()===today.getTime();
     const isSel=dtStr===selectedStr;
+    const dow=dt.getDay();
+    const isHoliday=!!JAPAN_HOLIDAYS[dtStr];
+    const isRed=(dow===0||dow===6||isHoliday);
     let style='font-size:13px;padding:5px 2px;border-radius:50%;cursor:pointer;';
     if(isSel) style+='background:#1a2744;color:white;';
     else if(isToday) style+='border:2px solid #1a2744;color:#1a2744;font-weight:700;';
-    grid+=`<div style="${style}" onclick="${onSelectFn}('${dtStr}',${d},${mo+1},${y})">${d}</div>`;
+    else if(isRed) style+='color:#e24b4a;font-weight:700;';
+    // 祝日ツールチップ
+    const title = isHoliday ? ` title="${JAPAN_HOLIDAYS[dtStr]}"` : '';
+    grid+=`<div style="${style}"${title} onclick="${onSelectFn}('${dtStr}',${d},${mo+1},${y})">${d}</div>`;
   }
   grid+='</div>';
   document.getElementById(gridId).innerHTML=
@@ -5058,10 +5080,12 @@ function renderJukuCal() {
     const dt = new Date(jukuCalYear, jukuCalMonth, d);
     const dateStr = dateKeyJST(dt);
     const dow = dt.getDay(); // 0=Sun,6=Sat
+    const isHoliday = !!JAPAN_HOLIDAYS[dateStr];
 
     const cell = document.createElement('div');
     let cls = 'juku-cal-day';
-    if (dow === 0 || dow === 6) cls += ' holiday-day'; // 土日は赤
+    // 土日・祝日は赤
+    if (dow === 0 || dow === 6 || isHoliday) cls += ' holiday-day';
 
     // 範囲ハイライト（JST文字列で比較）
     const inRange  = startStr && endStr && dateStr > startStr && dateStr < endStr;
@@ -5073,7 +5097,16 @@ function renderJukuCal() {
     if (dateStr === todayStr) cls += ' today-dot';
 
     cell.className = cls;
-    cell.textContent = d;
+    // 祝日は日付の下に祝日名を小さく表示
+    if (isHoliday) {
+      cell.innerHTML = '<div>' + d + '</div><div style="font-size:8px;line-height:1.1;color:#e24b4a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:32px;">' + JAPAN_HOLIDAYS[dateStr] + '</div>';
+      cell.style.height = '44px';
+      cell.style.flexDirection = 'column';
+      cell.style.justifyContent = 'center';
+      cell.style.gap = '1px';
+    } else {
+      cell.textContent = d;
+    }
     cell.onclick = () => onJukuCalDayClick(dt);
     grid.appendChild(cell);
   }
@@ -5184,14 +5217,16 @@ async function runJukuPropose() {
       '塾カード(月夜・水夜)はルール違反対象外。月夜の学校の宿題はOK。水曜夜は学校の宿題も入れない。夜90分以内。\n' +
       '土日にサッカーが入っているスロットはサッカー優先。同スロットに勉強カードがある場合は時間競合に注意。\n' +
       '【塾休み期間の追加ルール】\n' +
+      '期間中（' + dateKeyJST(jukuRangeStart) + ' 〜 ' + dateKeyJST(jukuRangeEnd) + '）は全日塾なし。月夜・水夜も使える。\n' +
       (jukuMode === 'long'
-        ? '長期休暇中は月夜・水夜も塾なしで使える。平日も午前(am)スロットが使える。ほぼ土日と同じ扱い。\n'
-        : '通常週（祝日のみ）：祝日は土日と同じスロットルールを適用。祝日の月夜・水夜も塾なし。\n') +
-      '祝日にサッカーがある可能性あり（予定欄を確認）。\n\n' +
+        ? '【長期休暇モード】学校なし。平日も午前(am)スロットが使える。土日と同じ扱いで終日活用可能。ただし土日はサッカーがある可能性あり（予定欄を確認）。\n'
+        : '【通常週モード（祝日のみ）】祝日以外の平日は学校あり。平日の通常スロットルール（朝・午後・夜）はそのまま適用。平日午前(am)は不可。祝日は土日と同じ扱い（午前から使える）。祝日・土日はサッカーがある可能性あり（予定欄を確認）。\n') +
+      '祝日一覧（期間内）: ' + (holidayList.length > 0 ? holidayList.join(', ') : 'なし') + '\n\n' +
       '【提案内容の指示】\n' +
       'スロットルールと既存スケジュールを踏まえて、追加で勉強できるスロットに仮カードを配置する。\n' +
       '優先順位：グノレブ対策（苦手単元強化） > 算数 > 理科 > 社会 > 国語\n' +
-      '既存タスクの最適な移動先も考慮した上で、空きスロットに具体的な単元名・時間を入れること。\n' +
+      '既存タスクの最適な移動先も考慮した上で、空きスロットに教科・時間を決めること。\n' +
+      '【重要】unit_nameは必ず "仮・提案" で固定すること。単元名は考えなくてよい。\n' +
       '説明文・テキストは一切不要。JSONのみ出力すること。\n\n' +
       '【出力形式】\n' +
       '以下のJSON配列のみを返す（説明文・コードブロック・マークダウン不要）:\n' +
@@ -5245,7 +5280,7 @@ async function runJukuPropose() {
           '<span style="width:70px;flex-shrink:0;color:#555;">' + dateLabel + '</span>' +
           '<span style="width:26px;flex-shrink:0;color:#888;">' + (SLOT_JP2[c.slot]||c.slot) + '</span>' +
           '<span style="background:' + (SUBJ_COLORS2[c.subject]||'#eee') + ';border-radius:3px;padding:1px 5px;font-size:11px;font-weight:700;flex-shrink:0;">' + c.subject + '</span>' +
-          '<span style="flex:1;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (c.unit_name||'') + '</span>' +
+          '<span style="flex:1;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">仮・提案</span>' +
           '<span style="color:#888;flex-shrink:0;">' + (c.study_time||'?') + '分</span>';
         msgs.appendChild(row);
       });
@@ -5281,7 +5316,7 @@ function addJukuTempCards(cards, btn) {
       weekday_index: wi, _dayIdx: wi,
       slot: c.slot,
       subject: c.subject,
-      unit_name: c.unit_name || c.subject + '（仮）',
+      unit_name: '仮・提案',  // 単元名は固定
       color: SUBJ_COLORS[c.subject] || '#C1E8FB',
       study_time: c.study_time || null,
       display_type: 'one_time', note: '',
