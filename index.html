@@ -4442,54 +4442,68 @@ async function sendRuleChatMessage() {
   var now = new Date();
   var todayStr = now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日（' + ['日','月','火','水','木','金','土'][now.getDay()] + '）';
 
-  // 先3ヶ月分のスケジュールをテキスト化
+  // 先3ヶ月分のスケジュールをテキスト化（EXCEPTION_DATAも反映）
   function buildScheduleFor3Months() {
     var lines = [];
     var slotName = { morning:'朝', am:'午前', pm:'午後', night:'夜', plan:'予定' };
     var dowName = ['日','月','火','水','木','金','土'];
     var threeMonthsLater = new Date(now.getFullYear(), now.getMonth()+3, now.getDate());
-
-    // 今日の月曜を起点
     var startMon = new Date(now);
     var curDay = startMon.getDay();
     startMon.setDate(startMon.getDate() - (curDay === 0 ? 6 : curDay - 1));
-
-    // 週ループ
     var cur = new Date(startMon);
     while (cur <= threeMonthsLater) {
       var wk = cur.getFullYear() + '-' + String(cur.getMonth()+1).padStart(2,'0') + '-' + String(cur.getDate()).padStart(2,'0');
-      var lo = localOverrides[wk] || {};
-
-      // 1. RAW_DATAの通常繰り返しカード（weekly）
-      (RAW_DATA || []).forEach(function(t) {
+      var lo = localOverrides[wk] || {added:[], hidden:{}};
+      // weeklyDeletedで削除されたUID
+      var deletedSet = new Set();
+      (localOverrides.weeklyDeleted || []).forEach(function(d) {
+        var applies = d.fromDate === null || d.fromDate === undefined ? true : wk >= d.fromDate;
+        if (applies) deletedSet.add(d.uid + '_' + d.dayIdx);
+      });
+      // この週のEXCEPTION_DATAでhiddenになったrepeat_key+dayIdx
+      var hiddenRepeat = {};
+      EXCEPTION_DATA.forEach(function(e) {
+        if (e.is_hidden !== 'yes' || !e.repeat_key) return;
+        var eDate = new Date(e.date);
+        var diff = Math.round((eDate - cur) / 86400000);
+        if (diff >= 0 && diff < 7) hiddenRepeat[e.repeat_key + '_' + diff] = true;
+      });
+      // 1. RAW_DATA繰り返しカード
+      RAW_DATA.forEach(function(t) {
         if (!t.unit_name || t.is_hidden === 'yes') return;
         if (t.display_type !== 'weekly') return;
-        var dayIdx = t.weekday_index !== undefined ? t.weekday_index : t._dayIdx;
-        if (dayIdx === undefined || dayIdx === null) return;
-        var d = new Date(cur);
-        d.setDate(d.getDate() + dayIdx);
-        if (d < now || d > threeMonthsLater) return;
-        // hidden確認
+        var dayIdx = t.weekday_index !== undefined ? t.weekday_index : 0;
+        if (deletedSet.has(t.uid + '_' + dayIdx)) return;
+        if (hiddenRepeat[t.repeat_key + '_' + dayIdx] || hiddenRepeat[(t.uid) + '_' + dayIdx]) return;
         if (lo.hidden && lo.hidden[t.uid]) return;
+        var d = new Date(cur); d.setDate(d.getDate() + dayIdx);
+        if (d < now || d > threeMonthsLater) return;
         var ds = (d.getMonth()+1) + '/' + d.getDate() + '(' + dowName[d.getDay()] + ')';
-        lines.push(ds + ' ' + (slotName[t.slot]||t.slot) + '：' + t.unit_name + (t.note && t.note !== 'NaN' ? '（'+t.note+'）' : ''));
+        lines.push(ds + ' ' + (slotName[t.slot]||t.slot) + '：' + t.unit_name);
       });
-
-      // 2. added（一回限りカード）
+      // 2. EXCEPTION_DATAのis_hidden=noのカード（この週分）
+      EXCEPTION_DATA.forEach(function(e) {
+        if (!e.unit_name || e.is_hidden === 'yes') return;
+        var eDate = new Date(e.date);
+        var diff = Math.round((eDate - cur) / 86400000);
+        if (diff < 0 || diff >= 7) return;
+        if (eDate < now || eDate > threeMonthsLater) return;
+        var ds = (eDate.getMonth()+1) + '/' + eDate.getDate() + '(' + dowName[eDate.getDay()] + ')';
+        lines.push(ds + ' ' + (slotName[e.slot]||e.slot) + '：' + e.unit_name);
+      });
+      // 3. localOverrides.added
       (lo.added || []).forEach(function(t) {
         if (!t.unit_name || t.is_hidden === 'yes') return;
         var dayIdx = t._dayIdx !== undefined ? t._dayIdx : (t.weekday_index !== undefined ? t.weekday_index : 0);
-        var d = new Date(cur);
-        d.setDate(d.getDate() + dayIdx);
+        var d = new Date(cur); d.setDate(d.getDate() + dayIdx);
         if (d < now || d > threeMonthsLater) return;
         var ds = (d.getMonth()+1) + '/' + d.getDate() + '(' + dowName[d.getDay()] + ')';
         lines.push(ds + ' ' + (slotName[t.slot]||t.slot) + '：' + t.unit_name + (t.note && t.note !== 'NaN' ? '（'+t.note+'）' : ''));
       });
-
       cur.setDate(cur.getDate() + 7);
     }
-
-    // 3. weeklyAdded（期間限定繰り返しカード）
+    // 4. weeklyAdded
     if (localOverrides.weeklyAdded) {
       localOverrides.weeklyAdded.forEach(function(t) {
         if (!t.unit_name || t.is_hidden === 'yes') return;
@@ -4498,27 +4512,19 @@ async function sendRuleChatMessage() {
         if (!fd) return;
         if (td && td < now) return;
         var end = new Date(Math.min(+threeMonthsLater, td ? +td : +threeMonthsLater));
-        // weekday_indexを優先、なければfromDateの曜日を使う
-        var targetDow = (t.weekday_index !== undefined && t.weekday_index !== null)
-          ? t.weekday_index  // 0=月〜6=日
-          : fd.getDay() === 0 ? 6 : fd.getDay() - 1; // JS日曜=0を月=0に変換
-        // 今日以降でtargetDowに一致する最初の日を探す
+        var targetDow = (t.weekday_index !== undefined && t.weekday_index !== null) ? t.weekday_index : (fd.getDay() === 0 ? 6 : fd.getDay() - 1);
+        var jsDow = targetDow === 6 ? 0 : targetDow + 1;
         var d = new Date(now);
-        var jsDow = targetDow === 6 ? 0 : targetDow + 1; // 月=0→日曜=1に変換
         while (d.getDay() !== jsDow) d.setDate(d.getDate() + 1);
-        // fromDateより前なら前に戻す
         if (d < fd) d = new Date(fd);
         var count = 0;
         while (d <= end && count < 20) {
           var ds = (d.getMonth()+1) + '/' + d.getDate() + '(' + dowName[d.getDay()] + ')';
           lines.push(ds + ' ' + (slotName[t.slot]||t.slot) + '：' + t.unit_name + (t.note && t.note !== 'NaN' ? '（'+t.note+'）' : ''));
-          d.setDate(d.getDate() + 7);
-          count++;
+          d.setDate(d.getDate() + 7); count++;
         }
       });
     }
-
-    // 重複除去してソート
     var unique = lines.filter(function(v, i, a) { return a.indexOf(v) === i; });
     unique.sort();
     return unique.length ? unique.join('\n') : '（登録カードなし）';
