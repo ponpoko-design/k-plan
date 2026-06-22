@@ -1320,6 +1320,11 @@ function getMonday(d) {
   const m = new Date(d); m.setDate(diff); m.setHours(0,0,0,0); return m;
 }
 function dateKey(d) { return d.toISOString().slice(0,10); }
+// JST基準の日付文字列（タイムゾーンズレなし）
+function dateKeyJST(d) {
+  const jst = new Date(d.getTime() + 9*60*60*1000);
+  return jst.toISOString().slice(0,10);
+}
 function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate()+n); return r; }
 function parseDate(s) { return s ? new Date(s) : null; }
 function sameDateStr(a, b) {
@@ -4946,13 +4951,52 @@ let jukuCalYear, jukuCalMonth;
 let jukuRangeStart = null, jukuRangeEnd = null, jukuRangeSelecting = false;
 let jukuMode = 'long'; // 'long' or 'normal'
 
-// 日本の祝日APIから取得（内閣府データ）
+// 日本の祝日データ（内閣府・国立天文台公式データ準拠）
+// 2026〜2027年分をハードコード
+const JAPAN_HOLIDAYS = {
+  '2026-01-01': '元日',
+  '2026-01-12': '成人の日',
+  '2026-02-11': '建国記念の日',
+  '2026-02-23': '天皇誕生日',
+  '2026-03-20': '春分の日',
+  '2026-04-29': '昭和の日',
+  '2026-05-03': '憲法記念日',
+  '2026-05-04': 'みどりの日',
+  '2026-05-05': 'こどもの日',
+  '2026-05-06': '振替休日',
+  '2026-07-20': '海の日',
+  '2026-08-11': '山の日',
+  '2026-09-21': '敬老の日',
+  '2026-09-22': '国民の休日',
+  '2026-09-23': '秋分の日',
+  '2026-10-12': 'スポーツの日',
+  '2026-11-03': '文化の日',
+  '2026-11-23': '勤労感謝の日',
+  '2027-01-01': '元日',
+  '2027-01-11': '成人の日',
+  '2027-02-11': '建国記念の日',
+  '2027-02-23': '天皇誕生日',
+  '2027-03-21': '春分の日',
+  '2027-04-29': '昭和の日',
+  '2027-05-03': '憲法記念日',
+  '2027-05-04': 'みどりの日',
+  '2027-05-05': 'こどもの日',
+  '2027-07-19': '海の日',
+  '2027-08-11': '山の日',
+  '2027-09-20': '敬老の日',
+  '2027-09-23': '秋分の日',
+  '2027-10-11': 'スポーツの日',
+  '2027-11-03': '文化の日',
+  '2027-11-23': '勤労感謝の日',
+};
+
 async function fetchJapanHolidays(year) {
-  try {
-    const res = await fetch('https://holidays-jp.github.io/api/v1/' + year + '/date.json');
-    if (!res.ok) return {};
-    return await res.json(); // { "2026-07-20": "海の日", ... }
-  } catch(e) { return {}; }
+  // ハードコードデータから該当年を返す（APIより確実）
+  const result = {};
+  Object.entries(JAPAN_HOLIDAYS).forEach(([date, name]) => {
+    if (date.startsWith(String(year))) result[date] = name;
+  });
+  return result;
 }
 
 function openJukuYasumiPanel() {
@@ -4995,6 +5039,7 @@ function renderJukuCal() {
   const grid = document.getElementById('jukuCalGrid');
   grid.innerHTML = '';
   const today = getTodayJST();
+  const todayStr = dateKeyJST(today);
   const firstDay = new Date(jukuCalYear, jukuCalMonth, 1).getDay(); // 0=Sun
   const startOffset = (firstDay + 6) % 7; // 月曜始まり
   const daysInMonth = new Date(jukuCalYear, jukuCalMonth+1, 0).getDate();
@@ -5006,23 +5051,26 @@ function renderJukuCal() {
     grid.appendChild(blank);
   }
 
+  const startStr = jukuRangeStart ? dateKeyJST(jukuRangeStart) : null;
+  const endStr   = jukuRangeEnd   ? dateKeyJST(jukuRangeEnd)   : null;
+
   for (let d = 1; d <= daysInMonth; d++) {
     const dt = new Date(jukuCalYear, jukuCalMonth, d);
-    const dateStr = dateKey(dt);
+    const dateStr = dateKeyJST(dt);
     const dow = dt.getDay(); // 0=Sun,6=Sat
 
     const cell = document.createElement('div');
     let cls = 'juku-cal-day';
     if (dow === 0 || dow === 6) cls += ' holiday-day'; // 土日は赤
 
-    // 範囲ハイライト
-    const inRange = jukuRangeStart && jukuRangeEnd && dateStr > dateKey(jukuRangeStart) && dateStr < dateKey(jukuRangeEnd);
-    const isStart = jukuRangeStart && dateStr === dateKey(jukuRangeStart);
-    const isEnd = jukuRangeEnd && dateStr === dateKey(jukuRangeEnd);
+    // 範囲ハイライト（JST文字列で比較）
+    const inRange  = startStr && endStr && dateStr > startStr && dateStr < endStr;
+    const isStart  = startStr && dateStr === startStr;
+    const isEnd    = endStr   && dateStr === endStr;
     if (isStart) cls += ' range-start';
     if (isEnd)   cls += ' range-end';
     if (inRange) cls += ' in-range';
-    if (dt.getTime() === today.getTime()) cls += ' today-dot';
+    if (dateStr === todayStr) cls += ' today-dot';
 
     cell.className = cls;
     cell.textContent = d;
@@ -5049,7 +5097,10 @@ function updateJukuRangeLabel() {
   const el = document.getElementById('jukuRangeLabel');
   if (!jukuRangeStart) { el.textContent = '開始日をタップ'; return; }
   if (!jukuRangeEnd)   { el.textContent = formatJukuDate(jukuRangeStart) + ' →  終了日をタップ'; return; }
-  const days = Math.round((jukuRangeEnd - jukuRangeStart) / 86400000) + 1;
+  // JST基準で日数計算（タイムゾーンズレなし）
+  const s = new Date(dateKeyJST(jukuRangeStart) + 'T00:00:00');
+  const e = new Date(dateKeyJST(jukuRangeEnd)   + 'T00:00:00');
+  const days = Math.round((e - s) / 86400000) + 1;
   el.textContent = formatJukuDate(jukuRangeStart) + ' 〜 ' + formatJukuDate(jukuRangeEnd) + '（' + days + '日間）';
 }
 
@@ -5085,15 +5136,19 @@ async function runJukuPropose() {
     let scheduleTxt = '';
     let holidayList = [];
 
+    // JST基準の日付文字列で比較
+    const startStr = dateKeyJST(jukuRangeStart);
+    const endStr   = dateKeyJST(jukuRangeEnd);
+
     const firstMonday = getMonday(jukuRangeStart);
     let scanMonday = new Date(firstMonday);
-    while (scanMonday <= jukuRangeEnd) {
+    while (dateKeyJST(scanMonday) <= endStr) {
       currentMonday = new Date(scanMonday);
       const wkTasks = getTasksForWeek();
       for (let d = 0; d < 7; d++) {
         const dt = new Date(scanMonday); dt.setDate(scanMonday.getDate() + d);
-        if (dt < jukuRangeStart || dt > jukuRangeEnd) continue;
-        const ds = dateKey(dt);
+        const ds = dateKeyJST(dt);
+        if (ds < startStr || ds > endStr) continue;
         const dateLabel = (dt.getMonth()+1) + '/' + dt.getDate() + '(' + DAY_JP3[dt.getDay()] + ')';
         const holidayName = allHolidays[ds];
         if (holidayName) holidayList.push(dateLabel + ' ' + holidayName);
@@ -5118,7 +5173,7 @@ async function runJukuPropose() {
     const prompt =
       'あなたはこうたくん（小学5年生・グノーブル塾）の塾休み期間の学習スケジュール最適化AIです。\n\n' +
       '【期間】\n' +
-      dateKey(jukuRangeStart) + ' 〜 ' + dateKey(jukuRangeEnd) + '\n' +
+      dateKeyJST(jukuRangeStart) + ' 〜 ' + dateKeyJST(jukuRangeEnd) + '\n' +
       'モード: ' + modeDesc + '\n' +
       (holidayList.length > 0 ? '祝日: ' + holidayList.join(', ') + '\n' : '祝日なし\n') + '\n' +
       '【こうたくんの基本情報・ルール】\n' + rules + '\n\n' +
@@ -5134,23 +5189,18 @@ async function runJukuPropose() {
         : '通常週（祝日のみ）：祝日は土日と同じスロットルールを適用。祝日の月夜・水夜も塾なし。\n') +
       '祝日にサッカーがある可能性あり（予定欄を確認）。\n\n' +
       '【提案内容の指示】\n' +
-      '1. まず「既存タスクのスロット最適化」を提案する\n' +
-      '   例：月夜が空いたのでNテキストを月夜に移動→木夜に追加勉強の枠が作れる など\n' +
-      '2. 次に「追加で勉強できるスロット一覧」を表形式で出力する\n' +
-      '   優先順位：グノレブ対策（苦手単元強化） > 算数 > 理科 > 社会 > 国語\n' +
-      '   各スロットに「何分できるか」「何をやるか（具体的な単元名や内容）」を明記\n' +
-      '3. 仮カードとして追加する候補リストをJSON形式で出力する\n\n' +
+      'スロットルールと既存スケジュールを踏まえて、追加で勉強できるスロットに仮カードを配置する。\n' +
+      '優先順位：グノレブ対策（苦手単元強化） > 算数 > 理科 > 社会 > 国語\n' +
+      '既存タスクの最適な移動先も考慮した上で、空きスロットに具体的な単元名・時間を入れること。\n' +
+      '説明文・テキストは一切不要。JSONのみ出力すること。\n\n' +
       '【出力形式】\n' +
-      'まず最適化提案と追加スロット一覧をMarkdown形式で出力する（## や ### や表を使ってよい）。\n' +
-      'その後に以下のJSONブロックを出力する（```json で囲む）:\n' +
-      '```json\n' +
+      '以下のJSON配列のみを返す（説明文・コードブロック・マークダウン不要）:\n' +
       '[\n' +
-      '  { "date": "2026-07-21", "slot": "am", "subject": "算数", "unit_name": "N間違った所", "study_time": 30 },\n' +
+      '  { "date": "2026-09-21", "slot": "am", "subject": "算数", "unit_name": "N間違った所", "study_time": 30 },\n' +
       '  ...\n' +
       ']\n' +
-      '```\n' +
       'subjectは 算数/国語/理科/社会 のいずれか。slotは morning/am/pm/night のいずれか。study_timeは分数（整数）。\n' +
-      '仮カードは追加提案分のみ（既存カードは含めない）。';
+      '仮カードは追加提案分のみ（既存カードは含めない）。できるだけ多くのスロットを埋めること。';
 
     const res = await fetch('https://kota-ai-proxy.nacchukkim.workers.dev', {
       method: 'POST',
@@ -5160,28 +5210,49 @@ async function runJukuPropose() {
     const data = await res.json();
     const replyText = (data.content?.[0]?.text) || '';
 
-    // JSONブロックを抽出してカード追加
-    const jsonMatch = replyText.match(/```json\s*([\s\S]*?)```/);
+    // JSONパース（純配列 or コードブロック両対応）
     let tempCards = [];
-    if (jsonMatch) {
-      try { tempCards = JSON.parse(jsonMatch[1].trim()); } catch(e) { tempCards = []; }
-    }
+    try {
+      // ```json ブロックがあれば取り出す
+      const blockMatch = replyText.match(/```json\s*([\s\S]*?)```/);
+      const raw = blockMatch ? blockMatch[1].trim() : replyText.trim();
+      // [ で始まる配列を抽出
+      const arrMatch = raw.match(/\[[\s\S]*\]/);
+      if (arrMatch) tempCards = JSON.parse(arrMatch[0]);
+    } catch(e) { tempCards = []; }
 
-    // Markdownテキスト部分（JSONブロック除く）
-    const mdText = replyText.replace(/```json[\s\S]*?```/g, '').trim();
-
-    // 結果表示（Markdownレンダリング）
     msgs.innerHTML = '';
-    const mdDiv = document.createElement('div');
-    mdDiv.style.cssText = 'font-size:13px;color:#333;line-height:1.7;';
-    mdDiv.innerHTML = renderMarkdown(mdText);
-    msgs.appendChild(mdDiv);
 
-    // 仮カードが取れた場合、追加ボタンを表示
-    if (tempCards.length > 0) {
+    if (tempCards.length === 0) {
+      msgs.innerHTML = '<div style="color:#e24b4a;font-size:13px;padding:12px;">提案カードを取得できませんでした。もう一度お試しください。</div>';
+    } else {
+      // 件数バナーだけ表示してすぐ追加
+      const banner = document.createElement('div');
+      banner.style.cssText = 'background:#EDE9FD;border-radius:8px;padding:10px 14px;font-size:13px;color:#26215C;font-weight:700;margin-bottom:8px;';
+      banner.textContent = '✨ ' + tempCards.length + '件の仮カードを提案しました';
+      msgs.appendChild(banner);
+
+      // カード一覧プレビュー
+      const SLOT_JP2 = {morning:'朝', am:'午前', pm:'午後', night:'夜'};
+      const DAY_JP4 = ['日','月','火','水','木','金','土'];
+      const SUBJ_COLORS2 = {'算数':'#C1E8FB','国語':'#F2B9E4','理科':'#B6EBB0','社会':'#F9DB82'};
+      tempCards.forEach(c => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid #f0f0f0;font-size:12px;';
+        const dt = new Date(c.date + 'T00:00:00');
+        const dateLabel = (dt.getMonth()+1) + '/' + dt.getDate() + '(' + DAY_JP4[dt.getDay()] + ')';
+        row.innerHTML =
+          '<span style="width:70px;flex-shrink:0;color:#555;">' + dateLabel + '</span>' +
+          '<span style="width:26px;flex-shrink:0;color:#888;">' + (SLOT_JP2[c.slot]||c.slot) + '</span>' +
+          '<span style="background:' + (SUBJ_COLORS2[c.subject]||'#eee') + ';border-radius:3px;padding:1px 5px;font-size:11px;font-weight:700;flex-shrink:0;">' + c.subject + '</span>' +
+          '<span style="flex:1;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (c.unit_name||'') + '</span>' +
+          '<span style="color:#888;flex-shrink:0;">' + (c.study_time||'?') + '分</span>';
+        msgs.appendChild(row);
+      });
+
       const addBtn = document.createElement('button');
       addBtn.style.cssText = 'margin-top:10px;width:100%;background:#534AB7;border:none;color:white;border-radius:9999px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;';
-      addBtn.textContent = '仮カード ' + tempCards.length + '件をカレンダーに追加';
+      addBtn.textContent = 'カレンダーに追加';
       addBtn.onclick = () => addJukuTempCards(tempCards, addBtn);
       msgs.appendChild(addBtn);
     }
