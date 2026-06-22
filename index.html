@@ -5192,12 +5192,23 @@ async function runJukuPropose() {
         const dateLabel = (dt.getMonth()+1) + '/' + dt.getDate() + '(' + DAY_JP3[dt.getDay()] + ')';
         const holidayName = allHolidays[ds];
         if (holidayName) holidayList.push(dateLabel + ' ' + holidayName);
+        const dow = dt.getDay(); // 0=Sun,6=Sat
+        const isWeekend = (dow === 0 || dow === 6);
+        const isHoliday = !!holidayName;
+        // 日付タイプを明示（AIへの指示の核心）
+        let dayType;
+        if (jukuMode === 'long') {
+          dayType = isWeekend ? '【土日】' : '【長期休暇平日・午前OK】';
+        } else {
+          if (isWeekend) dayType = '【土日】';
+          else if (isHoliday) dayType = '【祝日・土日扱い・午前OK】';
+          else dayType = '【通常平日・午前不可】';
+        }
         const dayTasks = wkTasks.filter(t => t._dayIdx === d);
         const taskStr = dayTasks.length > 0
           ? dayTasks.map(t => (SLOT_LABELS3[t.slot]||t.slot) + '/' + t.subject + ':' + t.unit_name + (t.study_time ? '(' + t.study_time + '分)' : '')).join(' | ')
           : '（予定なし）';
-        const holidayMark = holidayName ? ' ★祝日:' + holidayName : '';
-        scheduleTxt += dateLabel + holidayMark + ': ' + taskStr + '\n';
+        scheduleTxt += dateLabel + dayType + ': ' + taskStr + '\n';
       }
       scanMonday.setDate(scanMonday.getDate() + 7);
     }
@@ -5231,21 +5242,18 @@ async function runJukuPropose() {
       '祝日一覧（期間内）: ' + (holidayList.length > 0 ? holidayList.join(', ') : 'なし') + '\n\n' +
       '【追加提案の基本方針】\n' +
       '・既存タスクはそのままこなすことが前提。既存カードは変更しない。\n' +
-      '・土日はサッカーがあり通常通り。追加提案は原則しない（既存の土日スケジュールで十分）。\n' +
-      '・追加提案の対象は「塾休みで空きが生まれたスロット」のみ。\n' +
-      (jukuMode === 'long'
-        ? '  → 平日の午前(am)スロット（通常は不可だが長期休暇中は使える）\n  → 月夜・水夜（塾がなくなった分の空き）\n'
-        : '  → 祝日の午前(am)スロット（祝日は土日扱い・ただし通常の土日と違いサッカーは基本なし）\n  → 月夜・水夜で祝日にあたる日\n') +
+      '・土日（【土日】ラベルの日）は追加提案しない。\n' +
+      '・追加できる日は【通常平日】【祝日】【長期休暇平日】のみ。\n' +
       '優先順位：算数 > 理科 > 社会 > 国語\n' +
-      '【重要】unit_nameは必ず "仮・提案" で固定。説明文不要。JSONのみ出力。\n\n' +
+      '【重要】slotは返さなくてよい。unit_nameは必ず "仮・提案" で固定。説明文不要。JSONのみ出力。\n\n' +
       '【出力形式】\n' +
       '以下のJSON配列のみを返す（説明文・コードブロック・マークダウン不要）:\n' +
       '[\n' +
-      '  { "date": "2026-09-21", "slot": "am", "subject": "算数", "unit_name": "N間違った所", "study_time": 30 },\n' +
+      '  { "date": "2026-09-21", "subject": "算数", "study_time": 30 },\n' +
       '  ...\n' +
       ']\n' +
-      'subjectは 算数/国語/理科/社会 のいずれか。slotは morning/am/pm/night のいずれか。study_timeは分数（整数）。\n' +
-      '仮カードは追加提案分のみ（既存カードは含めない）。できるだけ多くのスロットを埋めること。';
+      'subjectは 算数/国語/理科/社会 のいずれか。study_timeは分数（整数）。slotは不要。\n' +
+      '同じ日に複数教科入れてもよい。土日ラベルの日は絶対に含めないこと。';
 
     const res = await fetch('https://kota-ai-proxy.nacchukkim.workers.dev', {
       method: 'POST',
@@ -5265,6 +5273,65 @@ async function runJukuPropose() {
       const arrMatch = raw.match(/\[[\s\S]*\]/);
       if (arrMatch) tempCards = JSON.parse(arrMatch[0]);
     } catch(e) { tempCards = []; }
+
+    // 日付タイプを判定してスロットをJS側で決定
+    function assignSlot(card) {
+      const dt = new Date(card.date + 'T00:00:00');
+      const ds = card.date;
+      const dow = dt.getDay(); // 0=Sun,6=Sat
+      const isWeekend = (dow === 0 || dow === 6);
+      const isHoliday = !!allHolidays[ds];
+      const isLongVacationWeekday = (jukuMode === 'long') && !isWeekend;
+      const isHolidayWeekday = (jukuMode === 'normal') && isHoliday && !isWeekend;
+
+      // 土日はスキップ
+      if (isWeekend) return null;
+
+      // 使えるスロットを決定
+      let availableSlots;
+      if (isLongVacationWeekday || isHolidayWeekday) {
+        // 午前も使える
+        availableSlots = ['am', 'pm', 'night'];
+      } else {
+        // 通常平日：午前不可
+        const dayIdx = (dow + 6) % 7; // 月=0
+        if (dayIdx === 0) {
+          // 月曜：夜のみ（学校の宿題はあるが追加可）
+          availableSlots = ['night'];
+        } else if (dayIdx === 2) {
+          // 水曜：午後のみ（夜は塾→塾休みなので夜も可）
+          availableSlots = ['pm', 'night'];
+        } else if (dayIdx === 3) {
+          // 木曜：夜のみ（午後はプロタゴ）
+          availableSlots = ['night'];
+        } else {
+          availableSlots = ['pm', 'night'];
+        }
+      }
+
+      // 既存タスクが少ないスロットを優先して選択
+      const wkMonday = getMonday(dt);
+      const savedM = new Date(currentMonday);
+      currentMonday = new Date(wkMonday);
+      const wkTasks = getTasksForWeek();
+      currentMonday = savedM;
+      const dayIdx2 = (dow + 6) % 7;
+      const SLOT_IDX2 = {morning:0, am:1, pm:2, night:3};
+
+      // 各スロットの既存タスク数を数えて一番空いているところを選ぶ
+      let bestSlot = availableSlots[0];
+      let minCount = 999;
+      for (const slot of availableSlots) {
+        const count = wkTasks.filter(t => t._dayIdx === dayIdx2 && t.slot === slot).length;
+        if (count < minCount) { minCount = count; bestSlot = slot; }
+      }
+      return { ...card, slot: bestSlot, unit_name: '仮・提案' };
+    }
+
+    // 土日除外＋スロット割り当て
+    tempCards = tempCards
+      .map(c => assignSlot(c))
+      .filter(c => c !== null);
 
     // 日付昇順にソート
     tempCards.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
