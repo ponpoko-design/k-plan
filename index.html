@@ -7297,6 +7297,45 @@ function _tCancel() {
 }
 
 function openMoveModal(task, toDay, toSlot) {
+  // one_timeカード（繰り返しなし）はポップアップなしで直接移動
+  if (task.display_type !== 'weekly') {
+    takeSnapshot();
+    const SLOTS2 = ['plan','morning','am','pm','night'];
+    const wk = getWeekKey();
+    if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
+    const lo = localOverrides[wk];
+    if (!lo.added) lo.added = [];
+    const addIdx = lo.added.findIndex(a => a.uid === task.uid);
+    if (addIdx >= 0) {
+      lo.added[addIdx]._dayIdx = toDay;
+      lo.added[addIdx].slot = SLOTS2[toSlot] || 'night';
+      if (lo.added[addIdx]._fromDateExact) {
+        const newDate = addDays(currentMonday, toDay);
+        const newDateStr = newDate.getFullYear() + '-' +
+          String(newDate.getMonth()+1).padStart(2,'0') + '-' +
+          String(newDate.getDate()).padStart(2,'0');
+        lo.added[addIdx]._fromDateExact = newDateStr;
+        lo.added[addIdx].date = newDateStr;
+      }
+    } else {
+      // OVERRIDE_DATA等のone_timeカードを移動
+      if (!lo.hidden) lo.hidden = {};
+      lo.hidden[task.uid] = true;
+      const newDate = addDays(currentMonday, toDay);
+      const newDateStr = newDate.getFullYear() + '-' +
+        String(newDate.getMonth()+1).padStart(2,'0') + '-' +
+        String(newDate.getDate()).padStart(2,'0');
+      const movedCard = {
+        ...task, uid: 'moved_'+Date.now(), display_type:'one_time',
+        _dayIdx: toDay, slot: SLOTS2[toSlot]||'night', _slotIdx: toSlot,
+        weekday_index: toDay, order: 99, repeat_key: null
+      };
+      if (movedCard._fromDateExact) { movedCard._fromDateExact = newDateStr; movedCard.date = newDateStr; }
+      lo.added.push(movedCard);
+    }
+    saveLocal(); render();
+    return;
+  }
   _pendingMove = {task, toDay, toSlot};
   const slotNames = {0:'予定',1:'朝',2:'午前',3:'午後',4:'夜'};
   document.getElementById('moveModalTitle').textContent =
@@ -7365,11 +7404,20 @@ function confirmMove() {
     }
     const addIdx = lo.added.findIndex(a => a.uid === orig.uid);
     if (addIdx >= 0) lo.added.splice(addIdx, 1);
-    lo.added.push({
+    const newDate = addDays(currentMonday, toDay);
+    const newDateStr = newDate.getFullYear() + '-' +
+      String(newDate.getMonth()+1).padStart(2,'0') + '-' +
+      String(newDate.getDate()).padStart(2,'0');
+    const movedCard = {
       ...orig, uid:'moved_'+Date.now(), display_type:'one_time',
       _dayIdx:toDay, slot:SLOTS2[toSlot]||'night', _slotIdx:toSlot,
       weekday_index:toDay, order:99, repeat_key:null
-    });
+    };
+    if (movedCard._fromDateExact) {
+      movedCard._fromDateExact = newDateStr;
+      movedCard.date = newDateStr;
+    }
+    lo.added.push(movedCard);
   }
   saveLocal(); closeMoveModal(); render();
 }
