@@ -7352,11 +7352,20 @@ function _tCancel() {
 }
 
 function openMoveModal(taskRef, toDay, toSlot) {
-  // taskRefはuidだけの場合があるので、実際のタスクオブジェクトを取得
+  // taskRefはuidだけの場合があるので、実際のタスクオブジェクトをkey+uidで正確に取得
   const allTasks = getTasksForWeek();
-  const task = (taskRef._fromDateExact !== undefined || taskRef.display_type !== undefined)
-    ? taskRef
-    : (allTasks.find(t => t.uid === taskRef.uid) || taskRef);
+  let task;
+  if (taskRef._fromDateExact !== undefined || taskRef.display_type !== undefined) {
+    task = taskRef;
+  } else {
+    // keyからdayIdx・slotIdxを取得して正確に特定
+    const keyParts = (taskRef.key || '').split('-');
+    const keyDay  = keyParts.length >= 1 ? parseInt(keyParts[0]) : -1;
+    const keySlot = keyParts.length >= 2 ? parseInt(keyParts[1]) : -1;
+    task = allTasks.find(t =>
+      t.uid === taskRef.uid && t._dayIdx === keyDay && t._slotIdx === keySlot
+    ) || allTasks.find(t => t.uid === taskRef.uid) || taskRef;
+  }
 
   // weeklyカード（繰り返し）のみポップアップ表示、それ以外は直接移動
   if (task.display_type !== 'weekly') {
