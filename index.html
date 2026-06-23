@@ -300,8 +300,27 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
           </button>
         </div>
 
-
-      </div>
+        <!-- バックアップ -->
+        <div style="display:flex;gap:8px;margin-top:2px;">
+          <button onclick="manualBackup()" style="flex:1;border:none;border-radius:12px;background:#F3F0FF;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:10px;padding:10px 14px;text-align:left;transition:opacity .15s;box-sizing:border-box;" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
+            <div style="width:34px;height:34px;border-radius:9px;background:#DDD6FE;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#4C1D95" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:14px;font-weight:700;color:#2D1B69;">JSONダウンロード</div>
+              <div id="lastManualBackupLabel" style="font-size:11px;color:#888;margin-top:1px;">手動バックアップ</div>
+            </div>
+          </button>
+          <button onclick="showBackupHistory()" style="flex:1;border:none;border-radius:12px;background:#F0FDF4;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:10px;padding:10px 14px;text-align:left;transition:opacity .15s;box-sizing:border-box;" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
+            <div style="width:34px;height:34px;border-radius:9px;background:#BBF7D0;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#14532D" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1018 0 9 9 0 00-18 0"/><polyline points="3 12 7 8 11 12"/><line x1="7" y1="8" x2="7" y2="16"/></svg>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:14px;font-weight:700;color:#14532D;">自動バックアップ</div>
+              <div id="lastAutoBackupLabel" style="font-size:11px;color:#888;margin-top:1px;">復元する</div>
+            </div>
+          </button>
+        </div>
     </div>
   </div>
   <!-- 全体バランスチェック サイドパネル/ボトムシート -->
@@ -1360,6 +1379,20 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
     </div>
   </div>
 </div>
+
+  <!-- バックアップ復元モーダル -->
+  <div class="modal-bg" id="backupModal" style="z-index:220;">
+    <div class="modal" style="width:min(400px,92vw);">
+      <div class="modal-hdr">
+        <span>自動バックアップから復元</span>
+        <button class="modal-close" onclick="document.getElementById('backupModal').classList.remove('open')">×</button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size:13px;color:#888;margin-bottom:12px;">過去7日分の自動バックアップです。復元すると現在のデータが上書きされます。</div>
+        <div id="backupList" style="display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
+    </div>
+  </div>
 
   <!-- 月カレンダーモーダル（翌月・先月ボタン用） -->
   <div class="modal-bg" id="monthCalModal" style="z-index:220;">
@@ -7373,7 +7406,6 @@ function openMoveModal(taskRef, toDay, toSlot) {
       lo.added[addIdx].date = newDateStr;
     } else {
       if (!lo.hidden) lo.hidden = {};
-      // weeklyカードはuid+_dayIdxで非表示にする
       const hkey = (task.display_type === 'weekly') ? task.uid + '_' + task._dayIdx : task.uid;
       lo.hidden[hkey] = true;
       const newDate = addDays(currentMonday, toDay);
@@ -7462,12 +7494,9 @@ function confirmMove() {
     const movedCard = {
       ...orig, uid:'moved_'+Date.now(), display_type:'one_time',
       _dayIdx:toDay, slot:SLOTS2[toSlot]||'night', _slotIdx:toSlot,
-      weekday_index:toDay, order:99, repeat_key:null
+      weekday_index:toDay, order:99, repeat_key:null,
+      _fromDateExact: newDateStr, date: newDateStr
     };
-    if (movedCard._fromDateExact) {
-      movedCard._fromDateExact = newDateStr;
-      movedCard.date = newDateStr;
-    }
     lo.added.push(movedCard);
   }
   saveLocal(); closeMoveModal(); render();
@@ -8021,6 +8050,99 @@ async function checkAutoSaveRecords() {
   }
 }
 
+// ===== バックアップ機能 =====
+
+// 手動バックアップ：JSONダウンロード
+function manualBackup() {
+  const now = new Date();
+  const jst = new Date(now.getTime() + 9*60*60*1000);
+  const ts = jst.toISOString().slice(0,16).replace('T','_').replace(':','');
+  const data = JSON.stringify({ overrides: localOverrides, savedAt: jst.toISOString() }, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'kota_backup_' + ts + '.json';
+  a.click(); URL.revokeObjectURL(url);
+  document.getElementById('lastManualBackupLabel').textContent = '最終: ' + jst.toISOString().slice(0,16).replace('T',' ');
+  showToast('💾 バックアップをダウンロードしました', 2500);
+}
+
+// 自動バックアップ：Firestoreのbackupsコレクションに保存（毎日1回）
+async function autoBackup() {
+  try {
+    if (typeof db === 'undefined') return;
+    const now = new Date();
+    const jst = new Date(now.getTime() + 9*60*60*1000);
+    const dateStr = jst.toISOString().slice(0,10); // YYYY-MM-DD
+    // 今日のバックアップが既にあればスキップ
+    const existing = await db.collection('backups').doc(dateStr).get();
+    if (existing.exists) return;
+    await db.collection('backups').doc(dateStr).set({
+      overrides: localOverrides,
+      savedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    // 7日より古いバックアップを削除
+    const cutoff = new Date(jst); cutoff.setDate(cutoff.getDate() - 7);
+    const cutoffStr = cutoff.toISOString().slice(0,10);
+    const old = await db.collection('backups').where('savedAt', '<', new Date(cutoff)).get();
+    old.forEach(doc => doc.ref.delete());
+    // ラベル更新
+    const label = document.getElementById('lastAutoBackupLabel');
+    if (label) label.textContent = '最終: ' + dateStr;
+    console.log('自動バックアップ完了:', dateStr);
+  } catch(e) {
+    console.log('自動バックアップエラー:', e);
+  }
+}
+
+// バックアップ履歴モーダルを開いて一覧表示
+async function showBackupHistory() {
+  document.getElementById('aiModal').classList.remove('open');
+  const listEl = document.getElementById('backupList');
+  listEl.innerHTML = '<div style="text-align:center;color:#888;padding:20px;">読み込み中...</div>';
+  document.getElementById('backupModal').classList.add('open');
+  resetAndInitModalDrag('backupModal');
+  try {
+    const snap = await db.collection('backups').orderBy('savedAt', 'desc').limit(7).get();
+    if (snap.empty) {
+      listEl.innerHTML = '<div style="text-align:center;color:#888;padding:20px;">バックアップがありません</div>';
+      return;
+    }
+    listEl.innerHTML = '';
+    snap.forEach(doc => {
+      const d = doc.data();
+      const dateStr = doc.id;
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;background:#f8f8f8;border-radius:10px;padding:12px 14px;';
+      row.innerHTML =
+        '<div>' +
+        '<div style="font-size:14px;font-weight:700;color:#1a2744;">' + dateStr + '</div>' +
+        '</div>' +
+        '<button onclick="restoreBackup(\'' + dateStr + '\')" style="background:#534AB7;border:none;color:white;border-radius:9999px;padding:6px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">復元</button>';
+      listEl.appendChild(row);
+    });
+  } catch(e) {
+    listEl.innerHTML = '<div style="text-align:center;color:#e24b4a;padding:20px;">読み込みエラー</div>';
+  }
+}
+
+// バックアップから復元
+async function restoreBackup(dateStr) {
+  if (!confirm(dateStr + ' のバックアップから復元しますか？\n現在のデータは上書きされます。')) return;
+  try {
+    const doc = await db.collection('backups').doc(dateStr).get();
+    if (!doc.exists) { alert('バックアップが見つかりません'); return; }
+    takeSnapshot(); // undoで戻せるように
+    localOverrides = doc.data().overrides || {};
+    saveLocal();
+    render();
+    document.getElementById('backupModal').classList.remove('open');
+    showToast('✅ ' + dateStr + ' のバックアップから復元しました', 3000);
+  } catch(e) {
+    alert('復元エラー: ' + e.message);
+  }
+}
+
 // ===== 全モーダル共通ドラッグ =====
 function initModalDrag(bgId) {
   const bg = document.getElementById(bgId);
@@ -8164,7 +8286,21 @@ window.addEventListener('DOMContentLoaded', function() {
   if (localStorage.getItem('auth') === '1') {
     document.getElementById('pwScreen').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
-    loadFromFirestore().then(() => { render(); checkAutoSaveRecords(); });
+    loadFromFirestore().then(() => {
+      render();
+      checkAutoSaveRecords();
+      // 自動バックアップ（毎日1回）
+      setTimeout(autoBackup, 3000);
+      // 自動バックアップの最終日時をラベルに表示
+      if (typeof db !== 'undefined') {
+        db.collection('backups').orderBy('savedAt','desc').limit(1).get().then(snap => {
+          if (!snap.empty) {
+            const label = document.getElementById('lastAutoBackupLabel');
+            if (label) label.textContent = '最終: ' + snap.docs[0].id;
+          }
+        }).catch(()=>{});
+      }
+    });
   }
 });
 </script>
