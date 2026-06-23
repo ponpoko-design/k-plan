@@ -1668,7 +1668,7 @@ function render() {
     const name = t.unit_name || '';
     const displayName = name;
     const span = document.createElement('span');
-    span.style.cssText = 'pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;display:flex;align-items:center;gap:3px;';
+    span.style.cssText = 'pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;display:flex;align-items:center;justify-content:center;gap:3px;width:100%;';
     if (t._kadaiStar) {
       const starSvg = document.createElementNS('http://www.w3.org/2000/svg','svg');
       starSvg.setAttribute('width','10'); starSvg.setAttribute('height','10');
