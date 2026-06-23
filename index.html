@@ -1361,6 +1361,33 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
   </div>
 </div>
 
+  <!-- 月カレンダーモーダル（翌月・先月ボタン用） -->
+  <div class="modal-bg" id="monthCalModal" style="z-index:220;">
+    <div class="modal" style="width:min(340px,92vw);">
+      <div class="modal-hdr">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button onclick="_monthCalMonth--;if(_monthCalMonth<1){_monthCalMonth=12;_monthCalYear--;}renderMonthCalModal();" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:50%;width:28px;height:28px;font-size:16px;cursor:pointer;">‹</button>
+          <span id="monthCalTitle" style="font-size:16px;font-weight:700;min-width:90px;text-align:center;"></span>
+          <button onclick="_monthCalMonth++;if(_monthCalMonth>12){_monthCalMonth=1;_monthCalYear++;}renderMonthCalModal();" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:50%;width:28px;height:28px;font-size:16px;cursor:pointer;">›</button>
+        </div>
+        <button class="modal-close" onclick="document.getElementById('monthCalModal').classList.remove('open')">×</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:6px;">
+          <div style="text-align:center;font-size:12px;color:#888;padding:4px;">月</div>
+          <div style="text-align:center;font-size:12px;color:#888;padding:4px;">火</div>
+          <div style="text-align:center;font-size:12px;color:#888;padding:4px;">水</div>
+          <div style="text-align:center;font-size:12px;color:#888;padding:4px;">木</div>
+          <div style="text-align:center;font-size:12px;color:#888;padding:4px;">金</div>
+          <div style="text-align:center;font-size:12px;color:#378add;padding:4px;">土</div>
+          <div style="text-align:center;font-size:12px;color:#e24b4a;padding:4px;">日</div>
+        </div>
+        <div id="monthCalGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;"></div>
+        <div style="text-align:center;margin-top:10px;font-size:12px;color:#888;">日付をタップするとその週を表示</div>
+      </div>
+    </div>
+  </div>
+
 <script>
 // ===== データ定義 =====
 const SLOTS = ['plan','morning','am','pm','night'];
@@ -2521,9 +2548,20 @@ function hideCopyCalendar() {
 }
 let copyCalYear, copyCalMonth;
 function showCopyCalendar() {
-  const now = new Date();
-  copyCalYear = now.getFullYear();
-  copyCalMonth = now.getMonth();
+  const t = document.getElementById('copyModal')._task;
+  let base;
+  if (t) {
+    // コピー元の日付の月でカレンダーを開く
+    if (t._fromDateExact) {
+      base = new Date(t._fromDateExact + 'T00:00:00');
+    } else {
+      base = addDays(currentMonday, t._dayIdx || 0);
+    }
+  } else {
+    base = new Date();
+  }
+  copyCalYear  = base.getFullYear();
+  copyCalMonth = base.getMonth();
   renderCopyCal();
   document.getElementById('copyCalWrap').style.display='block';
 }
@@ -2535,6 +2573,17 @@ function renderCopyCal() {
   const startOffset = (firstDay+6)%7;
   const today = new Date(); today.setHours(0,0,0,0);
   const selectedStr = document.getElementById('copyTargetDate').getAttribute('data-selected')||'';
+  // コピー元日付
+  const t = document.getElementById('copyModal')._task;
+  let srcDateStr = '';
+  if (t) {
+    if (t._fromDateExact) {
+      srcDateStr = t._fromDateExact;
+    } else {
+      const sd = addDays(currentMonday, t._dayIdx || 0);
+      srcDateStr = sd.getFullYear()+'-'+String(sd.getMonth()+1).padStart(2,'0')+'-'+String(sd.getDate()).padStart(2,'0');
+    }
+  }
   let grid = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;">';
   ['月','火','水','木','金','土','日'].forEach((d,i)=>{
     const color=(i>=5)?'#e24b4a':'#888';
@@ -2546,12 +2595,14 @@ function renderCopyCal() {
     const dtStr=y+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
     const isToday=dt.getTime()===today.getTime();
     const isSel=dtStr===selectedStr;
+    const isSrc=dtStr===srcDateStr;
     const isPast=dt<today;
     const dow=dt.getDay();
     const isHoliday=!!JAPAN_HOLIDAYS[dtStr];
     const isRed=(dow===0||dow===6||isHoliday);
     let style='font-size:13px;padding:5px 2px;border-radius:50%;cursor:pointer;';
     if(isSel) style+='background:#1a2744;color:white;';
+    else if(isSrc) style+='background:rgba(26,39,68,0.12);color:#1a2744;font-weight:700;';
     else if(isToday) style+='border:2px solid #1a2744;color:#1a2744;font-weight:700;';
     else if(isPast) style+='color:#ccc;';
     else if(isRed) style+='color:#e24b4a;font-weight:700;';
@@ -7022,18 +7073,22 @@ function navNext() {
   else changeWeek(1);
 }
 function navPrevMonth() {
-  const d = new Date(currentMonday);
-  d.setMonth(d.getMonth() - 1);
-  currentMonday = getMonday(d);
-  render();
-  updateNavLabels();
+  const base = new Date(currentMonday);
+  base.setMonth(base.getMonth() - 1);
+  _monthCalYear  = base.getFullYear();
+  _monthCalMonth = base.getMonth() + 1;
+  renderMonthCalModal();
+  document.getElementById('monthCalModal').classList.add('open');
+  resetAndInitModalDrag('monthCalModal');
 }
 function navNextMonth() {
-  const d = new Date(currentMonday);
-  d.setMonth(d.getMonth() + 1);
-  currentMonday = getMonday(d);
-  render();
-  updateNavLabels();
+  const base = new Date(currentMonday);
+  base.setMonth(base.getMonth() + 1);
+  _monthCalYear  = base.getFullYear();
+  _monthCalMonth = base.getMonth() + 1;
+  renderMonthCalModal();
+  document.getElementById('monthCalModal').classList.add('open');
+  resetAndInitModalDrag('monthCalModal');
 }
 function phoneMoveDays(dir) {
   phoneViewStart = (phoneViewStart + dir + 7) % 7;
@@ -7969,6 +8024,144 @@ async function checkAutoSaveRecords() {
     console.log('自動保存エラー:', e);
   }
 }
+
+// ===== 全モーダル共通ドラッグ =====
+function initModalDrag(bgId) {
+  const bg = document.getElementById(bgId);
+  if (!bg) return;
+  const modal = bg.querySelector('.modal');
+  const hdr   = bg.querySelector('.modal-hdr');
+  if (!modal || !hdr) return;
+  if (hdr._dragInited) return;
+  hdr._dragInited = true;
+  hdr.style.cursor = 'grab';
+  let dragging = false, ox = 0, oy = 0;
+  const onDown = e => {
+    if (e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT') return;
+    dragging = true;
+    // modalをfixedに切り替えて現在位置を維持
+    if (modal.style.position !== 'fixed') {
+      const r = modal.getBoundingClientRect();
+      modal.style.position = 'fixed';
+      modal.style.left = r.left + 'px';
+      modal.style.top  = r.top  + 'px';
+      modal.style.margin = '0';
+      bg.style.alignItems = 'unset';
+      bg.style.justifyContent = 'unset';
+    }
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    const cy = e.touches ? e.touches[0].clientY : e.clientY;
+    const r = modal.getBoundingClientRect();
+    ox = cx - r.left; oy = cy - r.top;
+    hdr.style.cursor = 'grabbing';
+    e.preventDefault();
+  };
+  const onMove = e => {
+    if (!dragging) return;
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    const cy = e.touches ? e.touches[0].clientY : e.clientY;
+    const x = Math.max(0, Math.min(window.innerWidth  - modal.offsetWidth,  cx - ox));
+    const y = Math.max(0, Math.min(window.innerHeight - modal.offsetHeight, cy - oy));
+    modal.style.left = x + 'px';
+    modal.style.top  = y + 'px';
+    e.preventDefault();
+  };
+  const onUp = () => { dragging = false; hdr.style.cursor = 'grab'; };
+  hdr.addEventListener('mousedown',  onDown, { passive: false });
+  hdr.addEventListener('touchstart', onDown, { passive: false });
+  document.addEventListener('mousemove',  onMove, { passive: false });
+  document.addEventListener('touchmove',  onMove, { passive: false });
+  document.addEventListener('mouseup',  onUp);
+  document.addEventListener('touchend', onUp);
+}
+
+// modalが開くたびに位置をリセットしてドラッグ初期化
+const _origOpenModal = window._origOpenModal;
+function resetAndInitModalDrag(bgId) {
+  const bg = document.getElementById(bgId);
+  if (!bg) return;
+  const modal = bg.querySelector('.modal');
+  if (modal) { modal.style.position=''; modal.style.left=''; modal.style.top=''; modal.style.margin=''; }
+  const bgEl = bg;
+  bgEl.style.alignItems = ''; bgEl.style.justifyContent = '';
+  initModalDrag(bgId);
+}
+
+// 既存のopen関数をラップしてドラッグ初期化を注入
+['aiModal','proposeModal','gnorevModal','detailModal','addModal','copyModal',
+ 'statsModal','ruleChatModal','saveRangeModal','repeatRangeModal'].forEach(id => {
+  const bg = document.getElementById(id);
+  if (!bg) return;
+  const observer = new MutationObserver(() => {
+    if (bg.classList.contains('open') || bg.style.display === 'flex') {
+      resetAndInitModalDrag(id);
+    }
+  });
+  observer.observe(bg, { attributes: true, attributeFilter: ['class','style'] });
+});
+
+// ===== 月カレンダーモーダル（翌月・先月ボタン用）=====
+let _monthCalYear = 0, _monthCalMonth = 0;
+function openMonthCalModal(offsetMonth) {
+  const base = getTodayJST();
+  base.setMonth(base.getMonth() + offsetMonth);
+  _monthCalYear  = base.getFullYear();
+  _monthCalMonth = base.getMonth() + 1;
+  renderMonthCalModal();
+  document.getElementById('monthCalModal').classList.add('open');
+  resetAndInitModalDrag('monthCalModal');
+}
+function renderMonthCalModal() {
+  const y = _monthCalYear, m = _monthCalMonth;
+  document.getElementById('monthCalTitle').textContent = m + '月 ' + y;
+  const grid = document.getElementById('monthCalGrid');
+  grid.innerHTML = '';
+  const first = new Date(y, m-1, 1).getDay(); // 0=日
+  const days  = new Date(y, m, 0).getDate();
+  const offset = first === 0 ? 6 : first - 1; // 月曜始まり
+  for (let i = 0; i < offset; i++) {
+    const blank = document.createElement('div'); grid.appendChild(blank);
+  }
+  const today = getTodayJST();
+  for (let d = 1; d <= days; d++) {
+    const dt = new Date(y, m-1, d);
+    const cell = document.createElement('div');
+    cell.textContent = d;
+    cell.style.cssText = 'padding:6px;text-align:center;border-radius:50%;cursor:pointer;font-size:14px;font-weight:600;line-height:1.4;';
+    const isToday = dt.toDateString() === today.toDateString();
+    const dow = dt.getDay();
+    if (isToday) { cell.style.background = 'var(--navy)'; cell.style.color = 'white'; }
+    else if (dow === 0) cell.style.color = '#e24b4a';
+    else if (dow === 6) cell.style.color = '#378add';
+    cell.onmouseover = () => { if (!isToday) cell.style.background = '#f0f2f8'; };
+    cell.onmouseout  = () => { if (!isToday) cell.style.background = ''; };
+    cell.onclick = () => {
+      currentMonday = getMonday(dt);
+      render(); updateNavLabels();
+      document.getElementById('monthCalModal').classList.remove('open');
+    };
+    grid.appendChild(cell);
+  }
+}
+
+// ===== コピーカレンダーをコピー元の月で開く & 元の日を薄丸表示 =====
+let _copySourceDate = null;
+const _origCopyTask = window.copyTask;
+// copyTask呼び出し時にコピー元日付を記録
+function patchCopyCalendar() {
+  const origCopyTask = copyTask;
+  window.copyTask = function() {
+    const t = document.getElementById('detailModal')._task;
+    if (t && (t._fromDateExact || t.date)) {
+      _copySourceDate = new Date((t._fromDateExact || t.date) + 'T00:00:00');
+    } else {
+      // 現在週の表示からコピー元の日付を推定
+      _copySourceDate = null;
+    }
+    origCopyTask();
+  };
+}
+document.addEventListener('DOMContentLoaded', () => { patchCopyCalendar(); });
 
 // セッション中は再入力不要
 window.addEventListener('DOMContentLoaded', function() {
