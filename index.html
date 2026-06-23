@@ -8144,6 +8144,27 @@ async function restoreBackup(dateStr) {
 }
 
 // ===== 全モーダル共通ドラッグ =====
+// ===== 全モーダル共通ドラッグ =====
+let _modalDragState = { dragging: false, modal: null, ox: 0, oy: 0 };
+
+document.addEventListener('mousemove', e => {
+  if (!_modalDragState.dragging || !_modalDragState.modal) return;
+  const modal = _modalDragState.modal;
+  const x = Math.max(0, Math.min(window.innerWidth - modal.offsetWidth, e.clientX - _modalDragState.ox));
+  const y = Math.max(0, Math.min(window.innerHeight - modal.offsetHeight, e.clientY - _modalDragState.oy));
+  modal.style.left = x + 'px'; modal.style.top = y + 'px';
+});
+document.addEventListener('touchmove', e => {
+  if (!_modalDragState.dragging || !_modalDragState.modal) return;
+  const modal = _modalDragState.modal;
+  const cx = e.touches[0].clientX, cy = e.touches[0].clientY;
+  const x = Math.max(0, Math.min(window.innerWidth - modal.offsetWidth, cx - _modalDragState.ox));
+  const y = Math.max(0, Math.min(window.innerHeight - modal.offsetHeight, cy - _modalDragState.oy));
+  modal.style.left = x + 'px'; modal.style.top = y + 'px';
+}, { passive: true });
+document.addEventListener('mouseup',  () => { _modalDragState.dragging = false; });
+document.addEventListener('touchend', () => { _modalDragState.dragging = false; });
+
 function initModalDrag(bgId) {
   const bg = document.getElementById(bgId);
   if (!bg) return;
@@ -8153,10 +8174,8 @@ function initModalDrag(bgId) {
   if (hdr._dragInited) return;
   hdr._dragInited = true;
   hdr.style.cursor = 'grab';
-  let dragging = false, ox = 0, oy = 0;
   const onDown = e => {
     if (e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT') return;
-    dragging = true;
     if (modal.style.position !== 'fixed') {
       const r = modal.getBoundingClientRect();
       modal.style.position = 'fixed';
@@ -8169,27 +8188,11 @@ function initModalDrag(bgId) {
     const cx = e.touches ? e.touches[0].clientX : e.clientX;
     const cy = e.touches ? e.touches[0].clientY : e.clientY;
     const r = modal.getBoundingClientRect();
-    ox = cx - r.left; oy = cy - r.top;
+    _modalDragState = { dragging: true, modal, ox: cx - r.left, oy: cy - r.top };
     hdr.style.cursor = 'grabbing';
-    e.preventDefault();
   };
-  const onMove = e => {
-    if (!dragging) return;
-    const cx = e.touches ? e.touches[0].clientX : e.clientX;
-    const cy = e.touches ? e.touches[0].clientY : e.clientY;
-    const x = Math.max(0, Math.min(window.innerWidth  - modal.offsetWidth,  cx - ox));
-    const y = Math.max(0, Math.min(window.innerHeight - modal.offsetHeight, cy - oy));
-    modal.style.left = x + 'px';
-    modal.style.top  = y + 'px';
-    e.preventDefault();
-  };
-  const onUp = () => { dragging = false; hdr.style.cursor = 'grab'; };
   hdr.addEventListener('mousedown',  onDown);
-  hdr.addEventListener('touchstart', onDown, { passive: false });
-  document.addEventListener('mousemove',  onMove);
-  document.addEventListener('touchmove',  onMove, { passive: true });
-  document.addEventListener('mouseup',  onUp);
-  document.addEventListener('touchend', onUp);
+  hdr.addEventListener('touchstart', onDown, { passive: true });
 }
 
 // modalが開くたびに位置をリセットしてドラッグ初期化
