@@ -7352,8 +7352,10 @@ function _tCancel() {
 }
 
 function openMoveModal(task, toDay, toSlot) {
-  // one_timeカード（繰り返しなし）はポップアップなしで直接移動
-  if (task.display_type !== 'weekly') {
+  // one_timeかつ_fromDateExactあり（課題カード等）はポップアップなしで直接移動
+  // weeklyカード・_isWeeklyMovedカードはポップアップを表示する
+  const isSimpleOneTime = task.display_type !== 'weekly' && !task._isWeeklyMoved;
+  if (isSimpleOneTime) {
     takeSnapshot();
     const SLOTS2 = ['plan','morning','am','pm','night'];
     const wk = getWeekKey();
