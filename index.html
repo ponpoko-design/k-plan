@@ -3915,19 +3915,10 @@ function confirmMultiDelete() {
 // ===== Undo機能 =====
 function undoLast() {
   if (!_undoSnapshot) return;
-  // スナップショットを一時変数に退避してからnullに
   const snapshot = JSON.parse(JSON.stringify(_undoSnapshot));
   _undoSnapshot = null;
   localOverrides = snapshot;
-  localStorage.setItem('schedule_overrides', JSON.stringify(localOverrides));
-  // Firestoreにも反映
-  if (typeof db !== 'undefined') {
-    db.collection('schedules').doc('main').set({
-      overrides: localOverrides,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      updatedBy: DEVICE_ID
-    }).catch(e => console.log('undo Firestore error:', e));
-  }
+  saveLocal(); // _savingToFirestoreフラグを立ててからFirestore保存
   updateUndoBtn();
   render();
   showToast('元に戻しました ↩');
@@ -7387,7 +7378,9 @@ function openMoveModal(taskRef, toDay, toSlot) {
       lo.added[addIdx].date = newDateStr;
     } else {
       if (!lo.hidden) lo.hidden = {};
-      lo.hidden[task.uid] = true;
+      // weeklyカードはuid+_dayIdxで非表示にする
+      const hkey = (task.display_type === 'weekly') ? task.uid + '_' + task._dayIdx : task.uid;
+      lo.hidden[hkey] = true;
       const newDate = addDays(currentMonday, toDay);
       const newDateStr = newDate.getFullYear() + '-' +
         String(newDate.getMonth()+1).padStart(2,'0') + '-' +
@@ -7432,6 +7425,8 @@ function confirmMove() {
   const orig = allTasks.find(t =>
     (t.uid === task.uid || t.id === task.id) &&
     t._dayIdx === fromDayIdx && t._slotIdx === fromSlotIdx
+  ) || allTasks.find(t =>
+    (t.uid === task.uid || t.id === task.id) && t._dayIdx === fromDayIdx
   ) || allTasks.find(t => t.uid === task.uid || t.id === task.id);
   if (!orig) { closeMoveModal(); return; }
 
