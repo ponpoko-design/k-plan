@@ -230,6 +230,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
       <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
     </button>
     <button class="bnav-btn" onclick="openAIModal()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
       <svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M12 2v4M8 2h8"/><circle cx="9" cy="13" r="1.5" fill="currentColor" stroke="none"/><circle cx="15" cy="13" r="1.5" fill="currentColor" stroke="none"/><line x1="9" y1="17" x2="15" y2="17"/><line x1="7" y1="8" x2="7" y2="6"/><line x1="17" y1="8" x2="17" y2="6"/></svg>
     </button>
     <button class="bnav-btn" onclick="showStats()">
@@ -261,7 +262,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
           </div>
           <div style="flex:1;min-width:0;">
             <div style="font-size:17px;font-weight:500;color:#26215C;">スケジュールを提案する</div>
-            <div style="font-size:13px;color:#534AB7;margin-top:3px;opacity:.8;">グノレブ前後 / 塾休み / 課題学習</div>
+            <div style="font-size:13px;color:#534AB7;margin-top:3px;opacity:.8;">グノレブ前後 / 塾休み / 課題学習 / 特別講習</div>
           </div>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7F77DD" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
@@ -1854,7 +1855,7 @@ function render() {
       const markBlock = document.createElement('div');
       markBlock.className = 'kadai-star-block';
       markBlock.style.cssText = 'background:' + (t._lectureMark || '#378add') + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;width:18px;min-height:100%;pointer-events:none;';
-      markBlock.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="white" style="display:block;pointer-events:none;"><circle cx="12" cy="12" r="4" fill="white"/><line x1="12" y1="2" x2="12" y2="5" stroke="white" stroke-width="2.5" stroke-linecap="round"/><line x1="12" y1="19" x2="12" y2="22" stroke="white" stroke-width="2.5" stroke-linecap="round"/><line x1="2" y1="12" x2="5" y2="12" stroke="white" stroke-width="2.5" stroke-linecap="round"/><line x1="19" y1="12" x2="22" y2="12" stroke="white" stroke-width="2.5" stroke-linecap="round"/></svg>';
+      markBlock.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="white" style="display:block;pointer-events:none;"><circle cx="12" cy="12" r="3.5" fill="white"/><line x1="12" y1="1.5" x2="12" y2="5" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="19" x2="12" y2="22.5" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="1.5" y1="12" x2="5" y2="12" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="19" y1="12" x2="22.5" y2="12" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="4.2" y1="4.2" x2="6.5" y2="6.5" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="17.5" y1="17.5" x2="19.8" y2="19.8" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="19.8" y1="4.2" x2="17.5" y2="6.5" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="6.5" y1="17.5" x2="4.2" y2="19.8" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>';
       const textBlock = document.createElement('div');
       textBlock.className = 'kadai-text';
       textBlock.style.pointerEvents = 'none';
@@ -5580,15 +5581,14 @@ function runLecture() {
       lo.hidden[hkey] = true;
     });
 
-    const now = getNowJST();
-    const mkCard = (slot, subject, unit_name, study_time) => {
+    const mkCard = (slot, subject, unit_name, note, study_time) => {
       const subjClass = { '算数':'math','国語':'jp','理科':'sci','社会':'soc' }[subject] || 'plan';
       return {
         uid: 'lec_'+dateStr+'_'+slot+'_'+subject+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
         date: dateStr, _fromDateExact: dateStr,
         weekday: DAY_JP[dt.getDay()], weekday_index: dayIdx, _dayIdx: dayIdx,
         slot, _slotIdx: {am:2,pm:3,night:4}[slot]||3,
-        subject, unit_name, study_time,
+        subject, unit_name, note: note || '', study_time,
         color: SUBJ_BG_MAP[subjClass] || '#C1E8FB',
         _lectureCard: true,
         _lectureMark: MARK_COLOR[subjClass] || '#378add',
@@ -5596,23 +5596,19 @@ function runLecture() {
       };
     };
 
-    // ①必須：算数復習（pm）
-    lo.added.push(mkCard('pm', '算数', 'その日の復習（✗以外全枚）', 60));
-
+    // ①算数
+    lo.added.push(mkCard('pm',    '算数', '単元復習',      '✗以外をやる', 60));
     if (isSciDay) {
-      // 理科の日
-      lo.added.push(mkCard('pm', '理科', 'グノチェック＋基本まとめ前半', 40));
-      lo.added.push(mkCard('night', '社会', '基礎問題（翌日社会に備え）', 25));
+      lo.added.push(mkCard('pm',    '理科', '今日の復習',   'グノチェック+基本のまとめ半分', 40));
+      lo.added.push(mkCard('night', '社会', 'テスト対策',   '基礎問題', 25));
     } else {
-      // 社会の日
-      lo.added.push(mkCard('pm', '社会', '音読＋用語基礎力確認', 25));
-      lo.added.push(mkCard('night', '理科', '基本まとめ後半＋確認問題（翌日理科に備え）', 40));
+      lo.added.push(mkCard('pm',    '社会', '今日の復習',   '音読+用語/基礎力確認', 25));
+      lo.added.push(mkCard('night', '理科', 'テスト対策',   '基本まとめ後半+確認問題', 40));
     }
-    // ④余裕時：国語意味調べ（night）
-    lo.added.push(mkCard('night', '国語', '意味調べ', 20));
+    lo.added.push(mkCard('night', '国語', '音読・意味調べ', '余裕あれば', 20));
   });
 
-  // 中日：国語 意味調べを仮カードで配置
+  // 中日：既存カード（朝以外）を非表示にして国語カードを配置
   midDays.forEach(dateStr => {
     const dt = new Date(dateStr+'T00:00:00');
     const wkMonday = getMonday(dt);
@@ -5620,14 +5616,29 @@ function runLecture() {
     if (!localOverrides[wkKey]) localOverrides[wkKey] = { added:[], hidden:{} };
     const lo = localOverrides[wkKey];
     if (!lo.added) lo.added = [];
+    if (!lo.hidden) lo.hidden = {};
     const dayIdx = (dt.getDay() + 6) % 7;
+    // 既存カード（朝以外）を非表示
+    const midTasks = (() => {
+      const saved = currentMonday;
+      currentMonday = new Date(wkMonday);
+      const tasks = getTasksForWeek();
+      currentMonday = saved;
+      return tasks;
+    })();
+    midTasks.forEach(t => {
+      if (t._dayIdx !== dayIdx) return;
+      if (t.slot === 'morning') return;
+      const hkey = t.display_type === 'weekly' ? t.uid+'_'+t._dayIdx : t.uid;
+      lo.hidden[hkey] = true;
+    });
     lo.added.push({
       uid: 'lec_mid_'+dateStr+'_'+Date.now(),
       date: dateStr, _fromDateExact: dateStr,
       weekday: DAY_JP[dt.getDay()], weekday_index: dayIdx, _dayIdx: dayIdx,
       slot: 'pm', _slotIdx: 3,
-      subject: '国語', unit_name: '意味調べ（中日・移動OK）', study_time: 20,
-      color: '#F2B9E4', _tempCard: true, _lectureCard: true,
+      subject: '国語', unit_name: '音読・意味調べ', note: '',
+      study_time: 20, color: '#F2B9E4', _tempCard: true, _lectureCard: true,
       _lectureMark: '#c966a8',
       display_type: 'one_time', repeat_key: null, is_hidden: 'no', order: 99
     });
