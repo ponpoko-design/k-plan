@@ -8144,55 +8144,15 @@ async function restoreBackup(dateStr) {
 }
 
 // ===== 全モーダル共通ドラッグ =====
-// ===== 全モーダル共通ドラッグ =====
+// ===== 全モーダル共通ドラッグ（無効化）=====
 let _modalDragState = { dragging: false, modal: null, ox: 0, oy: 0 };
-
-document.addEventListener('mousemove', e => {
-  if (!_modalDragState.dragging || !_modalDragState.modal) return;
-  const modal = _modalDragState.modal;
-  const x = Math.max(0, Math.min(window.innerWidth - modal.offsetWidth, e.clientX - _modalDragState.ox));
-  const y = Math.max(0, Math.min(window.innerHeight - modal.offsetHeight, e.clientY - _modalDragState.oy));
-  modal.style.left = x + 'px'; modal.style.top = y + 'px';
-});
-document.addEventListener('touchmove', e => {
-  if (!_modalDragState.dragging || !_modalDragState.modal) return;
-  const modal = _modalDragState.modal;
-  const cx = e.touches[0].clientX, cy = e.touches[0].clientY;
-  const x = Math.max(0, Math.min(window.innerWidth - modal.offsetWidth, cx - _modalDragState.ox));
-  const y = Math.max(0, Math.min(window.innerHeight - modal.offsetHeight, cy - _modalDragState.oy));
-  modal.style.left = x + 'px'; modal.style.top = y + 'px';
-}, { passive: true });
-document.addEventListener('mouseup',  () => { _modalDragState.dragging = false; });
-document.addEventListener('touchend', () => { _modalDragState.dragging = false; });
-
-function initModalDrag(bgId) {
+function initModalDrag(bgId) { /* モーダルドラッグ無効 */ }
+function resetAndInitModalDrag(bgId) {
   const bg = document.getElementById(bgId);
   if (!bg) return;
   const modal = bg.querySelector('.modal');
-  const hdr   = bg.querySelector('.modal-hdr');
-  if (!modal || !hdr) return;
-  if (hdr._dragInited) return;
-  hdr._dragInited = true;
-  hdr.style.cursor = 'grab';
-  const onDown = e => {
-    if (e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT') return;
-    if (modal.style.position !== 'fixed') {
-      const r = modal.getBoundingClientRect();
-      modal.style.position = 'fixed';
-      modal.style.left = r.left + 'px';
-      modal.style.top  = r.top  + 'px';
-      modal.style.margin = '0';
-      bg.style.alignItems = 'unset';
-      bg.style.justifyContent = 'unset';
-    }
-    const cx = e.touches ? e.touches[0].clientX : e.clientX;
-    const cy = e.touches ? e.touches[0].clientY : e.clientY;
-    const r = modal.getBoundingClientRect();
-    _modalDragState = { dragging: true, modal, ox: cx - r.left, oy: cy - r.top };
-    hdr.style.cursor = 'grabbing';
-  };
-  hdr.addEventListener('mousedown',  onDown);
-  hdr.addEventListener('touchstart', onDown, { passive: true });
+  if (modal) { modal.style.position=''; modal.style.left=''; modal.style.top=''; modal.style.margin=''; }
+  bg.style.alignItems = ''; bg.style.justifyContent = '';
 }
 
 // modalが開くたびに位置をリセットしてドラッグ初期化
@@ -8206,19 +8166,6 @@ function resetAndInitModalDrag(bgId) {
   bgEl.style.alignItems = ''; bgEl.style.justifyContent = '';
   initModalDrag(bgId);
 }
-
-// 既存のopen関数をラップしてドラッグ初期化を注入
-['aiModal','proposeModal','gnorevModal','detailModal','addModal','copyModal',
- 'statsModal','ruleChatModal','saveRangeModal','repeatRangeModal'].forEach(id => {
-  const bg = document.getElementById(id);
-  if (!bg) return;
-  const observer = new MutationObserver(() => {
-    if (bg.classList.contains('open') || bg.style.display === 'flex') {
-      resetAndInitModalDrag(id);
-    }
-  });
-  observer.observe(bg, { attributes: true, attributeFilter: ['class','style'] });
-});
 
 // ===== 月カレンダーモーダル（翌月・先月ボタン用）=====
 let _monthCalYear = 0, _monthCalMonth = 0;
