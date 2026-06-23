@@ -982,6 +982,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
       <div class="modal-body">
         <div class="subj-badge" id="detailBadge">
           <select id="dSubject" onchange="updateDetailColor()" style="font-weight:700;font-size:15px;font-family:inherit;background:transparent;border:1px solid rgba(0,0,0,0.2);border-radius:8px;padding:4px 10px;cursor:pointer;"></select>
+          <div id="kadaiStarIcon" style="display:none;width:28px;height:28px;border-radius:6px;background:#ff991c;display:none;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
+          </div>
           <button id="confirmTempBtn" onclick="confirmTempCard()" style="display:none;border-radius:9999px;background:white;font-size:12px;font-weight:700;padding:4px 12px;cursor:pointer;font-family:inherit;white-space:nowrap;">仮→決定</button>
           <button id="revertTempBtn" onclick="revertToTemp()" style="display:none;border-radius:9999px;background:white;font-size:12px;font-weight:700;padding:4px 12px;cursor:pointer;font-family:inherit;white-space:nowrap;">決定→仮</button>
         </div>
@@ -1981,6 +1984,10 @@ function openDetail(t) {
   updateFloatingClose();
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
 
+  // 課題★アイコン
+  const kadaiIcon = document.getElementById('kadaiStarIcon');
+  kadaiIcon.style.display = t._kadaiStar ? 'flex' : 'none';
+
   // 仮→決定 / 決定→仮 ボタン
   const TEMP_BORDER = { math:'#378add', jp:'#c966a8', sci:'#4caa44', soc:'#c8960a' };
   const cls = SUBJ_CLASS[t.subject] || 'plan';
@@ -2226,6 +2233,14 @@ function revertToTemp() {
   if (lo && lo.added) {
     const idx = lo.added.findIndex(a => a.uid === t.uid);
     if (idx !== -1) {
+      // フォームの入力内容を保存
+      lo.added[idx].unit_name  = document.getElementById('dUnit').value.trim() || lo.added[idx].unit_name;
+      lo.added[idx].note       = document.getElementById('dMemo').value.trim();
+      lo.added[idx].hash       = document.getElementById('dHash').value.trim();
+      const st = parseInt(document.getElementById('dTime').value);
+      if (!isNaN(st)) lo.added[idx].study_time = st;
+      lo.added[idx].subject    = document.getElementById('dSubject').value;
+      // フラグ切り替え
       delete lo.added[idx]._wasTemp;
       lo.added[idx]._tempCard = true;
     }
