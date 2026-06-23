@@ -189,8 +189,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 <div id="app" style="display:none;width:100%;height:100%;">
   <div class="hdr">
     <div style="display:flex;align-items:center;gap:6px;">
-      <button class="month-btn" id="btnPrevMonth" onclick="navPrevMonth()"><svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor"><polygon points="10,0 10,12 0,6"/></svg> 先月</button>
       <button class="nav-btn" id="btnPrev" onclick="navPrev()"><svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor"><polygon points="10,0 10,12 0,6"/></svg> <span id="btnPrevLabel">前週</span></button>
+      <button class="month-btn" id="btnPrevMonth" onclick="navPrevMonth()"><svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor"><polygon points="10,0 10,12 0,6"/></svg> 先月</button>
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
       <div class="hdr-title">航大 家庭学習スケジュール</div>
@@ -200,8 +200,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
         style="background:white;border:1.5px solid #ccc;color:#888;border-radius:14px;padding:3px 18px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;opacity:0.35;pointer-events:none;">↩</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px;">
-      <button class="nav-btn" id="btnNext" onclick="navNext()"><span id="btnNextLabel">翌週</span> <svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor"><polygon points="0,0 0,12 10,6"/></svg></button>
       <button class="month-btn" id="btnNextMonth" onclick="navNextMonth()">翌月 <svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor"><polygon points="0,0 0,12 10,6"/></svg></button>
+      <button class="nav-btn" id="btnNext" onclick="navNext()"><span id="btnNextLabel">翌週</span> <svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor"><polygon points="0,0 0,12 10,6"/></svg></button>
     </div>
   </div>
 
@@ -1762,14 +1762,14 @@ function render() {
       const textBlock = document.createElement('div');
       textBlock.className = 'kadai-text';
       textBlock.style.pointerEvents = 'none';
-      const label = (t._kadaiShortName && t.note) ? t._kadaiShortName + ' ' + t.note : name.slice(0,7);
+      const label = (t._kadaiShortName && t.note) ? t._kadaiShortName + ' ' + t.note : name.slice(0,8);
       textBlock.textContent = label;
       card.appendChild(starBlock);
       card.appendChild(textBlock);
     } else {
       const txt = document.createElement('span');
       txt.style.cssText = 'pointer-events:none;';
-      txt.textContent = name.length > 7 ? name.slice(0,7) : name;
+      txt.textContent = name.length > 8 ? name.slice(0,8) : name;
       span.appendChild(txt);
       card.appendChild(span);
     }
@@ -8157,7 +8157,6 @@ function initModalDrag(bgId) {
   const onDown = e => {
     if (e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT') return;
     dragging = true;
-    // modalをfixedに切り替えて現在位置を維持
     if (modal.style.position !== 'fixed') {
       const r = modal.getBoundingClientRect();
       modal.style.position = 'fixed';
@@ -8185,10 +8184,10 @@ function initModalDrag(bgId) {
     e.preventDefault();
   };
   const onUp = () => { dragging = false; hdr.style.cursor = 'grab'; };
-  hdr.addEventListener('mousedown',  onDown, { passive: false });
+  hdr.addEventListener('mousedown',  onDown);
   hdr.addEventListener('touchstart', onDown, { passive: false });
-  document.addEventListener('mousemove',  onMove, { passive: false });
-  document.addEventListener('touchmove',  onMove, { passive: false });
+  document.addEventListener('mousemove',  onMove);
+  document.addEventListener('touchmove',  onMove, { passive: true });
   document.addEventListener('mouseup',  onUp);
   document.addEventListener('touchend', onUp);
 }
