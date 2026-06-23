@@ -1089,6 +1089,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
             <div id="kadaiStarIcon" style="display:none;width:28px;height:28px;border-radius:6px;background:#ff991c;align-items:center;justify-content:center;flex-shrink:0;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
             </div>
+            <div id="lectureStarIcon" style="display:none;width:28px;height:28px;border-radius:6px;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><circle cx="12" cy="12" r="3.5"/><line x1="12" y1="1.5" x2="12" y2="5" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="19" x2="12" y2="22.5" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="1.5" y1="12" x2="5" y2="12" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="19" y1="12" x2="22.5" y2="12" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="4.2" y1="4.2" x2="6.5" y2="6.5" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="17.5" y1="17.5" x2="19.8" y2="19.8" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="19.8" y1="4.2" x2="17.5" y2="6.5" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="6.5" y1="17.5" x2="4.2" y2="19.8" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
           </div>
           <div style="display:flex;align-items:center;gap:6px;">
             <button id="confirmTempBtn" onclick="confirmTempCard()" style="display:none;border-radius:9999px;background:white;font-size:12px;font-weight:700;padding:4px 12px;cursor:pointer;font-family:inherit;white-space:nowrap;">仮→決定</button>
@@ -2161,6 +2164,15 @@ function openDetail(t) {
   // 課題★アイコン
   const kadaiIcon = document.getElementById('kadaiStarIcon');
   kadaiIcon.style.display = t._kadaiStar ? 'flex' : 'none';
+
+  // 講習太陽アイコン
+  const lectureIcon = document.getElementById('lectureStarIcon');
+  if (t._lectureCard) {
+    lectureIcon.style.display = 'flex';
+    lectureIcon.style.background = t._lectureMark || '#378add';
+  } else {
+    lectureIcon.style.display = 'none';
+  }
 
   // 仮→決定 / 決定→仮 ボタン
   const TEMP_BORDER = { math:'#378add', jp:'#c966a8', sci:'#4caa44', soc:'#c8960a' };
