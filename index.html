@@ -761,7 +761,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
       <div class="field">
         <label>1日目の理科・社会</label>
         <div style="display:flex;gap:8px;margin-top:4px;">
-          <button id="lectureDay1Sci" onclick="setLectureDay1('sci')" style="flex:1;border:2px solid #4caa44;border-radius:9999px;background:#4caa44;color:white;padding:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">理科から</button>
+          <button id="lectureDay1Sci" onclick="setLectureDay1('sci')" style="flex:1;border:2px solid #4caa44;border-radius:9999px;background:#B6EBB0;color:#27500A;padding:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">理科から</button>
           <button id="lectureDay1Soc" onclick="setLectureDay1('soc')" style="flex:1;border:2px solid #c8960a;border-radius:9999px;background:white;color:#c8960a;padding:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">社会から</button>
         </div>
         <div style="font-size:12px;color:#888;margin-top:6px;">※7/8頃グノレブ結果でクラス確定後に設定</div>
@@ -5468,10 +5468,10 @@ function closeLecturePanel() {
 }
 function setLectureDay1(type) {
   _lectureDay1 = type;
-  document.getElementById('lectureDay1Sci').style.background = type === 'sci' ? '#4caa44' : 'white';
-  document.getElementById('lectureDay1Sci').style.color = type === 'sci' ? 'white' : '#4caa44';
-  document.getElementById('lectureDay1Soc').style.background = type === 'soc' ? '#c8960a' : 'white';
-  document.getElementById('lectureDay1Soc').style.color = type === 'soc' ? 'white' : '#c8960a';
+  document.getElementById('lectureDay1Sci').style.background = type === 'sci' ? '#B6EBB0' : 'white';
+  document.getElementById('lectureDay1Sci').style.color = type === 'sci' ? '#27500A' : '#4caa44';
+  document.getElementById('lectureDay1Soc').style.background = type === 'soc' ? '#F9DB82' : 'white';
+  document.getElementById('lectureDay1Soc').style.color = type === 'soc' ? '#633806' : '#c8960a';
 }
 function lecturePrevMonth() {
   _lectureCalMonth--;
@@ -5540,14 +5540,16 @@ function runLecture() {
   const allStart = new Date(sortedDates[0]+'T00:00:00');
   const allEnd   = new Date(sortedDates[sortedDates.length-1]+'T00:00:00');
 
-  // 中日を特定（選択日の最小〜最大の間で、選択されていない日）
-  const lectureSet = new Set(sortedDates);
+  // 中日を特定（前後の講習日との間が1日だけの場合のみ）
   const midDays = [];
-  let cur = new Date(allStart);
-  while (cur <= allEnd) {
-    const ds = cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0')+'-'+String(cur.getDate()).padStart(2,'0');
-    if (!lectureSet.has(ds)) midDays.push(ds);
-    cur.setDate(cur.getDate()+1);
+  for (let i = 0; i < sortedDates.length - 1; i++) {
+    const d1 = new Date(sortedDates[i] + 'T00:00:00');
+    const d2 = new Date(sortedDates[i+1] + 'T00:00:00');
+    const diffDays = Math.round((d2 - d1) / (1000*60*60*24));
+    if (diffDays === 2) {
+      const mid = new Date(d1); mid.setDate(d1.getDate() + 1);
+      midDays.push(mid.getFullYear()+'-'+String(mid.getMonth()+1).padStart(2,'0')+'-'+String(mid.getDate()).padStart(2,'0'));
+    }
   }
 
   // 各講習日にカードを配置
