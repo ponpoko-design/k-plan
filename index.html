@@ -803,82 +803,127 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
     </div>
   </div>
 
-  <!-- 課題学習モーダル -->
-  <div class="modal-bg" id="kadaiModal" style="z-index:206;">
-    <div class="modal" style="width:min(420px,96vw);max-height:88dvh;display:flex;flex-direction:column;">
-      <div class="modal-hdr" style="background:#C47B1A;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg>
-          <span style="font-size:17px;font-weight:700;">課題学習の分配</span>
-        </div>
-        <button class="modal-close" onclick="closeKadaiModal()">×</button>
-      </div>
-      <div class="modal-body" style="overflow-y:auto;flex:1;">
+  <!-- 課題学習フローティングパネル -->
+  <style>
+    #kadaiPanel {
+      display: none;
+      position: fixed;
+      top: 60px; right: 16px;
+      width: min(400px, 92vw);
+      max-height: min(640px, 88dvh);
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 8px 40px rgba(0,0,0,.22);
+      z-index: 206;
+      flex-direction: column;
+      opacity: 0; pointer-events: none;
+      transform: scale(0.95);
+      transition: opacity .2s, transform .2s;
+      user-select: none;
+      overflow: hidden;
+    }
+    #kadaiPanel.open { opacity:1; pointer-events:auto; transform:scale(1); display:flex; }
+    @media (max-width: 600px) {
+      #kadaiPanel {
+        top: 0 !important; left: 0 !important; right: 0 !important;
+        width: 100vw !important; max-width: 100vw !important;
+        max-height: 100dvh !important;
+        border-radius: 0;
+      }
+    }
+    #kadaiPanelHdr { cursor:grab; border-radius:14px 14px 0 0; touch-action:none; }
+    #kadaiPanelHdr:active { cursor:grabbing; }
+    #kadaiResizeHandle {
+      position:absolute; left:0; top:0; bottom:0; width:8px;
+      cursor:ew-resize; z-index:10; border-radius:14px 0 0 14px;
+    }
+    #kadaiResizeHandle:hover, #kadaiResizeHandle:active { background:rgba(83,74,183,0.15); }
+    #kadaiWidthBtns { display:none; }
+    @media (max-width:699px) {
+      #kadaiWidthBtns { display:flex; gap:4px; align-items:center; }
+      #kadaiResizeHandle { display:none; }
+    }
+    #kadaiScrollBody { overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; flex:1; }
+  </style>
 
-        <!-- Step1: 入力フォーム -->
-        <div id="kadaiStep1">
-          <div style="font-size:13px;color:#888;margin-bottom:14px;">課題本の情報を入力すると、スケジュールに自動で分配します。</div>
-          <div class="field">
-            <label>科目</label>
-            <select id="kadaiSubject" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;">
-              <option value="算数">算数</option>
-              <option value="国語">国語</option>
-              <option value="理科">理科</option>
-              <option value="社会">社会</option>
-            </select>
+  <div id="kadaiPanel">
+    <div id="kadaiResizeHandle"></div>
+    <div style="background:#534AB7;padding:12px 14px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;" id="kadaiPanelHdr">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg>
+        <span style="font-size:14px;font-weight:700;color:white;">課題学習の分配</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <div id="kadaiWidthBtns">
+          <button ontouchend="event.preventDefault();kadaiResize(-40);" onclick="kadaiResize(-40)" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:6px;width:28px;height:28px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;">−</button>
+          <button ontouchend="event.preventDefault();kadaiResize(40);" onclick="kadaiResize(40)" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:6px;width:28px;height:28px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;">＋</button>
+        </div>
+        <button ontouchend="event.preventDefault();closeKadaiModal();" onclick="closeKadaiModal()" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:50%;width:28px;height:28px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">×</button>
+      </div>
+    </div>
+
+    <div id="kadaiScrollBody" style="padding:14px 16px;">
+      <!-- Step1: 入力フォーム -->
+      <div id="kadaiStep1">
+        <div style="font-size:13px;color:#888;margin-bottom:14px;">課題本の情報を入力すると、スケジュールに自動で分配します。</div>
+        <div class="field">
+          <label>科目</label>
+          <select id="kadaiSubject" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;">
+            <option value="算数">算数</option>
+            <option value="国語">国語</option>
+            <option value="理科">理科</option>
+            <option value="社会">社会</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>課題本の名前（例：算数課題ノート）</label>
+          <input type="text" id="kadaiBookName" placeholder="例：夏期算数課題ノート" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;">
+        </div>
+        <div class="field">
+          <label>総ページ数</label>
+          <input type="number" id="kadaiPages" placeholder="例：150" min="1" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;">
+        </div>
+        <div style="display:flex;gap:10px;">
+          <div class="field" style="flex:1;">
+            <label>開始日</label>
+            <input type="date" id="kadaiStartDate" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;">
           </div>
-          <div class="field">
-            <label>課題本の名前（例：算数課題ノート）</label>
-            <input type="text" id="kadaiBookName" placeholder="例：夏期算数課題ノート" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;">
+          <div class="field" style="flex:1;">
+            <label>提出日</label>
+            <input type="date" id="kadaiDueDate" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;">
           </div>
-          <div class="field">
-            <label>総ページ数</label>
-            <input type="number" id="kadaiPages" placeholder="例：150" min="1" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;">
-          </div>
-          <div style="display:flex;gap:10px;">
-            <div class="field" style="flex:1;">
-              <label>開始日</label>
-              <input type="date" id="kadaiStartDate" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;">
-            </div>
-            <div class="field" style="flex:1;">
-              <label>提出日</label>
-              <input type="date" id="kadaiDueDate" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;">
-            </div>
-          </div>
-          <!-- Step2オプション（折りたたみ） -->
-          <div style="margin-top:4px;">
-            <button onclick="toggleKadaiStep2Option()" id="kadaiStep2Toggle" style="background:none;border:none;color:#C47B1A;font-size:13px;font-weight:700;cursor:pointer;padding:0;font-family:inherit;">▶ ページあたりの時間を入力（任意・再分配）</button>
-            <div id="kadaiStep2Option" style="display:none;margin-top:10px;background:#FFF8EE;border-radius:8px;padding:12px;border:1.5px solid #F2C06A;">
-              <div style="font-size:12px;color:#888;margin-bottom:8px;">開始後、実際のペースがわかったら入力すると時間ベースで再分配できます。</div>
-              <div style="display:flex;gap:10px;align-items:flex-end;">
-                <div class="field" style="flex:1;margin-bottom:0;">
-                  <label>1ページあたり（分）</label>
-                  <input type="number" id="kadaiMinPerPage" placeholder="例：3" min="1" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;">
-                </div>
-                <div class="field" style="flex:1;margin-bottom:0;">
-                  <label>1回あたり上限（分）</label>
-                  <input type="number" id="kadaiMaxMin" placeholder="例：30" min="5" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;">
-                </div>
+        </div>
+        <div style="margin-top:4px;">
+          <button onclick="toggleKadaiStep2Option()" id="kadaiStep2Toggle" style="background:none;border:none;color:#534AB7;font-size:13px;font-weight:700;cursor:pointer;padding:0;font-family:inherit;">▶ ページあたりの時間を入力（任意・再分配）</button>
+          <div id="kadaiStep2Option" style="display:none;margin-top:10px;background:#EDEAF9;border-radius:8px;padding:12px;border:1.5px solid #AFA9EC;">
+            <div style="font-size:12px;color:#888;margin-bottom:8px;">開始後、実際のペースがわかったら入力すると時間ベースで再分配できます。</div>
+            <div style="display:flex;gap:10px;align-items:flex-end;">
+              <div class="field" style="flex:1;margin-bottom:0;">
+                <label>1ページあたり（分）</label>
+                <input type="number" id="kadaiMinPerPage" placeholder="例：3" min="1" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;">
+              </div>
+              <div class="field" style="flex:1;margin-bottom:0;">
+                <label>1回あたり上限（分）</label>
+                <input type="number" id="kadaiMaxMin" placeholder="例：30" min="5" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;">
               </div>
             </div>
           </div>
-          <div id="kadaiError" style="color:#e24b4a;font-size:12px;margin-top:8px;min-height:18px;"></div>
-          <div class="modal-actions" style="margin-top:14px;">
-            <button onclick="closeKadaiModal()" style="flex:1;background:white;border:2px solid #ccc;color:#888;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;">やめる</button>
-            <button onclick="runKadaiDistribute()" style="flex:2;background:#C47B1A;border:none;color:white;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;">AIで分配する ✨</button>
-          </div>
         </div>
-
-        <!-- Step2: 結果プレビュー -->
-        <div id="kadaiStep2" style="display:none;">
-          <div id="kadaiPreviewMsg" style="font-size:13px;color:#888;margin-bottom:12px;"></div>
-          <div id="kadaiPreviewList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;max-height:320px;overflow-y:auto;"></div>
-          <div class="modal-actions">
-            <button onclick="kadaiBack()" style="flex:1;background:white;border:2px solid #ccc;color:#888;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;">戻る</button>
-            <button onclick="kadaiConfirm()" style="flex:2;background:#C47B1A;border:none;color:white;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;">カレンダーに追加</button>
-          </div>
+        <div id="kadaiError" style="color:#e24b4a;font-size:12px;margin-top:8px;min-height:18px;"></div>
+        <div class="modal-actions" style="margin-top:14px;">
+          <button onclick="closeKadaiModal()" style="flex:1;background:white;border:2px solid #ccc;color:#888;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">やめる</button>
+          <button onclick="runKadaiDistribute()" id="kadaiRunBtn" style="flex:2;background:#534AB7;border:none;color:white;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">AIで分配する ✨</button>
         </div>
+      </div>
 
+      <!-- Step2: 結果プレビュー -->
+      <div id="kadaiStep2" style="display:none;">
+        <div id="kadaiPreviewMsg" style="font-size:13px;color:#888;margin-bottom:12px;"></div>
+        <div id="kadaiPreviewList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;"></div>
+        <div class="modal-actions">
+          <button onclick="kadaiBack()" style="flex:1;background:white;border:2px solid #ccc;color:#888;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">戻る</button>
+          <button onclick="kadaiConfirm()" style="flex:2;background:#534AB7;border:none;color:white;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">カレンダーに追加</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1623,8 +1668,21 @@ function render() {
     const name = t.unit_name || '';
     const displayName = name;
     const span = document.createElement('span');
-    span.style.cssText = 'pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;';
-    span.textContent = displayName.length > 8 ? displayName.slice(0,8) : displayName;
+    span.style.cssText = 'pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;display:flex;align-items:center;gap:3px;';
+    if (t._kadaiStar) {
+      const starSvg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+      starSvg.setAttribute('width','10'); starSvg.setAttribute('height','10');
+      starSvg.setAttribute('viewBox','0 0 24 24');
+      starSvg.style.cssText = 'flex-shrink:0;fill:#ff991c;';
+      const poly = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+      poly.setAttribute('points','12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26');
+      starSvg.appendChild(poly);
+      span.appendChild(starSvg);
+    }
+    const txt = document.createElement('span');
+    txt.style.cssText = 'pointer-events:none;';
+    txt.textContent = displayName.length > 7 ? displayName.slice(0,7) : displayName;
+    span.appendChild(txt);
     card.appendChild(span);
     // 選択モード中はチェックボックスを表示
     if (_multiSelectMode) {
@@ -4991,7 +5049,6 @@ function closeProposeModal() {
 let kadaiPendingCards = []; // 確定前の分配結果
 
 function openKadaiModal() {
-  // デフォルト日付を今日〜1ヶ月後に設定
   const today = getTodayJST();
   const due = new Date(today); due.setMonth(due.getMonth() + 1);
   const fmt = d => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
@@ -5000,11 +5057,83 @@ function openKadaiModal() {
   document.getElementById('kadaiStep1').style.display = '';
   document.getElementById('kadaiStep2').style.display = 'none';
   document.getElementById('kadaiError').textContent = '';
-  document.getElementById('kadaiModal').classList.add('open');
+  const panel = document.getElementById('kadaiPanel');
+  panel.style.display = 'flex';
+  setTimeout(() => panel.classList.add('open'), 10);
+  initKadaiPanelDrag();
+  initKadaiResize();
 }
 function closeKadaiModal() {
-  document.getElementById('kadaiModal').classList.remove('open');
+  const panel = document.getElementById('kadaiPanel');
+  panel.classList.remove('open');
+  setTimeout(() => { panel.style.display = 'none'; }, 210);
   openProposeModal();
+}
+function kadaiResize(delta) {
+  const panel = document.getElementById('kadaiPanel');
+  const cur = panel.getBoundingClientRect().width;
+  const nw = Math.max(280, Math.min(window.innerWidth * 0.95, cur + delta));
+  panel.style.width = nw + 'px';
+}
+function initKadaiPanelDrag() {
+  const panel = document.getElementById('kadaiPanel');
+  const hdr = document.getElementById('kadaiPanelHdr');
+  let dragging = false, ox = 0, oy = 0;
+  const onDown = e => {
+    if (e.target.tagName === 'BUTTON') return;
+    dragging = true;
+    const r = panel.getBoundingClientRect();
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    const cy = e.touches ? e.touches[0].clientY : e.clientY;
+    ox = cx - r.left; oy = cy - r.top;
+    panel.style.transition = 'none';
+  };
+  const onMove = e => {
+    if (!dragging) return;
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    const cy = e.touches ? e.touches[0].clientY : e.clientY;
+    const x = Math.max(0, Math.min(window.innerWidth - panel.offsetWidth, cx - ox));
+    const y = Math.max(0, Math.min(window.innerHeight - 60, cy - oy));
+    panel.style.left = x + 'px'; panel.style.top = y + 'px'; panel.style.right = 'auto';
+    e.preventDefault();
+  };
+  const onUp = () => { dragging = false; panel.style.transition = ''; };
+  hdr.addEventListener('mousedown', onDown);
+  hdr.addEventListener('touchstart', onDown, { passive: false });
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('touchmove', onMove, { passive: false });
+  document.addEventListener('mouseup', onUp);
+  document.addEventListener('touchend', onUp);
+}
+function initKadaiResize() {
+  const panel = document.getElementById('kadaiPanel');
+  const handle = document.getElementById('kadaiResizeHandle');
+  let resizing = false, startX = 0, startW = 0, startL = 0;
+  const onDown = e => {
+    resizing = true;
+    startX = e.touches ? e.touches[0].clientX : e.clientX;
+    startW = panel.offsetWidth;
+    startL = panel.getBoundingClientRect().left;
+    panel.style.transition = 'none';
+    e.preventDefault();
+  };
+  const onMove = e => {
+    if (!resizing) return;
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    const diff = startX - cx;
+    const nw = Math.max(260, Math.min(window.innerWidth * 0.95, startW + diff));
+    panel.style.width = nw + 'px';
+    panel.style.left = Math.max(0, startL + startW - nw) + 'px';
+    panel.style.right = 'auto';
+    e.preventDefault();
+  };
+  const onUp = () => { resizing = false; panel.style.transition = ''; };
+  handle.addEventListener('mousedown', onDown);
+  handle.addEventListener('touchstart', onDown, { passive: false });
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('touchmove', onMove, { passive: false });
+  document.addEventListener('mouseup', onUp);
+  document.addEventListener('touchend', onUp);
 }
 
 // ===== 塾休み期間パネル =====
@@ -5561,22 +5690,22 @@ async function runKadaiDistribute() {
   errEl.textContent = '';
 
   // ボタンをローディング状態に
-  const btn = document.querySelector('#kadaiStep1 button[onclick="runKadaiDistribute()"]');
+  const btn = document.getElementById('kadaiRunBtn');
   btn.disabled = true; btn.textContent = 'スケジュール確認中…';
 
+  const SUBJECT_BG = { '算数':'#C1E8FB','国語':'#F2B9E4','理科':'#B6EBB0','社会':'#F9DB82' };
+  const STAR_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="#ff991c" style="flex-shrink:0;vertical-align:middle;"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>';
+
   try {
-    // Firestoreから最新データを取得してから分配（バランスチェックと同じ方式）
     await loadFromFirestore();
 
     btn.textContent = 'AI分配中…';
 
-    // 期間のスケジュールをテキスト化（週ごとにgetTasksForWeek）
     const savedMonday = new Date(currentMonday);
     let scheduleTxt = '';
     const SLOT_LABELS2 = {plan:'予定',morning:'朝',am:'午前',pm:'午後',night:'夜'};
     const DAY_JP = ['日','月','火','水','木','金','土'];
 
-    // startDateの月曜から始める
     const firstMonday = getMonday(startDate);
     let scanMonday = new Date(firstMonday);
     while (scanMonday <= dueDate) {
@@ -5584,7 +5713,6 @@ async function runKadaiDistribute() {
       const wkTasks = getTasksForWeek();
       for (let d = 0; d < 7; d++) {
         const dt = new Date(scanMonday); dt.setDate(scanMonday.getDate() + d);
-        // 期間外の日はスキップ（breakしない）
         if (dt < startDate || dt > dueDate) continue;
         const dateLabel = (dt.getMonth()+1) + '/' + dt.getDate() + '(' + DAY_JP[dt.getDay()] + ')';
         const dayTasks = wkTasks.filter(t => t._dayIdx === d);
@@ -5598,7 +5726,6 @@ async function runKadaiDistribute() {
     }
     currentMonday = savedMonday;
 
-    // AIプロンプト組み立て
     const timeInfo = (minPerPg && maxMinVal)
       ? '・1ページ約' + minPerPg + '分。1回あたり上限' + maxMinVal + '分（上限ページ数=' + Math.floor(maxMinVal / minPerPg) + 'ページ）。\n'
       : '・1ページあたりの所要時間は不明のため、ページ数のみで分配する。\n';
@@ -5647,8 +5774,7 @@ async function runKadaiDistribute() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 2000, messages: [{ role: 'user', content: prompt }] })
     });
-    const data = await res.json();
-    const replyText = (data.content && data.content[0] && data.content[0].text) ? data.content[0].text : '';
+    const replyText = await res.text();
 
     // JSONパース
     let parsed = null;
@@ -5664,7 +5790,6 @@ async function runKadaiDistribute() {
       return;
     }
 
-    // プレビュー表示
     kadaiPendingCards = parsed.cards.map(c => ({
       date: c.date, slot: c.slot, pages: c.pages,
       subject, bookName, note: c.note || ''
@@ -5678,18 +5803,20 @@ async function runKadaiDistribute() {
 
     const listEl = document.getElementById('kadaiPreviewList');
     listEl.innerHTML = '';
+    const cardBg = SUBJECT_BG[subject] || '#FFB347';
     kadaiPendingCards.forEach((c, i) => {
       const row = document.createElement('div');
-      row.style.cssText = 'display:flex;align-items:center;gap:8px;background:#FFF8EE;border-radius:8px;padding:8px 12px;border:1px solid #F2C06A;';
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;background:' + cardBg + ';border-radius:8px;padding:8px 12px;';
       const d = new Date(c.date + 'T00:00:00');
       const dateLabel = (d.getMonth()+1) + '/' + d.getDate() + '(' + DAY_JP[d.getDay()] + ')';
       row.innerHTML =
-        '<div style="width:80px;font-size:13px;font-weight:700;color:#1a2744;flex-shrink:0;">' + dateLabel + '</div>' +
-        '<div style="width:32px;font-size:12px;color:#888;flex-shrink:0;">' + (SLOT_JP[c.slot]||c.slot) + '</div>' +
-        '<div style="flex:1;font-size:13px;"><span style="background:#FFB347;color:#1a2744;border-radius:4px;padding:2px 7px;font-weight:700;font-size:12px;">' + subject + '</span> ' +
-        bookName + ' <span style="color:#C47B1A;font-weight:700;">p.' + c.pages + '</span>' +
-        (c.note ? '<span style="color:#888;font-size:11px;"> ' + c.note + '</span>' : '') + '</div>' +
-        '<button onclick="kadaiRemoveCard(' + i + ')" style="background:none;border:none;color:#bbb;font-size:16px;cursor:pointer;flex-shrink:0;padding:0 2px;">×</button>';
+        STAR_SVG +
+        '<div style="width:76px;font-size:13px;font-weight:700;color:#1a2744;flex-shrink:0;">' + dateLabel + '</div>' +
+        '<div style="width:32px;font-size:12px;color:#555;flex-shrink:0;">' + (SLOT_JP[c.slot]||c.slot) + '</div>' +
+        '<div style="flex:1;font-size:13px;color:#1a2744;">' +
+        bookName + ' <span style="font-weight:700;">p.' + c.pages + '</span>' +
+        (c.note ? '<span style="color:#555;font-size:11px;"> ' + c.note + '</span>' : '') + '</div>' +
+        '<button onclick="kadaiRemoveCard(' + i + ')" style="background:none;border:none;color:#888;font-size:16px;cursor:pointer;flex-shrink:0;padding:0 2px;">×</button>';
       listEl.appendChild(row);
     });
 
@@ -5703,23 +5830,26 @@ async function runKadaiDistribute() {
 
 function kadaiRemoveCard(idx) {
   kadaiPendingCards.splice(idx, 1);
-  // リスト再描画
   const DAY_JP2 = ['日','月','火','水','木','金','土'];
   const SLOT_JP2 = { pm:'午後', night:'夜', am:'午前' };
+  const SUBJECT_BG2 = { '算数':'#C1E8FB','国語':'#F2B9E4','理科':'#B6EBB0','社会':'#F9DB82' };
+  const STAR_SVG2 = '<svg width="14" height="14" viewBox="0 0 24 24" fill="#ff991c" style="flex-shrink:0;vertical-align:middle;"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>';
   const listEl = document.getElementById('kadaiPreviewList');
   listEl.innerHTML = '';
   kadaiPendingCards.forEach((c, i) => {
     const row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:center;gap:8px;background:#FFF8EE;border-radius:8px;padding:8px 12px;border:1px solid #F2C06A;';
+    const cardBg2 = SUBJECT_BG2[c.subject] || '#FFB347';
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;background:' + cardBg2 + ';border-radius:8px;padding:8px 12px;';
     const d = new Date(c.date + 'T00:00:00');
     const dateLabel = (d.getMonth()+1) + '/' + d.getDate() + '(' + DAY_JP2[d.getDay()] + ')';
     row.innerHTML =
-      '<div style="width:80px;font-size:13px;font-weight:700;color:#1a2744;flex-shrink:0;">' + dateLabel + '</div>' +
-      '<div style="width:32px;font-size:12px;color:#888;flex-shrink:0;">' + (SLOT_JP2[c.slot]||c.slot) + '</div>' +
-      '<div style="flex:1;font-size:13px;"><span style="background:#FFB347;color:#1a2744;border-radius:4px;padding:2px 7px;font-weight:700;font-size:12px;">' + c.subject + '</span> ' +
-      c.bookName + ' <span style="color:#C47B1A;font-weight:700;">p.' + c.pages + '</span>' +
-      (c.note ? '<span style="color:#888;font-size:11px;"> ' + c.note + '</span>' : '') + '</div>' +
-      '<button onclick="kadaiRemoveCard(' + i + ')" style="background:none;border:none;color:#bbb;font-size:16px;cursor:pointer;flex-shrink:0;padding:0 2px;">×</button>';
+      STAR_SVG2 +
+      '<div style="width:76px;font-size:13px;font-weight:700;color:#1a2744;flex-shrink:0;">' + dateLabel + '</div>' +
+      '<div style="width:32px;font-size:12px;color:#555;flex-shrink:0;">' + (SLOT_JP2[c.slot]||c.slot) + '</div>' +
+      '<div style="flex:1;font-size:13px;color:#1a2744;">' +
+      c.bookName + ' <span style="font-weight:700;">p.' + c.pages + '</span>' +
+      (c.note ? '<span style="color:#555;font-size:11px;"> ' + c.note + '</span>' : '') + '</div>' +
+      '<button onclick="kadaiRemoveCard(' + i + ')" style="background:none;border:none;color:#888;font-size:16px;cursor:pointer;flex-shrink:0;padding:0 2px;">×</button>';
     listEl.appendChild(row);
   });
   document.getElementById('kadaiPreviewMsg').querySelector('strong').nextSibling.textContent = '';
@@ -5729,6 +5859,7 @@ function kadaiConfirm() {
   if (kadaiPendingCards.length === 0) { closeKadaiModal(); return; }
   const now = getNowJST();
   const DAY_NAMES_EN = ['日','月','火','水','木','金','土'];
+  const SUBJECT_BG3 = { '算数':'#C1E8FB','国語':'#F2B9E4','理科':'#B6EBB0','社会':'#F9DB82' };
   kadaiPendingCards.forEach(c => {
     const dt = new Date(c.date + 'T00:00:00');
     const uid = now.getTime() + '_kadai_' + Math.random().toString(36).slice(2);
@@ -5737,10 +5868,12 @@ function kadaiConfirm() {
     if (!localOverrides[wkKey]) localOverrides[wkKey] = { added:[], hidden:[], moved:[] };
     localOverrides[wkKey].added.push({
       uid, date: c.date, weekday: DAY_NAMES_EN[dt.getDay()],
-      weekday_index: (dt.getDay() + 6) % 7, // 月=0
+      weekday_index: (dt.getDay() + 6) % 7,
       slot: c.slot, subject: c.subject,
       unit_name: c.bookName + ' p.' + c.pages,
-      color: '#FFB347', study_time: null,
+      color: SUBJECT_BG3[c.subject] || '#FFB347',
+      _kadaiStar: true,
+      study_time: null,
       display_type: 'one_time', note: c.note || '',
       _fromDateExact: c.date
     });
