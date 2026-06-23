@@ -7351,11 +7351,15 @@ function _tCancel() {
   _tTask = null; _tCard = null; _tDropCell = null; _tActive = false;
 }
 
-function openMoveModal(task, toDay, toSlot) {
-  // one_timeかつ_fromDateExactあり（課題カード等）はポップアップなしで直接移動
-  // weeklyカード・_isWeeklyMovedカードはポップアップを表示する
-  const isSimpleOneTime = task.display_type !== 'weekly' && !task._isWeeklyMoved;
-  if (isSimpleOneTime) {
+function openMoveModal(taskRef, toDay, toSlot) {
+  // taskRefはuidだけの場合があるので、実際のタスクオブジェクトを取得
+  const allTasks = getTasksForWeek();
+  const task = (taskRef._fromDateExact !== undefined || taskRef.display_type !== undefined)
+    ? taskRef
+    : (allTasks.find(t => t.uid === taskRef.uid) || taskRef);
+
+  // weeklyカード（繰り返し）のみポップアップ表示、それ以外は直接移動
+  if (task.display_type !== 'weekly') {
     takeSnapshot();
     const SLOTS2 = ['plan','morning','am','pm','night'];
     const wk = getWeekKey();
@@ -7366,16 +7370,13 @@ function openMoveModal(task, toDay, toSlot) {
     if (addIdx >= 0) {
       lo.added[addIdx]._dayIdx = toDay;
       lo.added[addIdx].slot = SLOTS2[toSlot] || 'night';
-      if (lo.added[addIdx]._fromDateExact) {
-        const newDate = addDays(currentMonday, toDay);
-        const newDateStr = newDate.getFullYear() + '-' +
-          String(newDate.getMonth()+1).padStart(2,'0') + '-' +
-          String(newDate.getDate()).padStart(2,'0');
-        lo.added[addIdx]._fromDateExact = newDateStr;
-        lo.added[addIdx].date = newDateStr;
-      }
+      const newDate = addDays(currentMonday, toDay);
+      const newDateStr = newDate.getFullYear() + '-' +
+        String(newDate.getMonth()+1).padStart(2,'0') + '-' +
+        String(newDate.getDate()).padStart(2,'0');
+      lo.added[addIdx]._fromDateExact = newDateStr;
+      lo.added[addIdx].date = newDateStr;
     } else {
-      // OVERRIDE_DATA等のone_timeカードを移動
       if (!lo.hidden) lo.hidden = {};
       lo.hidden[task.uid] = true;
       const newDate = addDays(currentMonday, toDay);
@@ -7385,9 +7386,9 @@ function openMoveModal(task, toDay, toSlot) {
       const movedCard = {
         ...task, uid: 'moved_'+Date.now(), display_type:'one_time',
         _dayIdx: toDay, slot: SLOTS2[toSlot]||'night', _slotIdx: toSlot,
-        weekday_index: toDay, order: 99, repeat_key: null
+        weekday_index: toDay, order: 99, repeat_key: null,
+        _fromDateExact: newDateStr, date: newDateStr
       };
-      if (movedCard._fromDateExact) { movedCard._fromDateExact = newDateStr; movedCard.date = newDateStr; }
       lo.added.push(movedCard);
     }
     saveLocal(); render();
