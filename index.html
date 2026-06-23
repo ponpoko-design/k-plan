@@ -7394,7 +7394,7 @@ function openMoveModal(taskRef, toDay, toSlot) {
     saveLocal(); render();
     return;
   }
-  _pendingMove = {task, toDay, toSlot};
+  _pendingMove = {task: taskRef, toDay, toSlot};
   const slotNames = {0:'予定',1:'朝',2:'午前',3:'午後',4:'夜'};
   document.getElementById('moveModalTitle').textContent =
     DAYS_JP2[toDay] + '曜日の' + (slotNames[toSlot]||'') + 'に移動しますか？';
