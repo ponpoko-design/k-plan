@@ -1539,7 +1539,18 @@ function getTasksForWeek() {
 
   // 4. ローカル追加
   (local.added || []).forEach(t => {
-    result.push({...t, _dayIdx: t._dayIdx, _slotIdx: SLOT_IDX[t.slot] ?? 0});
+    // _fromDateExactがある場合は日付で_dayIdxを計算（one_timeカード）
+    let dayIdx = t._dayIdx;
+    if (t._fromDateExact) {
+      const tDate = new Date(t._fromDateExact + 'T00:00:00');
+      dayIdx = dates.findIndex(d => sameDateStr(d, tDate));
+      if (dayIdx < 0) return; // この週に存在しない日付はスキップ
+    } else if (t.date) {
+      const tDate = new Date(t.date);
+      dayIdx = dates.findIndex(d => sameDateStr(d, tDate));
+      if (dayIdx < 0) return;
+    }
+    result.push({...t, _dayIdx: dayIdx, _slotIdx: SLOT_IDX[t.slot] ?? 0});
   });
 
   // 5. weeklyAdded（one_time→weeklyに変換されたタスク）
