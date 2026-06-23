@@ -257,7 +257,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
         <!-- 上段：提案 -->
         <button onclick="closeAIModal();openProposeModal();" style="flex:1;width:100%;border:none;border-radius:12px;background:#EDE9FD;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:14px;padding:0 18px;text-align:left;transition:opacity .15s;box-sizing:border-box;" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
           <div style="width:40px;height:40px;border-radius:11px;background:#CEC9F6;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3C3489" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5Z"/><path d="M19 3l.8 2.2L22 6l-2.2.8L19 9l-.8-2.2L16 6l2.2-.8Z"/><path d="M5 15l.6 1.4L7 17l-1.4.6L5 19l-.6-1.4L3 17l1.4-.6Z"/></svg>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3C3489" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
           </div>
           <div style="flex:1;min-width:0;">
             <div style="font-size:17px;font-weight:500;color:#26215C;">スケジュールを提案する</div>
@@ -5564,7 +5564,8 @@ function runLecture() {
     if (!lo.added) lo.added = [];
     if (!lo.hidden) lo.hidden = {};
 
-    // 同日の朝以外（am・pm・night）の既存カードを非表示
+    // 同日の午前・午後・夜の算数・国語・理科・社会・学校の宿題カードのみ非表示
+    const REMOVE_SUBJECTS = new Set(['算数','国語','理科','社会','学校の宿題']);
     const allTasks = (() => {
       const saved = currentMonday;
       currentMonday = new Date(wkMonday);
@@ -5575,7 +5576,8 @@ function runLecture() {
     const dayIdx = (dt.getDay() + 6) % 7;
     allTasks.forEach(t => {
       if (t._dayIdx !== dayIdx) return;
-      if (t.slot === 'morning') return; // 朝は残す
+      if (t.slot === 'morning' || t.slot === 'plan') return; // 朝・予定は残す
+      if (!REMOVE_SUBJECTS.has(t.subject)) return; // 習い事・塾等は残す
       const hkey = t.display_type === 'weekly' ? t.uid+'_'+t._dayIdx : t.uid;
       lo.hidden[hkey] = true;
     });
@@ -5617,7 +5619,7 @@ function runLecture() {
     if (!lo.added) lo.added = [];
     if (!lo.hidden) lo.hidden = {};
     const dayIdx = (dt.getDay() + 6) % 7;
-    // 既存カード（朝以外）を非表示
+    // 既存カード（算数・国語・理科・社会・学校の宿題、午前・午後・夜のみ）を非表示
     const midTasks = (() => {
       const saved = currentMonday;
       currentMonday = new Date(wkMonday);
@@ -5627,7 +5629,8 @@ function runLecture() {
     })();
     midTasks.forEach(t => {
       if (t._dayIdx !== dayIdx) return;
-      if (t.slot === 'morning') return;
+      if (t.slot === 'morning' || t.slot === 'plan') return;
+      if (!new Set(['算数','国語','理科','社会','学校の宿題']).has(t.subject)) return;
       const hkey = t.display_type === 'weekly' ? t.uid+'_'+t._dayIdx : t.uid;
       lo.hidden[hkey] = true;
     });
