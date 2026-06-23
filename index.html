@@ -22,6 +22,7 @@
   --c-plan:#F5F4E4;--c-plan-t:#1a2744;
   --c-test:#F104BA;--c-test-t:#fff;
   --c-holiday:#AB0000;--c-holiday-t:#fff;
+  --c-kadai:#FFB347;--c-kadai-t:#1a2744;
 }
 html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 #app{width:100%;height:100%;display:flex;flex-direction:column;position:relative;}
@@ -31,6 +32,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 .hdr-title{font-size:22px;font-weight:700;color:var(--navy);}
 .nav-btn{background:white;border:2px solid var(--navy);color:var(--navy);border-radius:9999px;padding:6px 16px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;}
 .nav-btn:hover{background:#f0f2f8;}
+.month-btn{background:#909db2;border:none;color:white;border-radius:9999px;padding:6px 16px;font-size:15px;font-weight:700;cursor:pointer;display:none;align-items:center;gap:4px;}
+.month-btn:hover{background:#7d8daa;}
+/* Chrome desktop & iPad横：表示 */
+@media (min-width:768px),(orientation:landscape){.month-btn{display:flex;}}
+/* iPhone縦（max-width:767px かつ portrait）：非表示 */
+@media (max-width:767px) and (orientation:portrait){.month-btn{display:none!important;}}
 
 /* カレンダー */
 .cal-wrap{flex:1;background:var(--navy);border-radius:10px;margin:8px;overflow:hidden;display:flex;flex-direction:column;min-height:400px;}
@@ -49,6 +56,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 
 /* タスクカード */
 .card{border-radius:4px;padding:3px 5px;font-size:13px;font-weight:700;cursor:grab;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none !important;-webkit-user-select:none !important;-moz-user-select:none !important;-ms-user-select:none !important;-webkit-touch-callout:none !important;-webkit-user-drag:none;line-height:1.5;text-align:center;touch-action:none;-webkit-tap-highlight-color:rgba(0,0,0,0)!important;outline:none;}
+.card.kadai-card{padding:0;display:flex;align-items:stretch;overflow:hidden;}
+.card.kadai-card .kadai-star-block{background:#ff991c;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:18px;min-height:100%;}
+.card.kadai-card .kadai-text{flex:1;display:flex;align-items:center;justify-content:center;padding:3px 4px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
 .card *{user-select:none !important;-webkit-user-select:none !important;-webkit-touch-callout:none !important;pointer-events:none;}
 .card:active,.card:focus,.card:focus-visible{cursor:grabbing;outline:none!important;box-shadow:none!important;transform:none!important;opacity:1!important;}
 .card-ghost{opacity:0.3!important;background:#ccc!important;}
@@ -64,6 +74,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 .card.plan{background:var(--c-plan);color:var(--c-plan-t);}
 .card.test{background:var(--c-test);color:var(--c-test-t);}
 .card.holiday{background:var(--c-holiday);color:var(--c-holiday-t);}
+.card.kadai{background:var(--c-kadai);color:var(--c-kadai-t);}
+/* 仮カード：透過なし・教科色のドット枠線 */
+.card.temp-card { opacity:1; }
+.card.temp-card.math  { outline:2px dashed #378add; outline-offset:-2px; }
+.card.temp-card.jp    { outline:2px dashed #c966a8; outline-offset:-2px; }
+.card.temp-card.sci   { outline:2px dashed #4caa44; outline-offset:-2px; }
+.card.temp-card.soc   { outline:2px dashed #c8960a; outline-offset:-2px; }
 
 /* ボトムナビ */
 .bnav{background:white;border-top:1px solid #ddd;display:flex;justify-content:space-around;padding:6px 0;flex-shrink:0;height:52px;}
@@ -126,6 +143,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
   .hdr{height:34px;padding:3px 8px;flex-shrink:0;}
   .hdr-title{font-size:13px;}
   .nav-btn{font-size:11px;padding:3px 8px;}
+  .month-btn{font-size:11px;padding:3px 8px;}
   .cal-head{grid-template-columns:24px repeat(7,1fr);}
   .time-row{grid-template-columns:24px repeat(7,1fr);}
   .time-lbl{width:30px;padding:4px 2px;}
@@ -170,7 +188,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 
 <div id="app" style="display:none;width:100%;height:100%;">
   <div class="hdr">
-    <button class="nav-btn" id="btnPrev" onclick="navPrev()"><svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor"><polygon points="10,0 10,12 0,6"/></svg> <span id="btnPrevLabel">前週</span></button>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <button class="nav-btn" id="btnPrev" onclick="navPrev()"><svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor"><polygon points="10,0 10,12 0,6"/></svg> <span id="btnPrevLabel">前週</span></button>
+      <button class="month-btn" id="btnPrevMonth" onclick="navPrevMonth()"><svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor"><polygon points="10,0 10,12 0,6"/></svg> 先月</button>
+    </div>
     <div style="display:flex;align-items:center;gap:8px;">
       <div class="hdr-title">航大 家庭学習スケジュール</div>
       <button id="multiSelectToggle" onclick="toggleMultiSelect()"
@@ -178,7 +199,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
       <button class="undo-btn" onclick="undoLast()"
         style="background:white;border:1.5px solid #ccc;color:#888;border-radius:14px;padding:3px 18px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;opacity:0.35;pointer-events:none;">↩</button>
     </div>
-    <button class="nav-btn" id="btnNext" onclick="navNext()"><span id="btnNextLabel">翌週</span> <svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor"><polygon points="0,0 0,12 10,6"/></svg></button>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <button class="month-btn" id="btnNextMonth" onclick="navNextMonth()">翌月 <svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor"><polygon points="0,0 0,12 10,6"/></svg></button>
+      <button class="nav-btn" id="btnNext" onclick="navNext()"><span id="btnNextLabel">翌週</span> <svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor"><polygon points="0,0 0,12 10,6"/></svg></button>
+    </div>
   </div>
 
   <div class="cal-wrap">
@@ -233,11 +257,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
         <!-- 上段：提案 -->
         <button onclick="closeAIModal();openProposeModal();" style="flex:1;width:100%;border:none;border-radius:12px;background:#EDE9FD;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:14px;padding:0 18px;text-align:left;transition:opacity .15s;box-sizing:border-box;" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
           <div style="width:40px;height:40px;border-radius:11px;background:#CEC9F6;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3C3489" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5Z"/><path d="M19 3l.8 2.2L22 6l-2.2.8L19 9l-.8-2.2L16 6l2.2-.8Z"/><path d="M5 15l.6 1.4L7 17l-1.4.6L5 19l-.6-1.4L3 17l1.4-.6Z"/></svg>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3C3489" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
           </div>
           <div style="flex:1;min-width:0;">
             <div style="font-size:17px;font-weight:500;color:#26215C;">スケジュールを提案する</div>
-            <div style="font-size:13px;color:#534AB7;margin-top:3px;opacity:.8;">グノレブ前後 / 塾休み / 課題学習</div>
+            <div style="font-size:13px;color:#534AB7;margin-top:3px;opacity:.8;">グノレブ前後 / 塾休み / 課題学習 / 特別講習</div>
           </div>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7F77DD" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
@@ -267,12 +291,34 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
           </button>
           <button onclick="closeAIModal();openRuleChatModal();" style="flex:1;border:none;border-radius:12px;background:#E6F1FB;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:10px;padding:0 14px;text-align:left;transition:opacity .15s;box-sizing:border-box;" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
             <div style="width:34px;height:34px;border-radius:9px;background:#B5D4F4;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0C447C" stroke-width="1.8"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0C447C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M12 2v4M8 2h8"/><circle cx="9" cy="13" r="1.5" fill="#0C447C" stroke="none"/><circle cx="15" cy="13" r="1.5" fill="#0C447C" stroke="none"/><line x1="9" y1="17" x2="15" y2="17"/><line x1="7" y1="8" x2="7" y2="6"/><line x1="17" y1="8" x2="17" y2="6"/></svg>
             </div>
             <div style="flex:1;min-width:0;">
-              <div style="font-size:15px;font-weight:500;color:#042C53;line-height:1.3;">ルール<br>確認</div>
+              <div style="font-size:15px;font-weight:500;color:#042C53;line-height:1.3;">AIと<br>チャット</div>
             </div>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+
+        <!-- バックアップ -->
+        <div style="display:flex;gap:8px;margin-top:2px;">
+          <button onclick="manualBackup()" style="flex:1;border:none;border-radius:12px;background:#F3F0FF;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:10px;padding:10px 14px;text-align:left;transition:opacity .15s;box-sizing:border-box;" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
+            <div style="width:34px;height:34px;border-radius:9px;background:#DDD6FE;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#4C1D95" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:14px;font-weight:700;color:#2D1B69;">JSONダウンロード</div>
+              <div style="font-size:11px;color:#888;margin-top:1px;">手動バックアップ</div>
+            </div>
+          </button>
+          <button onclick="showBackupHistory()" style="flex:1;border:none;border-radius:12px;background:#F0FDF4;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:10px;padding:10px 14px;text-align:left;transition:opacity .15s;box-sizing:border-box;" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
+            <div style="width:34px;height:34px;border-radius:9px;background:#BBF7D0;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#14532D" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1018 0 9 9 0 00-18 0"/><polyline points="3 12 7 8 11 12"/><line x1="7" y1="8" x2="7" y2="16"/></svg>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:14px;font-weight:700;color:#14532D;">自動バックアップ</div>
+              <div id="lastAutoBackupLabel" style="font-size:11px;color:#888;margin-top:1px;">復元する</div>
+            </div>
           </button>
         </div>
 
@@ -402,8 +448,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
     <div class="modal" style="width:min(420px,96vw);height:min(680px,92dvh);display:flex;flex-direction:column;">
       <div class="modal-hdr" style="background:#185FA5;padding:16px 20px;flex-shrink:0;">
         <div style="display:flex;align-items:center;gap:10px;">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-          <span style="font-size:17px;font-weight:700;">ルール確認・相談</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M12 2v4M8 2h8"/><circle cx="9" cy="13" r="1.5" fill="white" stroke="none"/><circle cx="15" cy="13" r="1.5" fill="white" stroke="none"/><line x1="9" y1="17" x2="15" y2="17"/><line x1="7" y1="8" x2="7" y2="6"/><line x1="17" y1="8" x2="17" y2="6"/></svg>
+          <span style="font-size:17px;font-weight:700;">AIとチャット</span>
         </div>
         <button class="modal-close" onclick="closeRuleChatModal()">×</button>
       </div>
@@ -428,7 +474,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 
       <!-- 入力エリア -->
       <div style="padding:12px 16px;background:white;border-top:1px solid #eee;display:flex;gap:8px;align-items:flex-end;flex-shrink:0;">
-        <textarea id="ruleChatInput" placeholder="メッセージを入力…" style="flex:1;border:1.5px solid #ddd;border-radius:10px;padding:10px 12px;font-size:16px;font-family:inherit;resize:none;outline:none;line-height:1.5;max-height:100px;overflow-y:auto;" rows="1" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendRuleChatMessage();}"></textarea>
+        <textarea id="ruleChatInput" placeholder="メッセージを入力…" style="flex:1;border:1.5px solid #ddd;border-radius:10px;padding:10px 12px;font-size:16px;font-family:inherit;resize:none;outline:none;line-height:1.5;max-height:100px;overflow-y:auto;" rows="1" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'" onkeydown="if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();sendRuleChatMessage();}"></textarea>
         <button onclick="sendRuleChatMessage()" style="width:40px;height:40px;border-radius:50%;background:#185FA5;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:opacity .15s;" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
@@ -623,29 +669,366 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
         </button>
 
         <!-- 塾休み期間 -->
-        <button onclick="closeProposeModal();showToast('塾お休み期間の提案は近日公開予定です 🚧',2500);" style="flex:1;width:100%;border:none;border-radius:12px;background:#EDE9FD;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:14px;padding:0 18px;text-align:left;transition:opacity .15s;box-sizing:border-box;opacity:.6;" onmouseover="this.style.opacity='.5'" onmouseout="this.style.opacity='.6'">
+        <button onclick="closeProposeModal();openJukuYasumiPanel();" style="flex:1;width:100%;border:none;border-radius:12px;background:#EDE9FD;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:14px;padding:0 18px;text-align:left;transition:opacity .15s;box-sizing:border-box;" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
           <div style="width:40px;height:40px;border-radius:11px;background:#CEC9F6;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3C3489" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h6L4 14h6"/><path d="M10 3h4l-4 5h4"/><path d="M14 12h4l-4 5h4"/></svg>
           </div>
           <div style="flex:1;min-width:0;">
             <div style="font-size:17px;font-weight:500;color:#26215C;">塾休み期間</div>
-            <div style="font-size:13px;color:#534AB7;margin-top:3px;opacity:.8;">近日公開予定</div>
+            <div style="font-size:13px;color:#534AB7;margin-top:3px;opacity:.8;">休み期間の学習を最適化</div>
           </div>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7F77DD" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
 
         <!-- 課題学習 -->
-        <button onclick="closeProposeModal();showToast('課題学習の提案は近日公開予定です 🚧',2500);" style="flex:1;width:100%;border:none;border-radius:12px;background:#EDE9FD;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:14px;padding:0 18px;text-align:left;transition:opacity .15s;box-sizing:border-box;opacity:.6;" onmouseover="this.style.opacity='.5'" onmouseout="this.style.opacity='.6'">
+        <button onclick="closeProposeModal();openKadaiModal();" style="flex:1;width:100%;border:none;border-radius:12px;background:#EDE9FD;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:14px;padding:0 18px;text-align:left;transition:opacity .15s;box-sizing:border-box;" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
           <div style="width:40px;height:40px;border-radius:11px;background:#CEC9F6;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3C3489" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg>
           </div>
           <div style="flex:1;min-width:0;">
             <div style="font-size:17px;font-weight:500;color:#26215C;">課題学習</div>
-            <div style="font-size:13px;color:#534AB7;margin-top:3px;opacity:.8;">近日公開予定</div>
+            <div style="font-size:13px;color:#534AB7;margin-top:3px;opacity:.8;">課題本のページを自動分配</div>
           </div>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7F77DD" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
 
+        <!-- 夏期・冬期・春期講習 -->
+        <button onclick="closeProposeModal();openLecturePanel();" style="flex:1;width:100%;border:none;border-radius:12px;background:#E1F5EE;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:14px;padding:0 18px;text-align:left;transition:opacity .15s;box-sizing:border-box;" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
+          <div style="width:40px;height:40px;border-radius:11px;background:#9FE1CB;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#085041" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.9" y1="4.9" x2="7.1" y2="7.1"/><line x1="16.9" y1="16.9" x2="19.1" y2="19.1"/><line x1="19.1" y1="4.9" x2="16.9" y2="7.1"/><line x1="7.1" y1="16.9" x2="4.9" y2="19.1"/></svg>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:17px;font-weight:500;color:#04342C;">夏期・冬期・春期講習</div>
+            <div style="font-size:13px;color:#0F6E56;margin-top:3px;opacity:.8;">講習期間の学習を自動配置</div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1D9E75" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- 夏期・冬期・春期講習パネル -->
+  <style>
+    #lecturePanel {
+      display: none; position: fixed; top: 60px; right: 16px;
+      width: min(420px, 92vw); max-height: min(680px, 88dvh);
+      background: white; border-radius: 14px;
+      box-shadow: 0 8px 40px rgba(0,0,0,.22); z-index: 206;
+      flex-direction: column; opacity: 0; pointer-events: none;
+      transform: scale(0.95); transition: opacity .2s, transform .2s;
+      overflow: hidden;
+    }
+    #lecturePanel.open { opacity:1; pointer-events:auto; transform:scale(1); display:flex; }
+    @media (max-width:600px) {
+      #lecturePanel { top:0!important;left:0!important;right:0!important;width:100vw!important;max-width:100vw!important;max-height:100dvh!important;border-radius:0; }
+    }
+    #lectureScrollBody { overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; flex:1; padding:14px 16px; }
+  </style>
+  <div id="lecturePanel">
+    <div style="background:#0F6E56;padding:12px 14px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.9" y1="4.9" x2="7.1" y2="7.1"/><line x1="16.9" y1="16.9" x2="19.1" y2="19.1"/><line x1="19.1" y1="4.9" x2="16.9" y2="7.1"/><line x1="7.1" y1="16.9" x2="4.9" y2="19.1"/></svg>
+        <span style="font-size:14px;font-weight:700;color:white;">夏期・冬期・春期講習</span>
+      </div>
+      <button ontouchend="event.preventDefault();closeLecturePanel();" onclick="closeLecturePanel()" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:50%;width:28px;height:28px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>
+    </div>
+    <div id="lectureScrollBody">
+      <div style="font-size:13px;color:#888;margin-bottom:14px;">講習日を選択して配置すると、朝以外のスロットを講習パターンで自動置き換えします。</div>
+      <div class="field">
+        <label>講習日を選択（複数可）</label>
+        <div style="font-size:12px;color:#888;margin-bottom:6px;">タップで選択・解除。</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <button onclick="lecturePrevMonth()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#1a2744;padding:4px 8px;">‹</button>
+          <span id="lectureCalTitle" style="font-weight:700;font-size:14px;"></span>
+          <button onclick="lectureNextMonth()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#1a2744;padding:4px 8px;">›</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px;">
+          <div style="text-align:center;font-size:11px;color:#888;">月</div><div style="text-align:center;font-size:11px;color:#888;">火</div><div style="text-align:center;font-size:11px;color:#888;">水</div><div style="text-align:center;font-size:11px;color:#888;">木</div><div style="text-align:center;font-size:11px;color:#888;">金</div><div style="text-align:center;font-size:11px;color:#378add;">土</div><div style="text-align:center;font-size:11px;color:#e24b4a;">日</div>
+        </div>
+        <div id="lectureCalGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;"></div>
+        <div id="lectureSelectedDates" style="margin-top:8px;font-size:12px;color:#0F6E56;font-weight:700;min-height:18px;"></div>
+      </div>
+      <div class="field">
+        <label>講習時間</label>
+        <div style="display:flex;gap:10px;">
+          <div style="flex:1;"><div style="font-size:12px;color:#888;margin-bottom:4px;">開始</div>
+            <input type="time" id="lectureStartTime" value="08:45" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;"></div>
+          <div style="flex:1;"><div style="font-size:12px;color:#888;margin-bottom:4px;">終了</div>
+            <input type="time" id="lectureEndTime" value="12:30" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>1日目の理科・社会</label>
+        <div style="display:flex;gap:8px;margin-top:4px;">
+          <button id="lectureDay1Sci" onclick="setLectureDay1('sci')" style="flex:1;border:2px solid #4caa44;border-radius:9999px;background:#B6EBB0;color:#27500A;padding:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">理科から</button>
+          <button id="lectureDay1Soc" onclick="setLectureDay1('soc')" style="flex:1;border:2px solid #c8960a;border-radius:9999px;background:white;color:#c8960a;padding:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">社会から</button>
+        </div>
+        <div style="font-size:12px;color:#888;margin-top:6px;">※7/8頃グノレブ結果でクラス確定後に設定</div>
+      </div>
+      <div class="field">
+        <label>中日（講習のない日）</label>
+        <div style="font-size:12px;color:#888;margin-top:4px;">国語：意味調べを仮カードで配置（手動で移動前提）</div>
+      </div>
+      <div id="lectureError" style="color:#e24b4a;font-size:12px;margin-top:8px;min-height:18px;"></div>
+      <div class="modal-actions" style="margin-top:14px;">
+        <button onclick="closeLecturePanel()" style="flex:1;background:white;border:2px solid #ccc;color:#888;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">やめる</button>
+        <button onclick="runLecture()" style="flex:2;background:#0F6E56;border:none;color:white;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">カレンダーに配置</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 塾休み期間パネル（バランスチェックと同じフローティング） -->
+  <style>
+    #jukuPanel {
+      display: none;
+      position: fixed;
+      top: 60px; right: 16px;
+      width: min(380px, 92vw);
+      max-height: min(620px, 86dvh);
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 8px 40px rgba(0,0,0,.22);
+      z-index: 210;
+      flex-direction: column;
+      opacity: 0; pointer-events: none;
+      transform: scale(0.95);
+      transition: opacity .2s, transform .2s;
+      user-select: none;
+      overflow: hidden;
+    }
+    #jukuPanel.open { opacity:1; pointer-events:auto; transform:scale(1); display:flex; }
+    /* スマホ：画面全体に広げてスクロールしやすく */
+    @media (max-width: 600px) {
+      #jukuPanel {
+        top: 0 !important; left: 0 !important; right: 0 !important;
+        width: 100vw !important; max-width: 100vw !important;
+        max-height: 100dvh !important;
+        border-radius: 0;
+      }
+    }
+    #jukuMessages {
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+    }
+    #jukuInputArea {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      flex-shrink: 0;
+      max-height: 55dvh;
+    }
+    #jukuPanelHdr { cursor:grab; border-radius:14px 14px 0 0; touch-action:none; }
+    #jukuPanelHdr:active { cursor:grabbing; }
+    #jukuResizeHandle {
+      position:absolute; left:0; top:0; bottom:0; width:8px;
+      cursor:ew-resize; z-index:10; border-radius:14px 0 0 14px;
+    }
+    #jukuResizeHandle:hover, #jukuResizeHandle:active { background:rgba(83,74,183,0.15); }
+    #jukuMessages { font-size:14px; }
+    #jukuMessages table { table-layout:fixed; width:100%; font-size:13px; }
+    #jukuMessages table td, #jukuMessages table th {
+      word-break:break-all; white-space:normal; overflow-wrap:break-word;
+      vertical-align:top; padding:5px 5px; line-height:1.5; font-size:13px;
+    }
+    #jukuWidthBtns { display:none; }
+    @media (max-width:699px) {
+      #jukuWidthBtns { display:flex; gap:4px; align-items:center; }
+      #jukuResizeHandle { display:none; }
+    }
+    /* 期間カレンダー */
+    #jukuCalWrap { user-select:none; }
+    .juku-cal-day {
+      width:36px; height:36px; display:flex; align-items:center; justify-content:center;
+      border-radius:50%; font-size:13px; cursor:pointer; font-weight:500;
+      transition: background .1s;
+    }
+    .juku-cal-day:hover { background:#EDE9FD; }
+    .juku-cal-day.in-range { background:#CEC9F6; color:#26215C; border-radius:0; }
+    .juku-cal-day.range-start { background:#534AB7; color:white; border-radius:50% 0 0 50%; }
+    .juku-cal-day.range-end { background:#534AB7; color:white; border-radius:0 50% 50% 0; }
+    .juku-cal-day.range-start.range-end { border-radius:50%; }
+    .juku-cal-day.today-dot::before { content:''; display:block; width:4px; height:4px; background:#534AB7; border-radius:50%; position:absolute; bottom:3px; left:50%; transform:translateX(-50%); }
+    .juku-cal-day { position:relative; }
+    .juku-cal-day.other-month { color:#ccc; }
+    .juku-cal-day.holiday-day { color:#e24b4a; font-weight:700; }
+  </style>
+
+  <div id="jukuPanel">
+    <div id="jukuResizeHandle"></div>
+    <div style="background:#534AB7;padding:12px 14px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;" id="jukuPanelHdr">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><path d="M4 7h6L4 14h6"/><path d="M10 3h4l-4 5h4"/><path d="M14 12h4l-4 5h4"/></svg>
+        <span style="font-size:14px;font-weight:700;color:white;">塾休み期間の提案</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <div id="jukuWidthBtns">
+          <button ontouchend="event.preventDefault();jukuResize(-40);" onclick="jukuResize(-40)" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:6px;width:28px;height:28px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;">−</button>
+          <button ontouchend="event.preventDefault();jukuResize(40);" onclick="jukuResize(40)" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:6px;width:28px;height:28px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;">＋</button>
+        </div>
+        <button ontouchend="event.preventDefault();closeJukuPanel();" onclick="closeJukuPanel()" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:50%;width:28px;height:28px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">×</button>
+      </div>
+    </div>
+
+    <!-- 入力エリア -->
+    <div style="padding:12px 14px;border-bottom:1px solid #eee;flex-shrink:0;" id="jukuInputArea">
+      <!-- 期間カレンダー -->
+      <div style="font-size:12px;color:#888;margin-bottom:6px;">期間を選択（開始〜終了日＝塾なし期間）</div>
+      <div id="jukuCalWrap">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <button onclick="jukuCalPrev()" style="background:#EDE9FD;border:none;border-radius:8px;width:28px;height:28px;cursor:pointer;color:#534AB7;font-size:16px;">‹</button>
+          <div id="jukuCalTitle" style="font-size:14px;font-weight:700;color:#1a2744;"></div>
+          <button onclick="jukuCalNext()" style="background:#EDE9FD;border:none;border-radius:8px;width:28px;height:28px;cursor:pointer;color:#534AB7;font-size:16px;">›</button>
+        </div>
+        <!-- 曜日ヘッダー（月始まり） -->
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);text-align:center;margin-bottom:2px;">
+          <div style="font-size:11px;color:#888;padding:2px 0;">月</div><div style="font-size:11px;color:#888;padding:2px 0;">火</div>
+          <div style="font-size:11px;color:#888;padding:2px 0;">水</div><div style="font-size:11px;color:#888;padding:2px 0;">木</div>
+          <div style="font-size:11px;color:#888;padding:2px 0;">金</div>
+          <div style="font-size:11px;color:#e24b4a;padding:2px 0;">土</div><div style="font-size:11px;color:#e24b4a;padding:2px 0;">日</div>
+        </div>
+        <div id="jukuCalGrid" style="display:grid;grid-template-columns:repeat(7,1fr);text-align:center;"></div>
+      </div>
+      <!-- 選択中の期間表示 -->
+      <div id="jukuRangeLabel" style="font-size:12px;color:#534AB7;font-weight:700;margin:6px 0 8px;min-height:18px;text-align:center;"></div>
+      <!-- モード選択 -->
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <button id="jukuModeBtn0" onclick="setJukuMode('long')" style="flex:1;border:2px solid #534AB7;background:#534AB7;color:white;border-radius:9999px;padding:7px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">長期休暇</button>
+        <button id="jukuModeBtn1" onclick="setJukuMode('normal')" style="flex:1;border:2px solid #ccc;background:white;color:#888;border-radius:9999px;padding:7px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">通常週（祝日のみ）</button>
+      </div>
+      <button onclick="runJukuPropose()" id="jukuRunBtn" style="width:100%;background:#534AB7;border:none;color:white;border-radius:9999px;padding:9px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">この期間の学習を提案 ✨</button>
+    </div>
+
+    <!-- 結果エリア -->
+    <div id="jukuMessages" style="flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px;">
+      <div style="color:#bbb;font-size:12px;text-align:center;margin-top:16px;">期間を選択して提案ボタンを押すと、<br>最適な学習スケジュールを提案します</div>
+    </div>
+  </div>
+
+  <!-- 課題学習フローティングパネル -->
+  <style>
+    #kadaiPanel {
+      display: none;
+      position: fixed;
+      top: 60px; right: 16px;
+      width: min(400px, 92vw);
+      max-height: min(640px, 88dvh);
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 8px 40px rgba(0,0,0,.22);
+      z-index: 206;
+      flex-direction: column;
+      opacity: 0; pointer-events: none;
+      transform: scale(0.95);
+      transition: opacity .2s, transform .2s;
+      user-select: none;
+      overflow: hidden;
+    }
+    #kadaiPanel.open { opacity:1; pointer-events:auto; transform:scale(1); display:flex; }
+    @media (max-width: 600px) {
+      #kadaiPanel {
+        top: 0 !important; left: 0 !important; right: 0 !important;
+        width: 100vw !important; max-width: 100vw !important;
+        max-height: 100dvh !important;
+        border-radius: 0;
+      }
+    }
+    #kadaiPanelHdr { cursor:grab; border-radius:14px 14px 0 0; touch-action:none; }
+    #kadaiPanelHdr:active { cursor:grabbing; }
+    #kadaiResizeHandle {
+      position:absolute; left:0; top:0; bottom:0; width:8px;
+      cursor:ew-resize; z-index:10; border-radius:14px 0 0 14px;
+    }
+    #kadaiResizeHandle:hover, #kadaiResizeHandle:active { background:rgba(83,74,183,0.15); }
+    #kadaiWidthBtns { display:none; }
+    @media (max-width:699px) {
+      #kadaiWidthBtns { display:flex; gap:4px; align-items:center; }
+      #kadaiResizeHandle { display:none; }
+    }
+    #kadaiScrollBody { overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; flex:1; }
+  </style>
+
+  <div id="kadaiPanel">
+    <div id="kadaiResizeHandle"></div>
+    <div style="background:#534AB7;padding:12px 14px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;" id="kadaiPanelHdr">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg>
+        <span style="font-size:14px;font-weight:700;color:white;">課題学習の分配</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <div id="kadaiWidthBtns">
+          <button ontouchend="event.preventDefault();kadaiResize(-40);" onclick="kadaiResize(-40)" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:6px;width:28px;height:28px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;">−</button>
+          <button ontouchend="event.preventDefault();kadaiResize(40);" onclick="kadaiResize(40)" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:6px;width:28px;height:28px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;">＋</button>
+        </div>
+        <button ontouchend="event.preventDefault();closeKadaiModal();" onclick="closeKadaiModal()" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:50%;width:28px;height:28px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">×</button>
+      </div>
+    </div>
+
+    <div id="kadaiScrollBody" style="padding:14px 16px;">
+      <!-- Step1: 入力フォーム -->
+      <div id="kadaiStep1">
+        <div style="font-size:13px;color:#888;margin-bottom:14px;">課題本の情報を入力すると、スケジュールに自動で分配します。</div>
+        <div class="field">
+          <label>科目</label>
+          <select id="kadaiSubject" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;">
+            <option value="算数">算数</option>
+            <option value="国語">国語</option>
+            <option value="理科">理科</option>
+            <option value="社会">社会</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>課題本の名前（例：算数課題ノート）<span style="font-size:11px;color:#888;font-weight:400;"> ※3文字程度の省略名称を推奨</span></label>
+          <input type="text" id="kadaiBookName" placeholder="例：夏期算数課題ノート" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;">
+        </div>
+        <div class="field">
+          <label>カード略称（1〜2文字）<span style="font-size:11px;color:#888;font-weight:400;"> ★略称 p.XX-XX でカード上に表示</span></label>
+          <input type="text" id="kadaiShortName" placeholder="例：算" maxlength="2" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;">
+        </div>
+        <div class="field">
+          <label>総ページ数</label>
+          <input type="number" id="kadaiPages" placeholder="例：150" min="1" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;">
+        </div>
+        <div style="display:flex;gap:10px;">
+          <div class="field" style="flex:1;">
+            <label>開始日</label>
+            <input type="date" id="kadaiStartDate" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;">
+          </div>
+          <div class="field" style="flex:1;">
+            <label>提出日</label>
+            <input type="date" id="kadaiDueDate" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;">
+          </div>
+        </div>
+        <div style="margin-top:4px;">
+          <button onclick="toggleKadaiStep2Option()" id="kadaiStep2Toggle" style="background:none;border:none;color:#534AB7;font-size:13px;font-weight:700;cursor:pointer;padding:0;font-family:inherit;">▶ ページあたりの時間を入力（任意・再分配）</button>
+          <div id="kadaiStep2Option" style="display:none;margin-top:10px;background:#EDEAF9;border-radius:8px;padding:12px;border:1.5px solid #AFA9EC;">
+            <div style="font-size:12px;color:#888;margin-bottom:8px;">開始後、実際のペースがわかったら入力すると時間ベースで再分配できます。</div>
+            <div style="display:flex;gap:10px;align-items:flex-end;">
+              <div class="field" style="flex:1;margin-bottom:0;">
+                <label>1ページあたり（分）</label>
+                <input type="number" id="kadaiMinPerPage" placeholder="例：3" min="1" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;">
+              </div>
+              <div class="field" style="flex:1;margin-bottom:0;">
+                <label>1回あたり上限（分）</label>
+                <input type="number" id="kadaiMaxMin" placeholder="例：30" min="5" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;">
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="kadaiError" style="color:#e24b4a;font-size:12px;margin-top:8px;min-height:18px;"></div>
+        <div class="modal-actions" style="margin-top:14px;">
+          <button onclick="closeKadaiModal()" style="flex:1;background:white;border:2px solid #ccc;color:#888;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">やめる</button>
+          <button onclick="runKadaiDistribute()" id="kadaiRunBtn" style="flex:2;background:#534AB7;border:none;color:white;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">AIで分配する ✨</button>
+        </div>
+      </div>
+
+      <!-- Step2: 結果プレビュー -->
+      <div id="kadaiStep2" style="display:none;">
+        <div id="kadaiPreviewMsg" style="font-size:13px;color:#888;margin-bottom:12px;"></div>
+        <div id="kadaiPreviewList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;"></div>
+        <div class="modal-actions">
+          <button onclick="kadaiBack()" style="flex:1;background:white;border:2px solid #ccc;color:#888;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">戻る</button>
+          <button onclick="kadaiConfirm()" style="flex:2;background:#534AB7;border:none;color:white;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">カレンダーに追加</button>
+        </div>
       </div>
     </div>
   </div>
@@ -701,7 +1084,19 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
       </div>
       <div class="modal-body">
         <div class="subj-badge" id="detailBadge">
-          <select id="dSubject" onchange="updateDetailColor()" style="font-weight:700;font-size:15px;font-family:inherit;background:transparent;border:1px solid rgba(0,0,0,0.2);border-radius:8px;padding:4px 10px;cursor:pointer;"></select>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <select id="dSubject" onchange="updateDetailColor()" style="font-weight:700;font-size:15px;font-family:inherit;background:transparent;border:1px solid rgba(0,0,0,0.2);border-radius:8px;padding:4px 10px;cursor:pointer;"></select>
+            <div id="kadaiStarIcon" style="display:none;width:28px;height:28px;border-radius:6px;background:#ff991c;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
+            </div>
+            <div id="lectureStarIcon" style="display:none;width:28px;height:28px;border-radius:6px;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><circle cx="12" cy="12" r="3.5"/><line x1="12" y1="1.5" x2="12" y2="5" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="19" x2="12" y2="22.5" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="1.5" y1="12" x2="5" y2="12" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="19" y1="12" x2="22.5" y2="12" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="4.2" y1="4.2" x2="6.5" y2="6.5" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="17.5" y1="17.5" x2="19.8" y2="19.8" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="19.8" y1="4.2" x2="17.5" y2="6.5" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="6.5" y1="17.5" x2="4.2" y2="19.8" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <button id="confirmTempBtn" onclick="confirmTempCard()" style="display:none;border-radius:9999px;background:white;font-size:12px;font-weight:700;padding:4px 12px;cursor:pointer;font-family:inherit;white-space:nowrap;">仮→決定</button>
+            <button id="revertTempBtn" onclick="revertToTemp()" style="display:none;border-radius:9999px;background:white;font-size:12px;font-weight:700;padding:4px 12px;cursor:pointer;font-family:inherit;white-space:nowrap;">決定→仮</button>
+          </div>
         </div>
         <div class="field"><label>単元名</label><input id="dUnit" type="text"></div>
         <div class="field"><label># 単元番号（任意）</label><input id="dHash" type="text" placeholder="入れなくてもOK"></div>
@@ -1072,6 +1467,47 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
   </div>
 </div>
 
+  <!-- 月カレンダーモーダル（翌月・先月ボタン用） -->
+  <div class="modal-bg" id="monthCalModal" style="z-index:220;">
+    <div class="modal" style="width:min(340px,92vw);">
+      <div class="modal-hdr">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button onclick="_monthCalMonth--;if(_monthCalMonth<1){_monthCalMonth=12;_monthCalYear--;}renderMonthCalModal();" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:50%;width:28px;height:28px;font-size:16px;cursor:pointer;">‹</button>
+          <span id="monthCalTitle" style="font-size:16px;font-weight:700;min-width:90px;text-align:center;"></span>
+          <button onclick="_monthCalMonth++;if(_monthCalMonth>12){_monthCalMonth=1;_monthCalYear++;}renderMonthCalModal();" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:50%;width:28px;height:28px;font-size:16px;cursor:pointer;">›</button>
+        </div>
+        <button class="modal-close" onclick="document.getElementById('monthCalModal').classList.remove('open')">×</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:6px;">
+          <div style="text-align:center;font-size:12px;color:#888;padding:4px;">月</div>
+          <div style="text-align:center;font-size:12px;color:#888;padding:4px;">火</div>
+          <div style="text-align:center;font-size:12px;color:#888;padding:4px;">水</div>
+          <div style="text-align:center;font-size:12px;color:#888;padding:4px;">木</div>
+          <div style="text-align:center;font-size:12px;color:#888;padding:4px;">金</div>
+          <div style="text-align:center;font-size:12px;color:#378add;padding:4px;">土</div>
+          <div style="text-align:center;font-size:12px;color:#e24b4a;padding:4px;">日</div>
+        </div>
+        <div id="monthCalGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;"></div>
+        <div style="text-align:center;margin-top:10px;font-size:12px;color:#888;">日付をタップするとその週を表示</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- バックアップ復元モーダル -->
+  <div class="modal-bg" id="backupModal" style="z-index:220;">
+    <div class="modal" style="width:min(400px,92vw);">
+      <div class="modal-hdr">
+        <span>自動バックアップから復元</span>
+        <button class="modal-close" onclick="document.getElementById('backupModal').classList.remove('open')">×</button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size:13px;color:#888;margin-bottom:12px;">過去7日分の自動バックアップです。復元すると現在のデータが上書きされます。</div>
+        <div id="backupList" style="display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
+    </div>
+  </div>
+
 <script>
 // ===== データ定義 =====
 const SLOTS = ['plan','morning','am','pm','night'];
@@ -1079,7 +1515,7 @@ const SLOT_IDX = {plan:0,morning:1,am:2,pm:3,night:4};
 const DAYS_JP = ['月','火','水','木','金','土','日'];
 const SUBJ_CLASS = {
   '算数':'math','国語':'jp','理科':'sci','社会':'soc',
-  '学校の宿題':'hw','習い事':'lesson','予定':'plan','テスト':'test','祝日':'holiday'
+  '学校の宿題':'hw','習い事':'lesson','予定':'plan','テスト':'test','祝日':'holiday','課題':'kadai'
 };
 const SUBJ_COLOR = {
   '算数':['#C1E8FB','#1a2744'],'国語':['#F2B9E4','#1a2744'],
@@ -1122,6 +1558,11 @@ function getMonday(d) {
   const m = new Date(d); m.setDate(diff); m.setHours(0,0,0,0); return m;
 }
 function dateKey(d) { return d.toISOString().slice(0,10); }
+// JST基準の日付文字列（タイムゾーンズレなし）
+function dateKeyJST(d) {
+  const jst = new Date(d.getTime() + 9*60*60*1000);
+  return jst.toISOString().slice(0,10);
+}
 function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate()+n); return r; }
 function parseDate(s) { return s ? new Date(s) : null; }
 function sameDateStr(a, b) {
@@ -1142,12 +1583,16 @@ function takeSnapshot() {
   updateUndoBtn();
 }
 function getWeekKey() { return dateKey(currentMonday); }
+// localOverrides[wkKey]取得（後方互換）
+function getLocalForWeek(wk) {
+  return localOverrides[wk] || {added:[], hidden:{}};
+}
 
 // ===== Compute tasks for current week =====
 function getTasksForWeek() {
   const dates = getWeekDates();
   const wk = getWeekKey();
-  const local = localOverrides[wk] || {added:[], hidden:{}};
+  const local = getLocalForWeek(wk);
   const thisWeekMonday = getWeekKey(); // 'YYYY-MM-DD'形式の文字列
 
   // 曜日→日付マップ
@@ -1252,7 +1697,18 @@ function getTasksForWeek() {
 
   // 4. ローカル追加
   (local.added || []).forEach(t => {
-    result.push({...t, _dayIdx: t._dayIdx, _slotIdx: SLOT_IDX[t.slot] ?? 0});
+    // _fromDateExactがある場合は日付で_dayIdxを計算（one_timeカード）
+    let dayIdx = t._dayIdx;
+    if (t._fromDateExact) {
+      const tDate = new Date(t._fromDateExact + 'T00:00:00');
+      dayIdx = dates.findIndex(d => sameDateStr(d, tDate));
+      if (dayIdx < 0) return; // この週に存在しない日付はスキップ
+    } else if (t.date) {
+      const tDate = new Date(t.date);
+      dayIdx = dates.findIndex(d => sameDateStr(d, tDate));
+      if (dayIdx < 0) return;
+    }
+    result.push({...t, _dayIdx: dayIdx, _slotIdx: SLOT_IDX[t.slot] ?? 0});
   });
 
   // 5. weeklyAdded（one_time→weeklyに変換されたタスク）
@@ -1376,13 +1832,45 @@ function render() {
     const card = document.createElement('div');
     const cls = SUBJ_CLASS[t.subject] || 'plan';
     const aiCls = t._aiSuggest ? ' ai-suggest' : '';
-    card.className = 'card ' + cls + aiCls;
+    const tempCls = t._tempCard ? ' temp-card' : '';
+    card.className = 'card ' + cls + aiCls + tempCls;
     const name = t.unit_name || '';
-    const displayName = name;
     const span = document.createElement('span');
-    span.style.cssText = 'pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;';
-    span.textContent = displayName.length > 8 ? displayName.slice(0,8) : displayName;
-    card.appendChild(span);
+    span.style.cssText = 'pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;display:flex;align-items:center;justify-content:center;gap:3px;width:100%;';
+    if (t._kadaiStar) {
+      // 課題カード：2色ブロック構造（オレンジ★）
+      card.classList.add('kadai-card');
+      const starBlock = document.createElement('div');
+      starBlock.className = 'kadai-star-block';
+      starBlock.style.pointerEvents = 'none';
+      starBlock.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="white" style="display:block;flex-shrink:0;pointer-events:none;"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>';
+      const textBlock = document.createElement('div');
+      textBlock.className = 'kadai-text';
+      textBlock.style.pointerEvents = 'none';
+      const label = (t._kadaiShortName && t.note) ? t._kadaiShortName + ' ' + t.note : name.slice(0,8);
+      textBlock.textContent = label;
+      card.appendChild(starBlock);
+      card.appendChild(textBlock);
+    } else if (t._lectureCard) {
+      // 講習カード：2色ブロック構造（教科色太陽）
+      card.classList.add('kadai-card');
+      const markBlock = document.createElement('div');
+      markBlock.className = 'kadai-star-block';
+      markBlock.style.cssText = 'background:' + (t._lectureMark || '#378add') + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;width:18px;min-height:100%;pointer-events:none;';
+      markBlock.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="white" style="display:block;pointer-events:none;"><circle cx="12" cy="12" r="3.5" fill="white"/><line x1="12" y1="1.5" x2="12" y2="5" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="19" x2="12" y2="22.5" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="1.5" y1="12" x2="5" y2="12" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="19" y1="12" x2="22.5" y2="12" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="4.2" y1="4.2" x2="6.5" y2="6.5" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="17.5" y1="17.5" x2="19.8" y2="19.8" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="19.8" y1="4.2" x2="17.5" y2="6.5" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="6.5" y1="17.5" x2="4.2" y2="19.8" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>';
+      const textBlock = document.createElement('div');
+      textBlock.className = 'kadai-text';
+      textBlock.style.pointerEvents = 'none';
+      textBlock.textContent = name.length > 8 ? name.slice(0,8) : name;
+      card.appendChild(markBlock);
+      card.appendChild(textBlock);
+    } else {
+      const txt = document.createElement('span');
+      txt.style.cssText = 'pointer-events:none;';
+      txt.textContent = name.length > 8 ? name.slice(0,8) : name;
+      span.appendChild(txt);
+      card.appendChild(span);
+    }
     // 選択モード中はチェックボックスを表示
     if (_multiSelectMode) {
       const chk = document.createElement('span');
@@ -1416,15 +1904,26 @@ function render() {
           const rect = card.getBoundingClientRect();
           pcClone = document.createElement('div');
           pcClone.className = card.className;
-          pcClone.textContent = span.textContent;
-          Object.assign(pcClone.style, {
-            position:'fixed', left:rect.left+'px', top:rect.top+'px',
-            width:rect.width+'px', opacity:'0.85', pointerEvents:'none',
-            zIndex:'9999', transform:'scale(1.08)',
-            boxShadow:'0 6px 20px rgba(0,0,0,0.35)',
-            borderRadius:'4px', padding:'3px 5px',
-            fontSize:'13px', fontWeight:'700', textAlign:'center'
-          });
+          if (card.classList.contains('kadai-card')) {
+            pcClone.innerHTML = card.innerHTML;
+            Object.assign(pcClone.style, {
+              position:'fixed', left:rect.left+'px', top:rect.top+'px',
+              width:rect.width+'px', opacity:'0.85', pointerEvents:'none',
+              zIndex:'9999', transform:'scale(1.08)',
+              boxShadow:'0 6px 20px rgba(0,0,0,0.35)',
+              borderRadius:'4px'
+            });
+          } else {
+            pcClone.textContent = span.textContent;
+            Object.assign(pcClone.style, {
+              position:'fixed', left:rect.left+'px', top:rect.top+'px',
+              width:rect.width+'px', opacity:'0.85', pointerEvents:'none',
+              zIndex:'9999', transform:'scale(1.08)',
+              boxShadow:'0 6px 20px rgba(0,0,0,0.35)',
+              borderRadius:'4px', padding:'3px 5px',
+              fontSize:'13px', fontWeight:'700', textAlign:'center'
+            });
+          }
           document.body.appendChild(pcClone);
           card.style.opacity = '0.3';
           document.body.style.userSelect = 'none';
@@ -1489,13 +1988,28 @@ function dropTask(toDay, toSlot) {
   if (idx >= 0) {
     lo.added[idx]._dayIdx = toDay;
     lo.added[idx].slot = SLOTS[toSlot];
+    // _fromDateExactがある場合（課題カード等）は移動先の日付に更新
+    if (lo.added[idx]._fromDateExact) {
+      const newDate = addDays(currentMonday, toDay);
+      lo.added[idx]._fromDateExact = newDate.getFullYear() + '-' +
+        String(newDate.getMonth()+1).padStart(2,'0') + '-' +
+        String(newDate.getDate()).padStart(2,'0');
+      lo.added[idx].date = lo.added[idx]._fromDateExact;
+    }
   } else {
     // 元タスクを非表示にして新しい位置に追加
     lo.hidden = lo.hidden || {};
     const hkey = t.display_type === 'weekly' ? t.uid+'_'+t._dayIdx : t.uid;
     lo.hidden[hkey] = true;
     if (!lo.added) lo.added = [];
-    lo.added.push({...t, _dayIdx: toDay, slot: SLOTS[toSlot], _slotIdx: toSlot, uid: t.uid+'_moved_'+Date.now()});
+    // _fromDateExactがある場合は移動先の日付に更新してからスプレッド
+    const newDate = addDays(currentMonday, toDay);
+    const newDateStr = newDate.getFullYear() + '-' +
+      String(newDate.getMonth()+1).padStart(2,'0') + '-' +
+      String(newDate.getDate()).padStart(2,'0');
+    const newT = {...t, _dayIdx: toDay, slot: SLOTS[toSlot], _slotIdx: toSlot, uid: t.uid+'_moved_'+Date.now()};
+    if (newT._fromDateExact) { newT._fromDateExact = newDateStr; newT.date = newDateStr; }
+    lo.added.push(newT);
   }
   saveLocal();
   dragInfo = null;
@@ -1646,6 +2160,40 @@ function openDetail(t) {
   document.getElementById('detailModal').classList.add('open');
   updateFloatingClose();
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+
+  // 課題★アイコン
+  const kadaiIcon = document.getElementById('kadaiStarIcon');
+  kadaiIcon.style.display = t._kadaiStar ? 'flex' : 'none';
+
+  // 講習太陽アイコン
+  const lectureIcon = document.getElementById('lectureStarIcon');
+  if (t._lectureCard) {
+    lectureIcon.style.display = 'flex';
+    lectureIcon.style.background = t._lectureMark || '#378add';
+  } else {
+    lectureIcon.style.display = 'none';
+  }
+
+  // 仮→決定 / 決定→仮 ボタン
+  const TEMP_BORDER = { math:'#378add', jp:'#c966a8', sci:'#4caa44', soc:'#c8960a' };
+  const cls = SUBJ_CLASS[t.subject] || 'plan';
+  const borderColor = TEMP_BORDER[cls] || '#888';
+  const confirmBtn = document.getElementById('confirmTempBtn');
+  const revertBtn  = document.getElementById('revertTempBtn');
+  if (t._tempCard) {
+    confirmBtn.style.display = 'block';
+    confirmBtn.style.border = '2px solid ' + borderColor;
+    confirmBtn.style.color = borderColor;
+    revertBtn.style.display = 'none';
+  } else if (t._wasTemp) {
+    revertBtn.style.display = 'block';
+    revertBtn.style.border = '2px solid ' + borderColor;
+    revertBtn.style.color = borderColor;
+    confirmBtn.style.display = 'none';
+  } else {
+    confirmBtn.style.display = 'none';
+    revertBtn.style.display  = 'none';
+  }
 }
 
 function setDetailRRKind(kind) {
@@ -1835,6 +2383,60 @@ function saveDetailRepeatSettings() {
   saveLocal(); closeDetail(); render();
   showToast('繰り返し設定を変更しました ✓');
 }
+function confirmTempCard() {
+  const t = document.getElementById('detailModal')._task;
+  if (!t || !t._tempCard) return;
+  const wkMonday = getMonday(new Date((t._fromDateExact || t.date) + 'T00:00:00'));
+  const wkKey = dateKey(wkMonday);
+  const lo = localOverrides[wkKey];
+  if (lo && lo.added) {
+    const idx = lo.added.findIndex(a => a.uid === t.uid);
+    if (idx !== -1) {
+      // フォームの入力内容を保存
+      lo.added[idx].unit_name  = document.getElementById('dUnit').value.trim() || lo.added[idx].unit_name;
+      lo.added[idx].note       = document.getElementById('dMemo').value.trim();
+      lo.added[idx].hash       = document.getElementById('dHash').value.trim();
+      const st = parseInt(document.getElementById('dTime').value);
+      if (!isNaN(st)) lo.added[idx].study_time = st;
+      lo.added[idx].subject    = document.getElementById('dSubject').value;
+      // フラグ切り替え
+      delete lo.added[idx]._tempCard;
+      lo.added[idx]._wasTemp = true;
+    }
+  }
+  saveLocal();
+  render();
+  closeDetail();
+  showToast('✅ 通常カードに変更しました', 2000);
+}
+
+function revertToTemp() {
+  const t = document.getElementById('detailModal')._task;
+  if (!t || !t._wasTemp) return;
+  const wkMonday = getMonday(new Date((t._fromDateExact || t.date) + 'T00:00:00'));
+  const wkKey = dateKey(wkMonday);
+  const lo = localOverrides[wkKey];
+  if (lo && lo.added) {
+    const idx = lo.added.findIndex(a => a.uid === t.uid);
+    if (idx !== -1) {
+      // フォームの入力内容を保存
+      lo.added[idx].unit_name  = document.getElementById('dUnit').value.trim() || lo.added[idx].unit_name;
+      lo.added[idx].note       = document.getElementById('dMemo').value.trim();
+      lo.added[idx].hash       = document.getElementById('dHash').value.trim();
+      const st = parseInt(document.getElementById('dTime').value);
+      if (!isNaN(st)) lo.added[idx].study_time = st;
+      lo.added[idx].subject    = document.getElementById('dSubject').value;
+      // フラグ切り替え
+      delete lo.added[idx]._wasTemp;
+      lo.added[idx]._tempCard = true;
+    }
+  }
+  saveLocal();
+  render();
+  closeDetail();
+  showToast('↩️ 仮カードに戻しました', 2000);
+}
+
 function closeDetail() {
   document.getElementById('detailModal').classList.remove('open');
   updateFloatingClose();
@@ -2086,9 +2688,20 @@ function hideCopyCalendar() {
 }
 let copyCalYear, copyCalMonth;
 function showCopyCalendar() {
-  const now = new Date();
-  copyCalYear = now.getFullYear();
-  copyCalMonth = now.getMonth();
+  const t = document.getElementById('copyModal')._task;
+  let base;
+  if (t) {
+    // コピー元の日付の月でカレンダーを開く
+    if (t._fromDateExact) {
+      base = new Date(t._fromDateExact + 'T00:00:00');
+    } else {
+      base = addDays(currentMonday, t._dayIdx || 0);
+    }
+  } else {
+    base = new Date();
+  }
+  copyCalYear  = base.getFullYear();
+  copyCalMonth = base.getMonth();
   renderCopyCal();
   document.getElementById('copyCalWrap').style.display='block';
 }
@@ -2097,13 +2710,24 @@ function renderCopyCal() {
   const firstDay = new Date(y,mo,1).getDay(); // 0=Sun
   const daysInMonth = new Date(y,mo+1,0).getDate();
   const monthNames=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
-  // 月曜始まりに変換
   const startOffset = (firstDay+6)%7;
   const today = new Date(); today.setHours(0,0,0,0);
   const selectedStr = document.getElementById('copyTargetDate').getAttribute('data-selected')||'';
+  // コピー元日付
+  const t = document.getElementById('copyModal')._task;
+  let srcDateStr = '';
+  if (t) {
+    if (t._fromDateExact) {
+      srcDateStr = t._fromDateExact;
+    } else {
+      const sd = addDays(currentMonday, t._dayIdx || 0);
+      srcDateStr = sd.getFullYear()+'-'+String(sd.getMonth()+1).padStart(2,'0')+'-'+String(sd.getDate()).padStart(2,'0');
+    }
+  }
   let grid = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;">';
-  ['月','火','水','木','金','土','日'].forEach(d=>{
-    grid+=`<div style="font-size:11px;color:#888;padding:4px 0;">${d}</div>`;
+  ['月','火','水','木','金','土','日'].forEach((d,i)=>{
+    const color=(i>=5)?'#e24b4a':'#888';
+    grid+=`<div style="font-size:11px;color:${color};padding:4px 0;">${d}</div>`;
   });
   for(let i=0;i<startOffset;i++) grid+='<div></div>';
   for(let d=1;d<=daysInMonth;d++){
@@ -2111,12 +2735,19 @@ function renderCopyCal() {
     const dtStr=y+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
     const isToday=dt.getTime()===today.getTime();
     const isSel=dtStr===selectedStr;
+    const isSrc=dtStr===srcDateStr;
     const isPast=dt<today;
+    const dow=dt.getDay();
+    const isHoliday=!!JAPAN_HOLIDAYS[dtStr];
+    const isRed=(dow===0||dow===6||isHoliday);
     let style='font-size:13px;padding:5px 2px;border-radius:50%;cursor:pointer;';
     if(isSel) style+='background:#1a2744;color:white;';
+    else if(isSrc) style+='background:rgba(26,39,68,0.12);color:#1a2744;font-weight:700;';
     else if(isToday) style+='border:2px solid #1a2744;color:#1a2744;font-weight:700;';
-    else if(isPast) style+='color:#888;';
-    grid+=`<div style="${style}" onclick="selectCopyDate('${dtStr}',${d},${mo+1},${y})">${d}</div>`;
+    else if(isPast) style+='color:#ccc;';
+    else if(isRed) style+='color:#e24b4a;font-weight:700;';
+    const title=isHoliday?` title="${JAPAN_HOLIDAYS[dtStr]}"` : '';
+    grid+=`<div style="${style}"${title} onclick="selectCopyDate('${dtStr}',${d},${mo+1},${y})">${d}</div>`;
   }
   grid+='</div>';
   document.getElementById('copyCalGrid').innerHTML=
@@ -2167,7 +2798,7 @@ function confirmCopy(){
     const wk=dateKey(targetMonday);
     if(!localOverrides[wk]) localOverrides[wk]={added:[],hidden:{}};
     if(!localOverrides[wk].added) localOverrides[wk].added=[];
-    localOverrides[wk].added.push({
+    const copiedCard = {
       ...t, uid:newUid,
       display_type:'one_time',
       repeat_key:null,
@@ -2175,7 +2806,13 @@ function confirmCopy(){
       slot:targetSlot,
       _slotIdx:SLOT_IDX[targetSlot]||0,
       is_hidden:'no'
-    });
+    };
+    // _fromDateExactがある場合（課題カード等）はコピー先日付に更新
+    if (copiedCard._fromDateExact) {
+      copiedCard._fromDateExact = selectedStr;
+      copiedCard.date = selectedStr;
+    }
+    localOverrides[wk].added.push(copiedCard);
   }
   saveLocal();
   document.getElementById('copyModal').classList.remove('open');
@@ -2686,17 +3323,25 @@ function renderAddCal() {
   const today=new Date(); today.setHours(0,0,0,0);
   const selectedStr=document.getElementById('addSelectedDate').value||'';
   let grid='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;">';
-  ['月','火','水','木','金','土','日'].forEach(d=>{grid+=`<div style="font-size:11px;color:#888;padding:4px 0;">${d}</div>`;});
+  ['月','火','水','木','金','土','日'].forEach((d,i)=>{
+    const color=(i>=5)?'#e24b4a':'#888';
+    grid+=`<div style="font-size:11px;color:${color};padding:4px 0;">${d}</div>`;
+  });
   for(let i=0;i<startOffset;i++) grid+='<div></div>';
   for(let d=1;d<=daysInMonth;d++){
     const dt=new Date(y,mo,d); dt.setHours(0,0,0,0);
     const dtStr=y+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
     const isToday=dt.getTime()===today.getTime();
     const isSel=dtStr===selectedStr;
+    const dow=dt.getDay();
+    const isHoliday=!!JAPAN_HOLIDAYS[dtStr];
+    const isRed=(dow===0||dow===6||isHoliday);
     let style='font-size:13px;padding:5px 2px;border-radius:50%;cursor:pointer;';
     if(isSel) style+='background:#1a2744;color:white;';
     else if(isToday) style+='border:2px solid #1a2744;color:#1a2744;font-weight:700;';
-    grid+=`<div style="${style}" onclick="selectAddDate('${dtStr}')">${d}</div>`;
+    else if(isRed) style+='color:#e24b4a;font-weight:700;';
+    const title=isHoliday?` title="${JAPAN_HOLIDAYS[dtStr]}"` : '';
+    grid+=`<div style="${style}"${title} onclick="selectAddDate('${dtStr}')">${d}</div>`;
   }
   grid+='</div>';
   document.getElementById('addCalGrid').innerHTML=
@@ -2763,17 +3408,26 @@ function _renderWeeklyCal(gridId, selectedStr, onSelectFn, prevFn, nextFn, y, mo
   const startOffset=(firstDay+6)%7;
   const today=new Date(); today.setHours(0,0,0,0);
   let grid='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;">';
-  ['月','火','水','木','金','土','日'].forEach(d=>{grid+=`<div style="font-size:11px;color:#888;padding:3px 0;">${d}</div>`;});
+  ['月','火','水','木','金','土','日'].forEach((d,i)=>{
+    const color = (i>=5) ? '#e24b4a' : '#888';
+    grid+=`<div style="font-size:11px;color:${color};padding:3px 0;">${d}</div>`;
+  });
   for(let i=0;i<startOffset;i++) grid+='<div></div>';
   for(let d=1;d<=daysInMonth;d++){
     const dt=new Date(y,mo,d); dt.setHours(0,0,0,0);
     const dtStr=y+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
     const isToday=dt.getTime()===today.getTime();
     const isSel=dtStr===selectedStr;
+    const dow=dt.getDay();
+    const isHoliday=!!JAPAN_HOLIDAYS[dtStr];
+    const isRed=(dow===0||dow===6||isHoliday);
     let style='font-size:13px;padding:5px 2px;border-radius:50%;cursor:pointer;';
     if(isSel) style+='background:#1a2744;color:white;';
     else if(isToday) style+='border:2px solid #1a2744;color:#1a2744;font-weight:700;';
-    grid+=`<div style="${style}" onclick="${onSelectFn}('${dtStr}',${d},${mo+1},${y})">${d}</div>`;
+    else if(isRed) style+='color:#e24b4a;font-weight:700;';
+    // 祝日ツールチップ
+    const title = isHoliday ? ` title="${JAPAN_HOLIDAYS[dtStr]}"` : '';
+    grid+=`<div style="${style}"${title} onclick="${onSelectFn}('${dtStr}',${d},${mo+1},${y})">${d}</div>`;
   }
   grid+='</div>';
   document.getElementById(gridId).innerHTML=
@@ -3401,19 +4055,10 @@ function confirmMultiDelete() {
 // ===== Undo機能 =====
 function undoLast() {
   if (!_undoSnapshot) return;
-  // スナップショットを一時変数に退避してからnullに
   const snapshot = JSON.parse(JSON.stringify(_undoSnapshot));
   _undoSnapshot = null;
   localOverrides = snapshot;
-  localStorage.setItem('schedule_overrides', JSON.stringify(localOverrides));
-  // Firestoreにも反映
-  if (typeof db !== 'undefined') {
-    db.collection('schedules').doc('main').set({
-      overrides: localOverrides,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      updatedBy: DEVICE_ID
-    }).catch(e => console.log('undo Firestore error:', e));
-  }
+  saveLocal(); // _savingToFirestoreフラグを立ててからFirestore保存
   updateUndoBtn();
   render();
   showToast('元に戻しました ↩');
@@ -4061,8 +4706,7 @@ async function runBalanceCheck() {
       prompt += '【夏休み期間】この週は夏休み中（7/18〜8/31）。\n';
       prompt += '・通常の月曜・水曜の夜塾はなし。月曜・水曜夜も勉強可能。\n';
       prompt += '・夏期講習日（7/26〜27、7/29〜8/1、8/3〜6、8/17〜20、8/22〜23）は夏期講習カードが入る想定。\n';
-      prompt += '・夏期講習（午前8:50〜13:00）の日：午後・夜が使える。\n';
-      prompt += '・夏期講習（午後13:30〜17:30）の日：朝・午前が使える。\n';
+      prompt += '・夏期講習（午前8:45〜12:30）の日：8:20出発。朝スロット後は出発準備。午後・夜が使える。\n';
       prompt += '・夏期講習なし日：ほぼ一日使える。\n';
       prompt += '・8/29（土）グノレブあり。\n\n';
     }
@@ -4100,6 +4744,30 @@ async function runBalanceCheck() {
     } else {
       prompt += '【今週のモード: 通常週】\n算数:朝基礎力/木金夜Nテキスト/金土夜N家庭/計算マスタ=土曜と日曜の両方に1回ずつ必要(スロット不問) 国語:朝漢字/単元音読週1 理科:基礎力週2(木土)/金グノチェック 社会:単元音読優先\n\n';
       prompt += '◆チェック観点:\n1. ルール違反: スロット違反（平日午前・月午後夜・水夜・木午後）がないか\n2. 負荷・バランス: 特定の日に集中しすぎ/夜90分超（いつもより明らかに多い・少ない場合のみ指摘）\n3. 確認: 漢字毎日/算数基礎力毎日/理科基礎力週2回/国語単元音読週1（不足時のみ指摘）\n4. アドバイス: 明確な改善点がある場合のみ\n\n';
+    }
+
+    // 「旅行・1日外出」系の予定を検出してプロンプトに注記
+    const ALL_DAY_KEYWORDS = ['旅行','遠足','合宿','宿泊','旅','キャンプ','修学旅行','校外学習','1日外出','一日外出','日帰り','泊'];
+    const DAY_NAMES = ['月','火','水','木','金','土','日'];
+    const allDayEvents = [];
+    for (let d = 0; d < 7; d++) {
+      const dt = new Date(mon); dt.setDate(mon.getDate() + d);
+      const tasks = getTasksForWeek(new Date(balanceCheckMonday));
+      const planTasks = tasks.filter(t => t._dayIdx === d && t.slot === 'plan' && t.subject !== '祝日');
+      planTasks.forEach(t => {
+        const name = t.unit_name || '';
+        if (ALL_DAY_KEYWORDS.some(kw => name.includes(kw))) {
+          const dateLabel = (dt.getMonth()+1) + '/' + dt.getDate() + '(' + DAY_NAMES[d] + ')';
+          allDayEvents.push({ dateLabel, name });
+        }
+      });
+    }
+    if (allDayEvents.length > 0) {
+      prompt += '【終日外出予定の注意】\n';
+      allDayEvents.forEach(ev => {
+        prompt += '・' + ev.dateLabel + '「' + ev.name + '」は終日外出のため、この日は勉強できないものとして扱うこと。この日に入っている勉強カードは他の日への移動を提案すること。\n';
+      });
+      prompt += '\n';
     }
 
     prompt += '【この週のスケジュール】\n' + scheduleSummary + '\n\n';
@@ -4439,7 +5107,55 @@ async function sendRuleChatMessage() {
     }
   });
 
+  var now = new Date();
+  var todayStr = now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日（' + ['日','月','火','水','木','金','土'][now.getDay()] + '）';
+
+  // 先3ヶ月分のスケジュールをテキスト化（getTasksForWeekを週ごとに呼ぶ）
+  function buildScheduleFor3Months() {
+    var lines = [];
+    var slotName = { morning:'朝', am:'午前', pm:'午後', night:'夜', plan:'予定' };
+    var dowName = ['日','月','火','水','木','金','土'];
+    var threeMonthsLater = new Date(now.getFullYear(), now.getMonth()+3, now.getDate());
+
+    // 今週月曜を起点
+    var startMon = getMonday(now);
+    var savedMonday = currentMonday; // 現在の週を保存
+
+    var cur = new Date(startMon);
+    while (cur <= threeMonthsLater) {
+      // currentMondayを一時的に書き換えてgetTasksForWeekを呼ぶ
+      currentMonday = new Date(cur);
+      var weekTasks = getTasksForWeek();
+
+      weekTasks.forEach(function(t) {
+        if (!t.unit_name || t.is_hidden === 'yes') return;
+        var dayIdx = t._dayIdx !== undefined ? t._dayIdx : (t.weekday_index !== undefined ? t.weekday_index : 0);
+        var d = new Date(cur);
+        d.setDate(d.getDate() + dayIdx);
+        if (d < now || d > threeMonthsLater) return;
+        var ds = (d.getMonth()+1) + '/' + d.getDate() + '(' + dowName[d.getDay()] + ')';
+        lines.push(ds + ' ' + (slotName[t.slot]||t.slot) + '：' + t.unit_name + (t.note && t.note !== 'NaN' ? '（'+t.note+'）' : ''));
+      });
+
+      cur.setDate(cur.getDate() + 7);
+    }
+
+    // currentMondayを元に戻す
+    currentMonday = savedMonday;
+
+    var unique = lines.filter(function(v, i, a) { return a.indexOf(v) === i; });
+    unique.sort();
+    return unique.length ? unique.join('\n') : '（登録カードなし）';
+  }
+
+  var scheduleText = buildScheduleFor3Months();
+
   var sp = 'あなたはK-studyのAIアシスタントです。こうたくん（小5）のお母さんからルールの確認・変更・相談を受けます。\n\n' +
+    '【今日の日付】\n' +
+    '・今日：' + todayStr + '\n\n' +
+    '【登録済みスケジュール（今日〜3ヶ月分）】\n' +
+    '※以下のデータにない予定は「登録されていません」と答えること。推測・補完禁止。\n' +
+    scheduleText + '\n\n' +
     '【回答スタイル】\n' +
     '・最初の一文はです・ます調でカジュアルに（例：「〜です！」「〜ですね！」）\n' +
     '・中身は箇条書き（・）中心\n' +
@@ -4517,18 +5233,71 @@ async function sendRuleChatMessage() {
     '・振り返り配分（合計90分）：算数30 / 理科30 / 国語15 / 社会15\n' +
     '・水曜グノレブ振り返り実績：翌木夜=算数振り返り+Nテキスト+理科基礎力+宿題 / 翌金午後=社会単元音読+用語確認+理科グノチェック / 翌金夜=Nテキスト+N家庭学習 / 翌土=理科・社会・国語振り返り各60分\n' +
     '・月曜グノレブ振り返り：翌火夜=単元音読系 / 翌火〜日で90分を分散\n\n' +
-    '【2026年度単元表（5年生）】\n' +
-    '・算数：10=点の移動(2) / 11=総合(07-10) / 12=量の変化とグラフ(1) / 13=量の変化とグラフ(2) / 14=量の変化とグラフ(3) / 15=割合基本 / 16=相当算 / 17=売買損益 / 18=食塩水 / 19=総合(15-18)\n' +
-    '・理科：10=電気3 / 11=月1 / 12=月2 / 13=てこ1 / 14=てこ2 / 15=星1 / 16=星2 / 17=人体1(消化) / 18=人体2(呼吸) / 19=人体3(血液)\n' +
-    '・国語：10〜19=文章読解＋文法・季節・ことわざ・類義語等\n' +
-    '・社会：10=院政と平氏 / 11=まとめ③(平安) / 12〜15=鎌倉時代 / 16〜19=室町時代\n\n' +
-    '【夏休み・特別期間】\n' +
+    '【2026年度完全単元表（5年生）】\n' +
+    '★算数★\n' +
+    '1=円とおうぎ形 / 2=うずまき・動ける範囲 / 3=約数 / 4=倍数 / 5=小数・分数(1) / 6=小数・分数(2)\n' +
+    '春1=平面図形(1) / 春2=平面図形(2) / 春3=数に関する問題(1) / 春4=数に関する問題(2) / 春5=規則性 / 春6=立体図形\n' +
+    '7=旅人算 / 8=ダイヤグラム / 9=点の移動(1) / 10=点の移動(2) / 11=総合(07〜10まとめ)\n' +
+    '12=量の変化とグラフ(1) / 13=量の変化とグラフ(2) / 14=量の変化とグラフ(3) / 15=割合基本 / 16=相当算 / 17=売買損益 / 18=食塩水 / 19=総合(15〜18まとめ)\n' +
+    '夏1=平面図形(1) / 夏2=平面図形(2) / 夏3=正比例・反比例 / 夏4=数に関する問題(1) / 夏5=数に関する問題(2) / 夏6=割合と比(1) / 夏7=割合と比(2) / 夏8=場合の数 / 夏9=対称な図形 / 夏10=速さ / 夏11=平均算 / 夏12=割合と比(3) / 夏13=規則性 / 夏14=立体図形 / 夏15=水量グラフ / 夏16=和と差の問題\n' +
+    '20=旅人算 / 21=流水算 / 22=時計算 / 23=通過算 / 24=仕事算 / 25=倍数算 / 26=相当算・還元算 / 27=ニュートン算 / 28=面積比 / 29=相似形 / 30=かげ・折り返し / 31=図形の移動 / 32=円すい\n' +
+    '冬1=割合 / 冬2=平面図形(1) / 冬3=数に関する問題 / 冬4=平面図形(2) / 冬5=場合の数 / 冬6=規則性\n' +
+    '33=投影・回転体 / 34=和差に関する問題 / 35=総合(1) / 36=総合(2)\n\n' +
+    '★理科★\n' +
+    '1=水溶液1(水溶液の性質) / 2=水溶液2(液性と指示薬) / 3=気体の発生と性質 / 4=植物1(種子と発芽) / 5=植物2(植物のつくり) / 6=植物3(蒸散作用)\n' +
+    '春1=熱と水の三態 / 春2=太陽1(太陽の動き) / 春3=太陽2(緯度と経度)\n' +
+    '7=植物4(光合成と呼吸) / 8=電気1(電気回路) / 9=電気2(電流と磁界) / 10=電気3(電磁石) / 11=月1(月の満ち欠け) / 12=月2(月の動き) / 13=てこ1 / 14=てこ2 / 15=星1(星座と星) / 16=星2(星の動き) / 17=人体1(消化) / 18=人体2(呼吸) / 19=人体3(血液循環)\n' +
+    '夏1=物の燃え方1(燃焼の条件) / 夏2=物の燃え方2(ろうそく) / 夏3=光1(直進) / 夏4=光2(反射) / 夏5=光3(屈折) / 夏6=生物のつながり / 夏7=電気4(電流と抵抗) / 夏8=電気5(電流と発熱)\n' +
+    '20=溶解度1 / 21=溶解度2 / 22=地層・岩石1(流水、堆積岩) / 23=地層・岩石2(火山、火成岩) / 24=地層・岩石3(大地の変化) / 25=気体の発生 / 26=中和1 / 27=中和2 / 28=動物1(セキツイ動物) / 29=動物2(こん虫) / 30=てこ3 / 31=かっ車と輪軸 / 32=ばね / 33=植物5(花のつくり)\n' +
+    '冬1=物体の運動1 / 冬2=物体の運動2 / 冬3=音\n' +
+    '34=気象 / 35=浮力1 / 36=浮力2\n\n' +
+    '★国語★\n' +
+    '1=文章読解+ことわざ・慣用句1 / 2=文章読解+文法1(主語・述語) / 3=文章読解+熟語の組み立て / 4=文章読解+季節と行事(春) / 5=文章読解+ことわざ・慣用句2 / 6=文章読解+文法2(体言・用言)\n' +
+    '春1〜春6=文章読解+知識力チェック\n' +
+    '7=文章読解+四字熟語1 / 8=文章読解+ことわざ・慣用句3 / 9=文章読解+和語・漢語・外来語 / 10=文章読解+文法3(副詞・その他) / 11=文章読解+敬語1 / 12=文章読解+季節と行事(夏) / 13=文章読解+ことわざ・慣用句4 / 14=文章読解+文法4(助詞・助動詞) / 15=文章読解+類義語・対義語1 / 16=文章読解+同音異義語・同訓異字1 / 17=文章読解+ことわざ・慣用句5 / 18=文章読解+詩歌1 / 19=文章読解+まとめ\n' +
+    '夏1〜夏16=文章読解+知識力チェック\n' +
+    '20=文章読解+四字熟語2 / 21=文章読解+季節と行事(秋) / 22=文章読解+ことわざ・慣用句6 / 23=文章読解+文法5(助詞・助動詞) / 24=文章読解+四字熟語3 / 25=文章読解+同音異義語・同訓異字2 / 26=文章読解+ことわざ・慣用句7 / 27=文章読解+文法6(助詞・助動詞) / 28=文章読解+類義語・対義語2 / 29=文章読解+季節と行事(冬) / 30=文章読解+ことわざ・慣用句8 / 31=文章読解+敬語2 / 32=文章読解+四字熟語4\n' +
+    '冬1〜冬6=文章読解+知識力チェック\n' +
+    '33=文章読解+詩歌2 / 34=文章読解+ことわざ・慣用句9 / 35=文章読解+文法7(総合) / 36=文章読解+同音・同訓3\n\n' +
+    '★社会★\n' +
+    '1=日本のはじまり / 2=むらからくにへ / 3=大和朝廷 / 4=律令国家へ / 5=まとめ①(旧石器〜飛鳥時代) / 6=平城京\n' +
+    '春1=聖武天皇の政治 / 春2=天平文化 / 春3=まとめ②(奈良時代)\n' +
+    '7=平安京 / 8=藤原氏の政治 / 9=武士の発生 / 10=院政と平氏の政治 / 11=まとめ③(平安時代) / 12=鎌倉幕府の成立 / 13=鎌倉時代の人々 / 14=鎌倉幕府のおとろえ / 15=まとめ④(鎌倉時代) / 16=室町幕府の成立 / 17=室町幕府のおとろえ / 18=室町時代の人々 / 19=まとめ⑤(室町時代)\n' +
+    '夏1=戦国大名と南蛮貿易 / 夏2=織田信長と豊臣秀吉 / 夏3=まとめ⑥(戦国〜安土桃山時代) / 夏4=江戸幕府の成立 / 夏5=鎖国へ / 夏6=江戸幕府の立て直し / 夏7=まとめ⑦(江戸時代前半) / 夏8=江戸幕府のゆらぎ\n' +
+    '20=江戸時代の人々 / 21=江戸幕府のおとろえ / 22=まとめ⑧(江戸時代後半) / 23=明治維新 / 24=自由民権運動 / 25=不平等条約の改正 / 26=まとめ⑨(明治時代) / 27=日清戦争と日露戦争 / 28=産業の発達 / 29=第一次世界大戦 / 30=まとめ⑩(大正時代) / 31=大正デモクラシー / 32=大衆文化 / 33=大陸進出と軍部の台頭\n' +
+    '冬1=第二次世界大戦 / 冬2=まとめ⑪(戦前) / 冬3=戦後の世界\n' +
+    '34=戦後の日本経済 / 35=現代の世界 / 36=まとめ⑫(戦後)\n\n' +
+    '【授業カレンダー（6/22以降）】\n' +
+    '6/24(水)算・理16 / 6/29(月)国・社16 / 7/1(水)グノレブ(水曜) / 7/6(月)国・社17 / 7/8(水)算・理17\n' +
+    '7/13(月)国・社18 / 7/15(水)算・理18 / 7/20(月)国・社19 / 7/22(水)算・理19\n' +
+    '7/26(土)夏期講習01 / 7/27(日)夏期講習02 / 7/29(月)夏期講習03 / 7/30(火)夏期講習04 / 7/31(水)夏期講習05 / 8/1(土)夏期講習06\n' +
+    '8/3(月)夏期講習07 / 8/4(火)夏期講習08 / 8/5(水)夏期講習09 / 8/6(木)夏期講習10\n' +
+    '8/17(月)夏期講習11 / 8/18(火)夏期講習12 / 8/19(水)夏期講習13 / 8/20(木)夏期講習14 / 8/22(土)夏期講習15 / 8/23(日)夏期講習16\n' +
+    '8/29(土)グノレブ(土曜) / 8/31(月)国・社20 / 9/2(水)算・理20\n' +
+    '9/7(月)国・社21 / 9/9(水)算・理21 / 9/14(月)国・社22 / 9/16(水)算・理22\n' +
+    '10/5(月)国・社24 / 10/7(水)算・理24 / 10/12(月)グノレブ(月祝) / 10/14(水)算・理25\n' +
+    '10/19(月)国・社25 / 10/21(水)算・理26 / 10/26(月)国・社26 / 10/28(水)算・理27\n' +
+    '11/2(月)国・社27 / 11/4(水)算・理28 / 11/9(月)国・社28 / 11/11(水)グノレブ(水曜)\n' +
+    '11/16(月)国・社29 / 11/18(水)算・理29 / 11/23(月)国・社30 / 11/25(水)算・理30\n' +
+    '11/30(月)国・社31 / 12/2(水)算・理31 / 12/7(月)国・社32 / 12/9(水)算・理32\n' +
+    '12/14(月)グノレブ(月曜) / 12/16(水)算・理33\n' +
+    '12/26(土)冬期講習01 / 12/27(日)冬期講習02 / 12/28(月)冬期講習03 / 12/29(火)冬期講習04\n' +
+    '1/4(日)冬期講習05 / 1/5(月)冬期講習06\n' +
+    '1/11(月)国・社34 / 1/13(水)算・理34 / 1/18(月)国・社35 / 1/20(水)算・理35 / 1/25(月)国・社36 / 1/27(水)算・理36\n\n' +
+    '【グノレブ年間スケジュール（2026年度）】\n' +
+    '・6/1(月) 17:00〜20:00 ／ 出題範囲：通常No.07〜11・算数基礎力テスト4月号\n' +
+    '・7/1(水) 17:00〜20:00 ／ 出題範囲：通常No.12〜15・算数基礎力テスト5月号\n' +
+    '・7/5(日) 13:30〜16:30 ／ 7月Gnoble公開実力テスト（範囲なし）\n' +
+    '・8/29(土) 9:00〜12:00 ／ 出題範囲：夏期講習・算数基礎力テスト8月号\n' +
+    '・10/12(月祝) 17:00〜20:00 ／ 出題範囲：通常No.20〜23・算数基礎力テスト9月号\n' +
+    '・11/11(水) 17:00〜20:00 ／ 出題範囲：通常No.24〜27・算数基礎力テスト10月号\n' +
+    '・12/14(月) 17:00〜20:00 ／ 出題範囲：通常No.28〜31・算数基礎力テスト11月号\n' +
+    '・1/9(土) 時間未定 ／ 1月Gnoble公開実力テスト（範囲なし）\n' +
+    '※9月はグノレブなし\n\n' +
     '・こうたくんの夏休み：2026年7/18〜8/31\n' +
     '・夏期講習日程：7/26〜27、7/29〜8/1、8/3〜6、8/17〜20、8/22〜23\n' +
     '・8/29（土）グノレブあり\n' +
-    '・夏期講習の時間帯：午前講習（8:50〜13:00）または午後講習（13:30〜17:30）※どちらかはまだ未定\n' +
-    '・夏期講習（午前）の日：午後・夜が使える\n' +
-    '・夏期講習（午後）の日：朝・午前が使える\n' +
+    '・夏期講習の時間帯：午前講習（8:45〜12:30）。8:20出発。朝スロット後は出発準備のため勉強不可。午後・夜が使える。\n' +
     '・夏期講習なし日：ほぼ一日使える\n' +
     '・夏休み中は月水の夜塾がなく月曜・水曜夜も勉強可能\n\n' +
     '【現在のカスタムルール（Firestoreから読み込み済み）】\n' +
@@ -4593,6 +5362,1058 @@ function openProposeModal() {
 function closeProposeModal() {
   document.getElementById('proposeModal').classList.remove('open');
   openAIModal();
+}
+
+// ===== 課題学習モーダル =====
+let kadaiPendingCards = []; // 確定前の分配結果
+
+function openKadaiModal() {
+  const today = getTodayJST();
+  const due = new Date(today); due.setMonth(due.getMonth() + 1);
+  const fmt = d => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  document.getElementById('kadaiStartDate').value = fmt(today);
+  document.getElementById('kadaiDueDate').value = fmt(due);
+  document.getElementById('kadaiShortName').value = '';
+  document.getElementById('kadaiStep1').style.display = '';
+  document.getElementById('kadaiStep2').style.display = 'none';
+  document.getElementById('kadaiError').textContent = '';
+  const panel = document.getElementById('kadaiPanel');
+  panel.style.display = 'flex';
+  setTimeout(() => panel.classList.add('open'), 10);
+  initKadaiPanelDrag();
+  initKadaiResize();
+}
+function closeKadaiModal() {
+  const panel = document.getElementById('kadaiPanel');
+  panel.classList.remove('open');
+  setTimeout(() => { panel.style.display = 'none'; }, 210);
+  openProposeModal();
+}
+function kadaiResize(delta) {
+  const panel = document.getElementById('kadaiPanel');
+  const cur = panel.getBoundingClientRect().width;
+  const nw = Math.max(280, Math.min(window.innerWidth * 0.95, cur + delta));
+  panel.style.width = nw + 'px';
+}
+function initKadaiPanelDrag() {
+  const panel = document.getElementById('kadaiPanel');
+  const hdr = document.getElementById('kadaiPanelHdr');
+  let dragging = false, ox = 0, oy = 0;
+  const onDown = e => {
+    if (e.target.tagName === 'BUTTON') return;
+    dragging = true;
+    const r = panel.getBoundingClientRect();
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    const cy = e.touches ? e.touches[0].clientY : e.clientY;
+    ox = cx - r.left; oy = cy - r.top;
+    panel.style.transition = 'none';
+  };
+  const onMove = e => {
+    if (!dragging) return;
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    const cy = e.touches ? e.touches[0].clientY : e.clientY;
+    const x = Math.max(0, Math.min(window.innerWidth - panel.offsetWidth, cx - ox));
+    const y = Math.max(0, Math.min(window.innerHeight - 60, cy - oy));
+    panel.style.left = x + 'px'; panel.style.top = y + 'px'; panel.style.right = 'auto';
+    e.preventDefault();
+  };
+  const onUp = () => { dragging = false; panel.style.transition = ''; };
+  hdr.addEventListener('mousedown', onDown);
+  hdr.addEventListener('touchstart', onDown, { passive: false });
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('touchmove', onMove, { passive: false });
+  document.addEventListener('mouseup', onUp);
+  document.addEventListener('touchend', onUp);
+}
+function initKadaiResize() {
+  const panel = document.getElementById('kadaiPanel');
+  const handle = document.getElementById('kadaiResizeHandle');
+  let resizing = false, startX = 0, startW = 0, startL = 0;
+  const onDown = e => {
+    resizing = true;
+    startX = e.touches ? e.touches[0].clientX : e.clientX;
+    startW = panel.offsetWidth;
+    startL = panel.getBoundingClientRect().left;
+    panel.style.transition = 'none';
+    e.preventDefault();
+  };
+  const onMove = e => {
+    if (!resizing) return;
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    const diff = startX - cx;
+    const nw = Math.max(260, Math.min(window.innerWidth * 0.95, startW + diff));
+    panel.style.width = nw + 'px';
+    panel.style.left = Math.max(0, startL + startW - nw) + 'px';
+    panel.style.right = 'auto';
+    e.preventDefault();
+  };
+  const onUp = () => { resizing = false; panel.style.transition = ''; };
+  handle.addEventListener('mousedown', onDown);
+  handle.addEventListener('touchstart', onDown, { passive: false });
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('touchmove', onMove, { passive: false });
+  document.addEventListener('mouseup', onUp);
+  document.addEventListener('touchend', onUp);
+}
+
+// ===== 夏期・冬期・春期講習パネル =====
+let _lectureSelectedDates = new Set();
+let _lectureCalYear = 0, _lectureCalMonth = 0;
+let _lectureDay1 = 'sci'; // 'sci' or 'soc'
+
+function openLecturePanel() {
+  const today = getTodayJST();
+  _lectureCalYear = today.getFullYear();
+  _lectureCalMonth = today.getMonth() + 1;
+  _lectureSelectedDates = new Set();
+  renderLectureCal();
+  updateLectureSelectedLabel();
+  const panel = document.getElementById('lecturePanel');
+  panel.style.display = 'flex';
+  setTimeout(() => panel.classList.add('open'), 10);
+}
+function closeLecturePanel() {
+  const panel = document.getElementById('lecturePanel');
+  panel.classList.remove('open');
+  setTimeout(() => { panel.style.display = 'none'; }, 210);
+  openProposeModal();
+}
+function setLectureDay1(type) {
+  _lectureDay1 = type;
+  document.getElementById('lectureDay1Sci').style.background = type === 'sci' ? '#B6EBB0' : 'white';
+  document.getElementById('lectureDay1Sci').style.color = type === 'sci' ? '#27500A' : '#4caa44';
+  document.getElementById('lectureDay1Soc').style.background = type === 'soc' ? '#F9DB82' : 'white';
+  document.getElementById('lectureDay1Soc').style.color = type === 'soc' ? '#633806' : '#c8960a';
+}
+function lecturePrevMonth() {
+  _lectureCalMonth--;
+  if (_lectureCalMonth < 1) { _lectureCalMonth = 12; _lectureCalYear--; }
+  renderLectureCal();
+}
+function lectureNextMonth() {
+  _lectureCalMonth++;
+  if (_lectureCalMonth > 12) { _lectureCalMonth = 1; _lectureCalYear++; }
+  renderLectureCal();
+}
+function renderLectureCal() {
+  const y = _lectureCalYear, m = _lectureCalMonth;
+  document.getElementById('lectureCalTitle').textContent = m + '月 ' + y;
+  const grid = document.getElementById('lectureCalGrid');
+  grid.innerHTML = '';
+  const firstDay = new Date(y, m-1, 1).getDay();
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const offset = firstDay === 0 ? 6 : firstDay - 1;
+  const today = getTodayJST();
+  for (let i = 0; i < offset; i++) { const d = document.createElement('div'); grid.appendChild(d); }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dt = new Date(y, m-1, d);
+    const dateStr = y + '-' + String(m).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    const cell = document.createElement('div');
+    const isSelected = _lectureSelectedDates.has(dateStr);
+    const dow = dt.getDay();
+    cell.style.cssText = 'padding:5px 2px;text-align:center;border-radius:50%;cursor:pointer;font-size:13px;font-weight:600;' +
+      (isSelected ? 'background:#0F6E56;color:white;' :
+       dow === 0 ? 'color:#e24b4a;' : dow === 6 ? 'color:#378add;' : 'color:#1a2744;');
+    cell.textContent = d;
+    cell.onclick = () => {
+      if (_lectureSelectedDates.has(dateStr)) _lectureSelectedDates.delete(dateStr);
+      else _lectureSelectedDates.add(dateStr);
+      renderLectureCal();
+      updateLectureSelectedLabel();
+    };
+    grid.appendChild(cell);
+  }
+}
+function updateLectureSelectedLabel() {
+  const sorted = Array.from(_lectureSelectedDates).sort();
+  const el = document.getElementById('lectureSelectedDates');
+  if (sorted.length === 0) { el.textContent = ''; return; }
+  el.textContent = sorted.map(s => { const d = new Date(s+'T00:00:00'); return (d.getMonth()+1)+'/'+d.getDate(); }).join('、') + '（' + sorted.length + '日）';
+}
+
+function runLecture() {
+  if (_lectureSelectedDates.size === 0) {
+    document.getElementById('lectureError').textContent = '講習日を選択してください';
+    return;
+  }
+  document.getElementById('lectureError').textContent = '';
+  takeSnapshot();
+
+  const sortedDates = Array.from(_lectureSelectedDates).sort();
+  const DAY_JP = ['日','月','火','水','木','金','土'];
+  // 教科色の点線と同じ色をマークに使う
+  const MARK_COLOR = { math:'#378add', jp:'#c966a8', sci:'#4caa44', soc:'#c8960a' };
+  const SUBJ_BG_MAP = { math:'#C1E8FB', jp:'#F2B9E4', sci:'#B6EBB0', soc:'#F9DB82' };
+
+  // 講習日の連番でパターンを決定（中日はカウントしない）
+  let lectureCount = 0;
+
+  // 全選択日（中日含む）の範囲を求める
+  const allStart = new Date(sortedDates[0]+'T00:00:00');
+  const allEnd   = new Date(sortedDates[sortedDates.length-1]+'T00:00:00');
+
+  // 中日を特定（前後の講習日との間が1日だけの場合のみ）
+  const midDays = [];
+  for (let i = 0; i < sortedDates.length - 1; i++) {
+    const d1 = new Date(sortedDates[i] + 'T00:00:00');
+    const d2 = new Date(sortedDates[i+1] + 'T00:00:00');
+    const diffDays = Math.round((d2 - d1) / (1000*60*60*24));
+    if (diffDays === 2) {
+      const mid = new Date(d1); mid.setDate(d1.getDate() + 1);
+      midDays.push(mid.getFullYear()+'-'+String(mid.getMonth()+1).padStart(2,'0')+'-'+String(mid.getDate()).padStart(2,'0'));
+    }
+  }
+
+  // 各講習日にカードを配置
+  sortedDates.forEach(dateStr => {
+    const dt = new Date(dateStr+'T00:00:00');
+    lectureCount++;
+    // 奇数日=1日目パターン、偶数日=2日目パターン
+    const isSciDay = _lectureDay1 === 'sci' ? (lectureCount % 2 === 1) : (lectureCount % 2 === 0);
+
+    const wkMonday = getMonday(dt);
+    const wkKey = dateKey(wkMonday);
+    if (!localOverrides[wkKey]) localOverrides[wkKey] = { added:[], hidden:{} };
+    const lo = localOverrides[wkKey];
+    if (!lo.added) lo.added = [];
+    if (!lo.hidden) lo.hidden = {};
+
+    // 同日の午前・午後・夜の算数・国語・理科・社会・学校の宿題カードのみ非表示
+    const REMOVE_SUBJECTS = new Set(['算数','国語','理科','社会','学校の宿題']);
+    const allTasks = (() => {
+      const saved = currentMonday;
+      currentMonday = new Date(wkMonday);
+      const tasks = getTasksForWeek();
+      currentMonday = saved;
+      return tasks;
+    })();
+    const dayIdx = (dt.getDay() + 6) % 7;
+    allTasks.forEach(t => {
+      if (t._dayIdx !== dayIdx) return;
+      if (t.slot === 'morning' || t.slot === 'plan') return; // 朝・予定は残す
+      if (!REMOVE_SUBJECTS.has(t.subject)) return; // 習い事・塾等は残す
+      const hkey = t.display_type === 'weekly' ? t.uid+'_'+t._dayIdx : t.uid;
+      lo.hidden[hkey] = true;
+    });
+
+    const mkCard = (slot, subject, unit_name, note, study_time) => {
+      const subjClass = { '算数':'math','国語':'jp','理科':'sci','社会':'soc' }[subject] || 'plan';
+      return {
+        uid: 'lec_'+dateStr+'_'+slot+'_'+subject+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
+        date: dateStr, _fromDateExact: dateStr,
+        weekday: DAY_JP[dt.getDay()], weekday_index: dayIdx, _dayIdx: dayIdx,
+        slot, _slotIdx: {am:2,pm:3,night:4}[slot]||3,
+        subject, unit_name, note: note || '', study_time,
+        color: SUBJ_BG_MAP[subjClass] || '#C1E8FB',
+        _lectureCard: true,
+        _lectureMark: MARK_COLOR[subjClass] || '#378add',
+        display_type: 'one_time', repeat_key: null, is_hidden: 'no', order: 99
+      };
+    };
+
+    // ①算数
+    lo.added.push(mkCard('pm',    '算数', '単元復習',      '✗以外をやる', 60));
+    if (isSciDay) {
+      lo.added.push(mkCard('pm',    '理科', '今日の復習',   'グノチェック+基本のまとめ半分', 40));
+      lo.added.push(mkCard('night', '社会', 'テスト対策',   '基礎問題', 25));
+    } else {
+      lo.added.push(mkCard('pm',    '社会', '今日の復習',   '音読+用語/基礎力確認', 25));
+      lo.added.push(mkCard('night', '理科', 'テスト対策',   '基本まとめ後半+確認問題', 40));
+    }
+    lo.added.push(mkCard('night', '国語', '音読・意味調べ', '余裕あれば', 20));
+  });
+
+  // 中日：既存カード（朝以外）を非表示にして国語カードを配置
+  midDays.forEach(dateStr => {
+    const dt = new Date(dateStr+'T00:00:00');
+    const wkMonday = getMonday(dt);
+    const wkKey = dateKey(wkMonday);
+    if (!localOverrides[wkKey]) localOverrides[wkKey] = { added:[], hidden:{} };
+    const lo = localOverrides[wkKey];
+    if (!lo.added) lo.added = [];
+    if (!lo.hidden) lo.hidden = {};
+    const dayIdx = (dt.getDay() + 6) % 7;
+    // 既存カード（算数・国語・理科・社会・学校の宿題、午前・午後・夜のみ）を非表示
+    const midTasks = (() => {
+      const saved = currentMonday;
+      currentMonday = new Date(wkMonday);
+      const tasks = getTasksForWeek();
+      currentMonday = saved;
+      return tasks;
+    })();
+    midTasks.forEach(t => {
+      if (t._dayIdx !== dayIdx) return;
+      if (t.slot === 'morning' || t.slot === 'plan') return;
+      if (!new Set(['算数','国語','理科','社会','学校の宿題']).has(t.subject)) return;
+      const hkey = t.display_type === 'weekly' ? t.uid+'_'+t._dayIdx : t.uid;
+      lo.hidden[hkey] = true;
+    });
+    lo.added.push({
+      uid: 'lec_mid_'+dateStr+'_'+Date.now(),
+      date: dateStr, _fromDateExact: dateStr,
+      weekday: DAY_JP[dt.getDay()], weekday_index: dayIdx, _dayIdx: dayIdx,
+      slot: 'pm', _slotIdx: 3,
+      subject: '国語', unit_name: '音読・意味調べ', note: '',
+      study_time: 20, color: '#F2B9E4', _tempCard: true, _lectureCard: true,
+      _lectureMark: '#c966a8',
+      display_type: 'one_time', repeat_key: null, is_hidden: 'no', order: 99
+    });
+  });
+
+  saveLocal();
+  render();
+  closeLecturePanel();
+  document.getElementById('aiModal').classList.remove('open');
+  showToast('☀️ 講習カードを配置しました！', 2500);
+}
+
+// ===== 塾休み期間パネル =====
+let jukuCalYear, jukuCalMonth;
+let jukuRangeStart = null, jukuRangeEnd = null, jukuRangeSelecting = false;
+let jukuMode = 'long'; // 'long' or 'normal'
+
+// 日本の祝日データ（内閣府・国立天文台公式データ準拠）
+// 2026〜2027年分をハードコード
+const JAPAN_HOLIDAYS = {
+  '2026-01-01': '元日',
+  '2026-01-12': '成人の日',
+  '2026-02-11': '建国記念の日',
+  '2026-02-23': '天皇誕生日',
+  '2026-03-20': '春分の日',
+  '2026-04-29': '昭和の日',
+  '2026-05-03': '憲法記念日',
+  '2026-05-04': 'みどりの日',
+  '2026-05-05': 'こどもの日',
+  '2026-05-06': '振替休日',
+  '2026-07-20': '海の日',
+  '2026-08-11': '山の日',
+  '2026-09-21': '敬老の日',
+  '2026-09-22': '国民の休日',
+  '2026-09-23': '秋分の日',
+  '2026-10-12': 'スポーツの日',
+  '2026-11-03': '文化の日',
+  '2026-11-23': '勤労感謝の日',
+  '2027-01-01': '元日',
+  '2027-01-11': '成人の日',
+  '2027-02-11': '建国記念の日',
+  '2027-02-23': '天皇誕生日',
+  '2027-03-21': '春分の日',
+  '2027-04-29': '昭和の日',
+  '2027-05-03': '憲法記念日',
+  '2027-05-04': 'みどりの日',
+  '2027-05-05': 'こどもの日',
+  '2027-07-19': '海の日',
+  '2027-08-11': '山の日',
+  '2027-09-20': '敬老の日',
+  '2027-09-23': '秋分の日',
+  '2027-10-11': 'スポーツの日',
+  '2027-11-03': '文化の日',
+  '2027-11-23': '勤労感謝の日',
+};
+
+async function fetchJapanHolidays(year) {
+  // ハードコードデータから該当年を返す（APIより確実）
+  const result = {};
+  Object.entries(JAPAN_HOLIDAYS).forEach(([date, name]) => {
+    if (date.startsWith(String(year))) result[date] = name;
+  });
+  return result;
+}
+
+function openJukuYasumiPanel() {
+  const panel = document.getElementById('jukuPanel');
+  panel.style.display = 'flex';
+  setTimeout(() => panel.classList.add('open'), 10);
+  const today = getTodayJST();
+  jukuCalYear = today.getFullYear();
+  jukuCalMonth = today.getMonth();
+  jukuRangeStart = null; jukuRangeEnd = null; jukuRangeSelecting = false;
+  jukuMode = 'long';
+  renderJukuCal();
+  updateJukuRangeLabel();
+  initJukuPanelDrag();
+  initJukuResize();
+}
+
+function closeJukuPanel() {
+  const panel = document.getElementById('jukuPanel');
+  panel.classList.remove('open');
+  setTimeout(() => { panel.style.display = 'none'; }, 210);
+}
+
+function setJukuMode(m) {
+  jukuMode = m;
+  document.getElementById('jukuModeBtn0').style.background = m === 'long' ? '#534AB7' : 'white';
+  document.getElementById('jukuModeBtn0').style.color = m === 'long' ? 'white' : '#888';
+  document.getElementById('jukuModeBtn0').style.borderColor = m === 'long' ? '#534AB7' : '#ccc';
+  document.getElementById('jukuModeBtn1').style.background = m === 'normal' ? '#534AB7' : 'white';
+  document.getElementById('jukuModeBtn1').style.color = m === 'normal' ? 'white' : '#888';
+  document.getElementById('jukuModeBtn1').style.borderColor = m === 'normal' ? '#534AB7' : '#ccc';
+}
+
+function jukuCalPrev() { jukuCalMonth--; if (jukuCalMonth < 0) { jukuCalMonth=11; jukuCalYear--; } renderJukuCal(); }
+function jukuCalNext() { jukuCalMonth++; if (jukuCalMonth > 11) { jukuCalMonth=0; jukuCalYear++; } renderJukuCal(); }
+
+function renderJukuCal() {
+  const title = document.getElementById('jukuCalTitle');
+  title.textContent = jukuCalYear + '年' + (jukuCalMonth+1) + '月';
+  const grid = document.getElementById('jukuCalGrid');
+  grid.innerHTML = '';
+  const today = getTodayJST();
+  const todayStr = dateKeyJST(today);
+  const firstDay = new Date(jukuCalYear, jukuCalMonth, 1).getDay(); // 0=Sun
+  const startOffset = (firstDay + 6) % 7; // 月曜始まり
+  const daysInMonth = new Date(jukuCalYear, jukuCalMonth+1, 0).getDate();
+
+  // 前月の空白
+  for (let i = 0; i < startOffset; i++) {
+    const blank = document.createElement('div');
+    blank.className = 'juku-cal-day other-month';
+    grid.appendChild(blank);
+  }
+
+  const startStr = jukuRangeStart ? dateKeyJST(jukuRangeStart) : null;
+  const endStr   = jukuRangeEnd   ? dateKeyJST(jukuRangeEnd)   : null;
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dt = new Date(jukuCalYear, jukuCalMonth, d);
+    const dateStr = dateKeyJST(dt);
+    const dow = dt.getDay(); // 0=Sun,6=Sat
+    const isHoliday = !!JAPAN_HOLIDAYS[dateStr];
+
+    const cell = document.createElement('div');
+    let cls = 'juku-cal-day';
+    // 土日・祝日は赤
+    if (dow === 0 || dow === 6 || isHoliday) cls += ' holiday-day';
+
+    // 範囲ハイライト（JST文字列で比較）
+    const inRange  = startStr && endStr && dateStr > startStr && dateStr < endStr;
+    const isStart  = startStr && dateStr === startStr;
+    const isEnd    = endStr   && dateStr === endStr;
+    if (isStart) cls += ' range-start';
+    if (isEnd)   cls += ' range-end';
+    if (inRange) cls += ' in-range';
+    if (dateStr === todayStr) cls += ' today-dot';
+
+    cell.className = cls;
+    // 祝日は日付の下に祝日名を小さく表示
+    if (isHoliday) {
+      cell.innerHTML = '<div>' + d + '</div><div style="font-size:8px;line-height:1.1;color:#e24b4a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:32px;">' + JAPAN_HOLIDAYS[dateStr] + '</div>';
+      cell.style.height = '44px';
+      cell.style.flexDirection = 'column';
+      cell.style.justifyContent = 'center';
+      cell.style.gap = '1px';
+    } else {
+      cell.textContent = d;
+    }
+    cell.onclick = () => onJukuCalDayClick(dt);
+    grid.appendChild(cell);
+  }
+}
+
+function onJukuCalDayClick(dt) {
+  if (!jukuRangeStart || (jukuRangeStart && jukuRangeEnd)) {
+    // 1回目クリック：開始日セット
+    jukuRangeStart = dt; jukuRangeEnd = null; jukuRangeSelecting = true;
+  } else {
+    // 2回目クリック：終了日セット
+    if (dt < jukuRangeStart) { jukuRangeEnd = jukuRangeStart; jukuRangeStart = dt; }
+    else jukuRangeEnd = dt;
+    jukuRangeSelecting = false;
+  }
+  renderJukuCal();
+  updateJukuRangeLabel();
+}
+
+function updateJukuRangeLabel() {
+  const el = document.getElementById('jukuRangeLabel');
+  if (!jukuRangeStart) { el.textContent = '開始日をタップ'; return; }
+  if (!jukuRangeEnd)   { el.textContent = formatJukuDate(jukuRangeStart) + ' →  終了日をタップ'; return; }
+  // JST基準で日数計算（タイムゾーンズレなし）
+  const s = new Date(dateKeyJST(jukuRangeStart) + 'T00:00:00');
+  const e = new Date(dateKeyJST(jukuRangeEnd)   + 'T00:00:00');
+  const days = Math.round((e - s) / 86400000) + 1;
+  el.textContent = formatJukuDate(jukuRangeStart) + ' 〜 ' + formatJukuDate(jukuRangeEnd) + '（' + days + '日間）';
+}
+
+function formatJukuDate(d) {
+  const DAY_JP2 = ['日','月','火','水','木','金','土'];
+  return (d.getMonth()+1) + '/' + d.getDate() + '(' + DAY_JP2[d.getDay()] + ')';
+}
+
+async function runJukuPropose() {
+  if (!jukuRangeStart || !jukuRangeEnd) { showToast('期間を選択してください', 2000); return; }
+
+  const btn = document.getElementById('jukuRunBtn');
+  const msgs = document.getElementById('jukuMessages');
+  btn.disabled = true; btn.textContent = 'スケジュール確認中…';
+  msgs.innerHTML = '<div style="color:#bbb;font-size:12px;text-align:center;padding:20px 0;">AIが分析中です…</div>';
+
+  try {
+    // 最新Firestoreデータ取得
+    await loadFromFirestore();
+    btn.textContent = '提案生成中…';
+
+    // 祝日取得（期間に跨がる年を両方取得）
+    const year1 = jukuRangeStart.getFullYear();
+    const year2 = jukuRangeEnd.getFullYear();
+    const holidays1 = await fetchJapanHolidays(year1);
+    const holidays2 = year1 !== year2 ? await fetchJapanHolidays(year2) : {};
+    const allHolidays = {...holidays1, ...holidays2};
+
+    // 期間中のスケジュール取得
+    const SLOT_LABELS3 = {plan:'予定',morning:'朝',am:'午前',pm:'午後',night:'夜'};
+    const DAY_JP3 = ['日','月','火','水','木','金','土'];
+    const savedMonday = new Date(currentMonday);
+    let scheduleTxt = '';
+    let holidayList = [];
+
+    // JST基準の日付文字列で比較
+    const startStr = dateKeyJST(jukuRangeStart);
+    const endStr   = dateKeyJST(jukuRangeEnd);
+
+    const firstMonday = getMonday(jukuRangeStart);
+    let scanMonday = new Date(firstMonday);
+    while (dateKeyJST(scanMonday) <= endStr) {
+      currentMonday = new Date(scanMonday);
+      const wkTasks = getTasksForWeek();
+      for (let d = 0; d < 7; d++) {
+        const dt = new Date(scanMonday); dt.setDate(scanMonday.getDate() + d);
+        const ds = dateKeyJST(dt);
+        if (ds < startStr || ds > endStr) continue;
+        const dateLabel = (dt.getMonth()+1) + '/' + dt.getDate() + '(' + DAY_JP3[dt.getDay()] + ')';
+        const holidayName = allHolidays[ds];
+        if (holidayName) holidayList.push(dateLabel + ' ' + holidayName);
+        const dow = dt.getDay(); // 0=Sun,6=Sat
+        const isWeekend = (dow === 0 || dow === 6);
+        const isHoliday = !!holidayName;
+        // 日付タイプを明示
+        let dayType;
+        if (jukuMode === 'long') {
+          dayType = isWeekend ? '【土日】' : '【長期休暇平日・午前OK】';
+        } else {
+          if (isWeekend) dayType = '【土日】';
+          else if (isHoliday) dayType = '【祝日・土日扱い・午前OK】';
+          else dayType = '【通常平日・午前不可】';
+        }
+        const dayTasks = wkTasks.filter(t => t._dayIdx === d);
+        // スロットごとの合計時間を計算してAIに渡す
+        const slotSummary = {};
+        dayTasks.forEach(t => {
+          if (!t.study_time) return;
+          slotSummary[t.slot] = (slotSummary[t.slot] || 0) + t.study_time;
+        });
+        const slotInfo = Object.keys(slotSummary).length > 0
+          ? ' [' + Object.entries(slotSummary).map(([s, m]) => ({morning:'朝',am:'午前',pm:'午後',night:'夜'}[s]||s) + m + '分').join('/') + ']'
+          : '';
+        const taskStr = dayTasks.length > 0
+          ? dayTasks.map(t => (SLOT_LABELS3[t.slot]||t.slot) + '/' + t.subject + ':' + t.unit_name + (t.study_time ? '(' + t.study_time + '分)' : '')).join(' | ')
+          : '（予定なし）';
+        scheduleTxt += dateLabel + dayType + slotInfo + ': ' + taskStr + '\n';
+      }
+      scanMonday.setDate(scanMonday.getDate() + 7);
+    }
+    currentMonday = savedMonday;
+
+    // スロットルール（loadAiRulesから）
+    const rules = await loadAiRules();
+
+    const modeDesc = jukuMode === 'long'
+      ? '長期休暇（塾なし・1日フル活用可能。平日も午前から使える）'
+      : '通常週（祝日のみ塾なし。祝日は土日と同じ扱い・午前から使える）';
+
+    const prompt =
+      'あなたはこうたくん（小学5年生・グノーブル塾）の塾休み期間の学習スケジュール最適化AIです。\n\n' +
+      '【期間】\n' +
+      dateKeyJST(jukuRangeStart) + ' 〜 ' + dateKeyJST(jukuRangeEnd) + '\n' +
+      'モード: ' + modeDesc + '\n' +
+      (holidayList.length > 0 ? '祝日: ' + holidayList.join(', ') + '\n' : '祝日なし\n') + '\n' +
+      '【こうたくんの基本情報・ルール】\n' + rules + '\n\n' +
+      '【期間中の現在のスケジュール（Firestoreから取得）】\n' + scheduleTxt + '\n' +
+      '【スロットルール（バランスチェックと同一・厳守）】\n' +
+      '朝(morning)=漢字・基礎力のみ/平日午前(am)不可/月=朝のみ(夜に学校の宿題のみOK・塾居残りなし)/火=朝午後夜/水=朝午後(〜16:00)/木=朝夜(プロタゴ午後OK)/金=朝午後夜/土=朝+午前(am)+午後+夜/日=朝+午前(am)+午後+夜\n' +
+      '【重要】土日のamスロットは勉強可能。計算マスタは土・日それぞれ1回ずつ必要（スロット不問）。\n' +
+      '塾カード(月夜・水夜)はルール違反対象外。月夜の学校の宿題はOK。水曜夜は学校の宿題も入れない。夜90分以内。\n' +
+      '土日にサッカーが入っているスロットはサッカー優先。同スロットに勉強カードがある場合は時間競合に注意。\n' +
+      '【塾休み期間の追加ルール】\n' +
+      '期間中（' + dateKeyJST(jukuRangeStart) + ' 〜 ' + dateKeyJST(jukuRangeEnd) + '）は全日塾なし。月夜・水夜も使える。\n' +
+      (jukuMode === 'long'
+        ? '【長期休暇モード】学校なし。平日も午前(am)スロットが使える。土日と同じ扱いで終日活用可能。ただし土日はサッカーがある可能性あり（予定欄を確認）。\n'
+        : '【通常週モード（祝日のみ）】祝日以外の平日は学校あり。平日の通常スロットルール（朝・午後・夜）はそのまま適用。平日午前(am)は不可。祝日は土日と同じ扱い（午前から使える）。祝日・土日はサッカーがある可能性あり（予定欄を確認）。\n') +
+      '祝日一覧（期間内）: ' + (holidayList.length > 0 ? holidayList.join(', ') : 'なし') + '\n\n' +
+      '【追加提案の基本方針】\n' +
+      '・既存タスクはそのままこなすことが前提。既存カードは変更しない。\n' +
+      '・スケジュールの各日付に日付タイプと[スロット別既存合計時間]を記載してある。これを必ず確認すること。\n' +
+      '・【土日】の日は追加提案しない。\n' +
+      '・【通常平日・午前不可】の日はamスロットに絶対追加しない。\n' +
+      '・夜(night)は既存タスク合計が90分以内の場合のみ追加可能。[夜◯分]と記載があれば残り時間を計算して入るかどうか判断すること。\n' +
+      '・午後(pm)も既存タスクが多い場合は追加しない。\n' +
+      '・塾がある日（月夜に塾カードがある月曜、水夜に塾カードがある水曜）は夜に追加しない。\n' +
+      '優先順位：算数 > 理科 > 社会 > 国語\n' +
+      '【重要】unit_nameは必ず "仮・提案" で固定。説明文不要。JSONのみ出力。\n\n' +
+      '【出力形式】\n' +
+      '以下のJSON配列のみを返す（説明文・コードブロック・マークダウン不要）:\n' +
+      '[\n' +
+      '  { "date": "2026-09-21", "slot": "am", "subject": "算数", "study_time": 30 },\n' +
+      '  ...\n' +
+      ']\n' +
+      'subjectは 算数/国語/理科/社会 のいずれか。slotは am/pm/night のいずれか。study_timeは分数（整数）。\n' +
+      '土日ラベルの日は絶対に含めないこと。夜90分超えの日に夜を追加しないこと。';
+
+    const res = await fetch('https://kota-ai-proxy.nacchukkim.workers.dev', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 3000, messages: [{ role:'user', content: prompt }] })
+    });
+    const data = await res.json();
+    const replyText = (data.content?.[0]?.text) || '';
+
+    // JSONパース（純配列 or コードブロック両対応）
+    let tempCards = [];
+    try {
+      // ```json ブロックがあれば取り出す
+      const blockMatch = replyText.match(/```json\s*([\s\S]*?)```/);
+      const raw = blockMatch ? blockMatch[1].trim() : replyText.trim();
+      // [ で始まる配列を抽出
+      const arrMatch = raw.match(/\[[\s\S]*\]/);
+      if (arrMatch) tempCards = JSON.parse(arrMatch[0]);
+    } catch(e) { tempCards = []; }
+
+    // JSでのセーフティチェック（AIの誤りをガード）
+    function validateCard(card) {
+      if (!card.date || !card.slot || !card.subject) return null;
+      const dt = new Date(card.date + 'T00:00:00');
+      const dow = dt.getDay();
+      const isWeekend = (dow === 0 || dow === 6);
+      // 土日は追加しない
+      if (isWeekend) return null;
+      // 通常平日のamは不可
+      const ds = card.date;
+      const isHoliday = !!allHolidays[ds];
+      const isLong = jukuMode === 'long';
+      if (card.slot === 'am' && !isHoliday && !isLong) return null;
+      // 夜90分超えチェック
+      if (card.slot === 'night') {
+        const wkMonday = getMonday(dt);
+        const savedM = new Date(currentMonday);
+        currentMonday = new Date(wkMonday);
+        const wkTasks = getTasksForWeek();
+        currentMonday = savedM;
+        const dayIdx = (dow + 6) % 7;
+        const nightTotal = wkTasks
+          .filter(t => t._dayIdx === dayIdx && t.slot === 'night' && t.study_time)
+          .reduce((sum, t) => sum + t.study_time, 0);
+        if (nightTotal >= 90) return null;
+      }
+      return { ...card, unit_name: '仮・提案' };
+    }
+
+    // バリデーション適用
+    tempCards = tempCards
+      .map(c => validateCard(c))
+      .filter(c => c !== null);
+
+    // 日付昇順にソート
+    tempCards.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+
+    msgs.innerHTML = '';
+
+    if (tempCards.length === 0) {
+      msgs.innerHTML = '<div style="color:#e24b4a;font-size:13px;padding:12px;">提案カードを取得できませんでした。もう一度お試しください。</div>';
+    } else {
+      // 件数バナーだけ表示してすぐ追加
+      const banner = document.createElement('div');
+      banner.style.cssText = 'background:#EDE9FD;border-radius:8px;padding:10px 14px;font-size:13px;color:#26215C;font-weight:700;margin-bottom:8px;';
+      banner.textContent = '✨ ' + tempCards.length + '件の仮カードを提案しました';
+      msgs.appendChild(banner);
+
+      // カード一覧プレビュー
+      const SLOT_JP2 = {morning:'朝', am:'午前', pm:'午後', night:'夜'};
+      const DAY_JP4 = ['日','月','火','水','木','金','土'];
+      const SUBJ_COLORS2 = {'算数':'#C1E8FB','国語':'#F2B9E4','理科':'#B6EBB0','社会':'#F9DB82'};
+      tempCards.forEach(c => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid #f0f0f0;font-size:12px;';
+        const dt = new Date(c.date + 'T00:00:00');
+        const dateLabel = (dt.getMonth()+1) + '/' + dt.getDate() + '(' + DAY_JP4[dt.getDay()] + ')';
+        row.innerHTML =
+          '<span style="width:70px;flex-shrink:0;color:#555;">' + dateLabel + '</span>' +
+          '<span style="width:26px;flex-shrink:0;color:#888;">' + (SLOT_JP2[c.slot]||c.slot) + '</span>' +
+          '<span style="background:' + (SUBJ_COLORS2[c.subject]||'#eee') + ';border-radius:3px;padding:1px 5px;font-size:11px;font-weight:700;flex-shrink:0;">' + c.subject + '</span>' +
+          '<span style="flex:1;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">仮・提案</span>' +
+          '<span style="color:#888;flex-shrink:0;">' + (c.study_time||'?') + '分</span>';
+        msgs.appendChild(row);
+      });
+
+      const addBtn = document.createElement('button');
+      addBtn.style.cssText = 'margin-top:10px;width:100%;background:#534AB7;border:none;color:white;border-radius:9999px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;';
+      addBtn.textContent = 'カレンダーに追加';
+      addBtn.onclick = () => addJukuTempCards(tempCards, addBtn);
+      msgs.appendChild(addBtn);
+    }
+
+  } catch(e) {
+    msgs.innerHTML = '<div style="color:#e24b4a;font-size:13px;padding:12px;">通信エラーが発生しました。</div>';
+  }
+  btn.disabled = false; btn.textContent = 'この期間の学習を提案 ✨';
+}
+
+function addJukuTempCards(cards, btn) {
+  const DAY_NAMES_JP2 = ['日','月','火','水','木','金','土'];
+  const SUBJ_COLORS = {'算数':'#C1E8FB','国語':'#F2B9E4','理科':'#B6EBB0','社会':'#F9DB82'};
+  let added = 0;
+  cards.forEach(c => {
+    if (!c.date || !c.slot || !c.subject) return;
+    const dt = new Date(c.date + 'T00:00:00');
+    const wi = (dt.getDay() + 6) % 7;
+    const wkMonday = getMonday(dt);
+    const wkKey = dateKey(wkMonday);
+    if (!localOverrides[wkKey]) localOverrides[wkKey] = { added:[], hidden:[], moved:[] };
+    const uid = Date.now() + '_juku_temp_' + added + '_' + Math.random().toString(36).slice(2);
+    localOverrides[wkKey].added.push({
+      uid, date: c.date,
+      weekday: DAY_NAMES_JP2[dt.getDay()],
+      weekday_index: wi, _dayIdx: wi,
+      slot: c.slot,
+      subject: c.subject,
+      unit_name: '仮・提案',  // 単元名は固定
+      color: SUBJ_COLORS[c.subject] || '#C1E8FB',
+      study_time: c.study_time || null,
+      display_type: 'one_time', note: '',
+      _fromDateExact: c.date,
+      _tempCard: true  // 仮カードフラグ
+    });
+    added++;
+  });
+  saveLocal();
+  render();
+  btn.textContent = '✅ ' + added + '件追加しました（カードに「仮」マーク）';
+  btn.style.background = '#27ae60';
+  btn.onclick = null;
+  showToast('📚 仮カード ' + added + '件を追加しました', 2000);
+}
+
+// 仮カード・課題カードの一括削除
+function deleteAllTempAndKadaiCards() {
+  let count = 0;
+  Object.keys(localOverrides).forEach(wkKey => {
+    const lo = localOverrides[wkKey];
+    if (!lo || !lo.added) return;
+    const before = lo.added.length;
+    lo.added = lo.added.filter(t => {
+      // 仮カード（塾休み提案）
+      if (t._tempCard) return false;
+      // 課題カード（unit_nameに " p." が含まれるonetimeカード）
+      if (t.display_type === 'one_time' && t.uid && t.uid.includes('_kadai_')) return false;
+      return true;
+    });
+    count += before - lo.added.length;
+  });
+  if (count === 0) {
+    showToast('削除対象のカードがありませんでした', 2000);
+    return;
+  }
+  saveLocal();
+  render();
+  closeAIModal();
+  showToast('🗑️ ' + count + '件の仮・課題カードを削除しました', 2500);
+}
+
+function jukuResize(delta) {
+  const panel = document.getElementById('jukuPanel');
+  const cur = panel.getBoundingClientRect().width;
+  const nw = Math.max(280, Math.min(window.innerWidth * 0.95, cur + delta));
+  panel.style.width = nw + 'px';
+}
+
+function initJukuPanelDrag() {
+  const panel = document.getElementById('jukuPanel');
+  const hdr = document.getElementById('jukuPanelHdr');
+  let dragging = false, ox = 0, oy = 0;
+  const onDown = e => {
+    if (e.target.tagName === 'BUTTON') return;
+    dragging = true;
+    const r = panel.getBoundingClientRect();
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    const cy = e.touches ? e.touches[0].clientY : e.clientY;
+    ox = cx - r.left; oy = cy - r.top;
+    panel.style.transition = 'none';
+  };
+  const onMove = e => {
+    if (!dragging) return;
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    const cy = e.touches ? e.touches[0].clientY : e.clientY;
+    const x = Math.max(0, Math.min(window.innerWidth - panel.offsetWidth, cx - ox));
+    const y = Math.max(0, Math.min(window.innerHeight - 60, cy - oy));
+    panel.style.left = x + 'px'; panel.style.top = y + 'px'; panel.style.right = 'auto';
+    e.preventDefault();
+  };
+  const onUp = () => { dragging = false; panel.style.transition = ''; };
+  hdr.addEventListener('mousedown', onDown);
+  hdr.addEventListener('touchstart', onDown, { passive: false });
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('touchmove', onMove, { passive: false });
+  document.addEventListener('mouseup', onUp);
+  document.addEventListener('touchend', onUp);
+}
+
+function initJukuResize() {
+  const panel = document.getElementById('jukuPanel');
+  const handle = document.getElementById('jukuResizeHandle');
+  let resizing = false, startX = 0, startW = 0, startL = 0;
+  const onDown = e => {
+    resizing = true;
+    startX = e.touches ? e.touches[0].clientX : e.clientX;
+    startW = panel.offsetWidth;
+    startL = panel.getBoundingClientRect().left;
+    panel.style.transition = 'none';
+    e.preventDefault();
+  };
+  const onMove = e => {
+    if (!resizing) return;
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    const diff = startX - cx;
+    const nw = Math.max(260, Math.min(window.innerWidth * 0.95, startW + diff));
+    panel.style.width = nw + 'px';
+    panel.style.left = Math.max(0, startL + startW - nw) + 'px';
+    panel.style.right = 'auto';
+    e.preventDefault();
+  };
+  const onUp = () => { resizing = false; panel.style.transition = ''; };
+  handle.addEventListener('mousedown', onDown);
+  handle.addEventListener('touchstart', onDown, { passive: false });
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('touchmove', onMove, { passive: false });
+  document.addEventListener('mouseup', onUp);
+  document.addEventListener('touchend', onUp);
+}
+function toggleKadaiStep2Option() {
+  const el = document.getElementById('kadaiStep2Option');
+  const btn = document.getElementById('kadaiStep2Toggle');
+  const open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : '';
+  btn.textContent = (open ? '▶' : '▼') + ' ページあたりの時間を入力（任意・再分配）';
+}
+function kadaiBack() {
+  document.getElementById('kadaiStep1').style.display = '';
+  document.getElementById('kadaiStep2').style.display = 'none';
+  kadaiPendingCards = [];
+}
+
+async function runKadaiDistribute() {
+  const subject   = document.getElementById('kadaiSubject').value;
+  const bookName  = document.getElementById('kadaiBookName').value.trim() || subject + '課題';
+  const shortName = document.getElementById('kadaiShortName').value.trim() || bookName.slice(0,2);
+  const pages     = parseInt(document.getElementById('kadaiPages').value);
+  const startStr  = document.getElementById('kadaiStartDate').value;
+  const dueStr    = document.getElementById('kadaiDueDate').value;
+  const minPerPg  = parseFloat(document.getElementById('kadaiMinPerPage').value) || null;
+  const maxMinVal = parseFloat(document.getElementById('kadaiMaxMin').value) || null;
+  const errEl     = document.getElementById('kadaiError');
+
+  // バリデーション
+  if (!pages || pages < 1)       { errEl.textContent = 'ページ数を入力してください'; return; }
+  if (!startStr || !dueStr)      { errEl.textContent = '開始日と提出日を入力してください'; return; }
+  const startDate = new Date(startStr + 'T00:00:00');
+  const dueDate   = new Date(dueStr   + 'T00:00:00');
+  if (dueDate <= startDate)      { errEl.textContent = '提出日は開始日より後にしてください'; return; }
+  const totalDays = Math.round((dueDate - startDate) / 86400000);
+  if (totalDays < 2)             { errEl.textContent = '期間が短すぎます（最低2日）'; return; }
+  errEl.textContent = '';
+
+  // ボタンをローディング状態に
+  const btn = document.getElementById('kadaiRunBtn');
+  btn.disabled = true; btn.textContent = 'スケジュール確認中…';
+
+  const SUBJECT_BG = { '算数':'#C1E8FB','国語':'#F2B9E4','理科':'#B6EBB0','社会':'#F9DB82' };
+  const STAR_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="#ff991c" style="flex-shrink:0;vertical-align:middle;"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>';
+
+  try {
+    await loadFromFirestore();
+
+    btn.textContent = 'AI分配中…';
+
+    const savedMonday = new Date(currentMonday);
+    let scheduleTxt = '';
+    const SLOT_LABELS2 = {plan:'予定',morning:'朝',am:'午前',pm:'午後',night:'夜'};
+    const DAY_JP = ['日','月','火','水','木','金','土'];
+
+    const firstMonday = getMonday(startDate);
+    let scanMonday = new Date(firstMonday);
+    while (scanMonday <= dueDate) {
+      currentMonday = new Date(scanMonday);
+      const wkTasks = getTasksForWeek();
+      for (let d = 0; d < 7; d++) {
+        const dt = new Date(scanMonday); dt.setDate(scanMonday.getDate() + d);
+        if (dt < startDate || dt > dueDate) continue;
+        const dateLabel = (dt.getMonth()+1) + '/' + dt.getDate() + '(' + DAY_JP[dt.getDay()] + ')';
+        const dayTasks = wkTasks.filter(t => t._dayIdx === d);
+        if (dayTasks.length > 0) {
+          scheduleTxt += dateLabel + ': ' + dayTasks.map(t => (SLOT_LABELS2[t.slot]||t.slot) + '/' + t.subject + ':' + t.unit_name + (t.study_time ? '(' + t.study_time + '分)' : '')).join(' | ') + '\n';
+        } else {
+          scheduleTxt += dateLabel + ': （予定なし）\n';
+        }
+      }
+      scanMonday.setDate(scanMonday.getDate() + 7);
+    }
+    currentMonday = savedMonday;
+
+    const timeInfo = (minPerPg && maxMinVal)
+      ? '・1ページ約' + minPerPg + '分。1回あたり上限' + maxMinVal + '分（上限ページ数=' + Math.floor(maxMinVal / minPerPg) + 'ページ）。\n'
+      : '・1ページあたりの所要時間は不明のため、ページ数のみで分配する。\n';
+
+    const prompt =
+      'あなたは小学5年生（こうたくん）の課題本のページ分配AIです。\n\n' +
+      '【課題情報】\n' +
+      '科目: ' + subject + '\n' +
+      '課題本名: ' + bookName + '\n' +
+      '総ページ: ' + pages + 'ページ\n' +
+      '開始日: ' + startStr + '\n' +
+      '提出日: ' + dueStr + '（この日の前日までに完了すること）\n' +
+      timeInfo +
+      '\n【スロットルール（厳守）】\n' +
+      '朝(morning)=漢字・基礎力テスト専用。課題本は入れない。\n' +
+      '平日午前(am)=不可。\n' +
+      '月=朝のみ（夜は学校の宿題のみ可・塾あり）。課題本は月に入れない。\n' +
+      '火=朝・午後・夜が使える。\n' +
+      '水=朝・午後（〜16:00）のみ。夜は塾あり。課題本は水夜に入れない。\n' +
+      '木=朝・夜（午後はプロタゴ）。\n' +
+      '金=朝・午後・夜。\n' +
+      '土=朝・午前(am)・午後・夜。\n' +
+      '日=朝・午前(am)・午後・夜。\n' +
+      '夜は90分以内（既存タスクと合わせて）。\n' +
+      '\n【分配ルール】\n' +
+      '・総ページ数を必ず全部配分すること。ページを意図的に減らしてはいけない。\n' +
+      '・提出日の2〜3日前を目標完了日とし、残り2〜3日は遅れた場合の予備日（バッファ日）として空けておく。\n' +
+      '・スケジュールを見て既存タスクが多い日は少なめ、余裕のある日は多めに配分する。\n' +
+      '・終日外出・旅行の予定がある日は入れない（予定欄に旅行・遠足・合宿等がある日）。\n' +
+      '・1回あたりのページ数は多くても20ページ以内を目安にする（1ページ時間が不明の場合）。\n' +
+      (minPerPg && maxMinVal ? '・時間情報があるので、1回あたり上限ページ数（' + Math.floor(maxMinVal / minPerPg) + 'ページ）を超えないよう分配する。\n' : '') +
+      '\n【期間中のスケジュール（Firestoreから取得した最新データ）】\n' + scheduleTxt + '\n' +
+      '【出力形式】\n' +
+      '以下のJSON形式のみで返す（説明文・コードブロック不要）:\n' +
+      '{\n' +
+      '  "summary": "1〜2行の分配概要（例：全15日間に分散、バッファ3日確保）",\n' +
+      '  "cards": [\n' +
+      '    { "date": "2026-07-20", "slot": "pm", "pages": "1-12", "note": "オプションのメモ" },\n' +
+      '    ...\n' +
+      '  ]\n' +
+      '}\n' +
+      'slotは pm / night / am（土日のみ）のいずれか。dateはYYYY-MM-DD形式。pagesは "開始ページ-終了ページ" 形式。';
+
+    const res = await fetch('https://kota-ai-proxy.nacchukkim.workers.dev', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 2000, messages: [{ role: 'user', content: prompt }] })
+    });
+    const data = await res.json();
+    const replyText = (data.content && data.content[0] && data.content[0].text) ? data.content[0].text : '';
+
+    // JSONパース
+    let parsed = null;
+    try {
+      const cleaned = replyText.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+      const m = cleaned.match(/\{[\s\S]*\}/);
+      if (m) parsed = JSON.parse(m[0]);
+    } catch(e) { try { parsed = JSON.parse(replyText.trim()); } catch(e2) { parsed = null; } }
+
+    if (!parsed || !parsed.cards || parsed.cards.length === 0) {
+      errEl.textContent = 'AIの応答を解析できませんでした。もう一度お試しください。';
+      btn.disabled = false; btn.textContent = 'AIで分配する ✨';
+      return;
+    }
+
+    kadaiPendingCards = parsed.cards.map(c => ({
+      date: c.date, slot: c.slot, pages: c.pages,
+      subject, bookName, shortName, note: 'p.' + c.pages
+    }));
+
+    const SLOT_JP = { pm:'午後', night:'夜', am:'午前' };
+    const previewMsg = document.getElementById('kadaiPreviewMsg');
+    previewMsg.innerHTML = '<strong>' + bookName + '（' + pages + 'P）</strong>を ' +
+      parsed.cards.length + ' 回に分けて配置します。<br>' +
+      '<span style="color:#888">' + (parsed.summary || '') + '</span>';
+
+    const listEl = document.getElementById('kadaiPreviewList');
+    listEl.innerHTML = '';
+    const cardBg = SUBJECT_BG[subject] || '#FFB347';
+    kadaiPendingCards.forEach((c, i) => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;background:' + cardBg + ';border-radius:8px;padding:8px 12px;';
+      const d = new Date(c.date + 'T00:00:00');
+      const dateLabel = (d.getMonth()+1) + '/' + d.getDate() + '(' + DAY_JP[d.getDay()] + ')';
+      row.innerHTML =
+        STAR_SVG +
+        '<div style="width:76px;font-size:13px;font-weight:700;color:#1a2744;flex-shrink:0;">' + dateLabel + '</div>' +
+        '<div style="width:32px;font-size:12px;color:#555;flex-shrink:0;">' + (SLOT_JP[c.slot]||c.slot) + '</div>' +
+        '<div style="flex:1;font-size:13px;color:#1a2744;font-weight:700;">' + shortName + ' p.' + c.pages + '</div>' +
+        '<button onclick="kadaiRemoveCard(' + i + ')" style="background:none;border:none;color:#888;font-size:16px;cursor:pointer;flex-shrink:0;padding:0 2px;">×</button>';
+      listEl.appendChild(row);
+    });
+
+    document.getElementById('kadaiStep1').style.display = 'none';
+    document.getElementById('kadaiStep2').style.display = '';
+  } catch(e) {
+    errEl.textContent = '通信エラーが発生しました。';
+  }
+  btn.disabled = false; btn.textContent = 'AIで分配する ✨';
+}
+
+function kadaiRemoveCard(idx) {
+  kadaiPendingCards.splice(idx, 1);
+  const DAY_JP2 = ['日','月','火','水','木','金','土'];
+  const SLOT_JP2 = { pm:'午後', night:'夜', am:'午前' };
+  const SUBJECT_BG2 = { '算数':'#C1E8FB','国語':'#F2B9E4','理科':'#B6EBB0','社会':'#F9DB82' };
+  const STAR_SVG2 = '<svg width="14" height="14" viewBox="0 0 24 24" fill="#ff991c" style="flex-shrink:0;vertical-align:middle;"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>';
+  const listEl = document.getElementById('kadaiPreviewList');
+  listEl.innerHTML = '';
+  kadaiPendingCards.forEach((c, i) => {
+    const row = document.createElement('div');
+    const cardBg2 = SUBJECT_BG2[c.subject] || '#FFB347';
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;background:' + cardBg2 + ';border-radius:8px;padding:8px 12px;';
+    const d = new Date(c.date + 'T00:00:00');
+    const dateLabel = (d.getMonth()+1) + '/' + d.getDate() + '(' + DAY_JP2[d.getDay()] + ')';
+    row.innerHTML =
+      STAR_SVG2 +
+      '<div style="width:76px;font-size:13px;font-weight:700;color:#1a2744;flex-shrink:0;">' + dateLabel + '</div>' +
+      '<div style="width:32px;font-size:12px;color:#555;flex-shrink:0;">' + (SLOT_JP2[c.slot]||c.slot) + '</div>' +
+      '<div style="flex:1;font-size:13px;color:#1a2744;font-weight:700;">' + (c.shortName||c.bookName) + ' p.' + c.pages + '</div>' +
+      '<button onclick="kadaiRemoveCard(' + i + ')" style="background:none;border:none;color:#888;font-size:16px;cursor:pointer;flex-shrink:0;padding:0 2px;">×</button>';
+    listEl.appendChild(row);
+  });
+  document.getElementById('kadaiPreviewMsg').querySelector('strong').nextSibling.textContent = '';
+}
+
+function kadaiConfirm() {
+  if (kadaiPendingCards.length === 0) { closeKadaiModal(); return; }
+  const now = getNowJST();
+  const DAY_NAMES_EN = ['日','月','火','水','木','金','土'];
+  const SUBJECT_BG3 = { '算数':'#C1E8FB','国語':'#F2B9E4','理科':'#B6EBB0','社会':'#F9DB82' };
+  kadaiPendingCards.forEach(c => {
+    const dt = new Date(c.date + 'T00:00:00');
+    const uid = now.getTime() + '_kadai_' + Math.random().toString(36).slice(2);
+    const wkMonday = getMonday(dt);
+    const wkKey = dateKey(wkMonday);
+    if (!localOverrides[wkKey]) localOverrides[wkKey] = { added:[], hidden:[], moved:[] };
+    localOverrides[wkKey].added.push({
+      uid, date: c.date, weekday: DAY_NAMES_EN[dt.getDay()],
+      weekday_index: (dt.getDay() + 6) % 7,
+      slot: c.slot, subject: c.subject,
+      unit_name: c.bookName + ' p.' + c.pages,
+      _kadaiShortName: c.shortName || c.bookName.slice(0,2),
+      color: SUBJECT_BG3[c.subject] || '#FFB347',
+      _kadaiStar: true,
+      study_time: null,
+      display_type: 'one_time', note: 'p.' + c.pages,
+      _fromDateExact: c.date
+    });
+  });
+  saveLocal();
+  render();
+  closeKadaiModal();
+  document.getElementById('aiModal').classList.remove('open');
+  showToast('📚 ' + kadaiPendingCards.length + '件の課題カードを追加しました！', 2500);
+  kadaiPendingCards = [];
 }
 
 function closeAIModal() {
@@ -5590,6 +7411,24 @@ function navNext() {
   if (isPhone() && isPortrait()) phoneMoveDays(1);
   else changeWeek(1);
 }
+function navPrevMonth() {
+  const base = new Date(currentMonday);
+  base.setMonth(base.getMonth() - 1);
+  _monthCalYear  = base.getFullYear();
+  _monthCalMonth = base.getMonth() + 1;
+  renderMonthCalModal();
+  document.getElementById('monthCalModal').classList.add('open');
+  resetAndInitModalDrag('monthCalModal');
+}
+function navNextMonth() {
+  const base = new Date(currentMonday);
+  base.setMonth(base.getMonth() + 1);
+  _monthCalYear  = base.getFullYear();
+  _monthCalMonth = base.getMonth() + 1;
+  renderMonthCalModal();
+  document.getElementById('monthCalModal').classList.add('open');
+  resetAndInitModalDrag('monthCalModal');
+}
 function phoneMoveDays(dir) {
   phoneViewStart = (phoneViewStart + dir + 7) % 7;
   // 月曜（0）から戻ったら前週へ、日曜（6）から進んだら翌週へ
@@ -5851,8 +7690,55 @@ function _tCancel() {
   _tTask = null; _tCard = null; _tDropCell = null; _tActive = false;
 }
 
-function openMoveModal(task, toDay, toSlot) {
-  _pendingMove = {task, toDay, toSlot};
+function openMoveModal(taskRef, toDay, toSlot) {
+  // taskRefはuidだけの場合があるので、実際のタスクオブジェクトをkey+uidで正確に取得
+  const allTasks = getTasksForWeek();
+  let task;
+  if (taskRef._fromDateExact !== undefined || taskRef.display_type !== undefined) {
+    task = taskRef;
+  } else {
+    // uidで完全一致（同スロット複数カードでもuidは異なる）
+    task = allTasks.find(t => t.uid === taskRef.uid) || taskRef;
+  }
+
+  // weeklyカード（繰り返し）のみポップアップ表示、それ以外は直接移動
+  if (task.display_type !== 'weekly') {
+    takeSnapshot();
+    const SLOTS2 = ['plan','morning','am','pm','night'];
+    const wk = getWeekKey();
+    if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
+    const lo = localOverrides[wk];
+    if (!lo.added) lo.added = [];
+    const addIdx = lo.added.findIndex(a => a.uid === task.uid);
+    if (addIdx >= 0) {
+      lo.added[addIdx]._dayIdx = toDay;
+      lo.added[addIdx].slot = SLOTS2[toSlot] || 'night';
+      const newDate = addDays(currentMonday, toDay);
+      const newDateStr = newDate.getFullYear() + '-' +
+        String(newDate.getMonth()+1).padStart(2,'0') + '-' +
+        String(newDate.getDate()).padStart(2,'0');
+      lo.added[addIdx]._fromDateExact = newDateStr;
+      lo.added[addIdx].date = newDateStr;
+    } else {
+      if (!lo.hidden) lo.hidden = {};
+      const hkey = (task.display_type === 'weekly') ? task.uid + '_' + task._dayIdx : task.uid;
+      lo.hidden[hkey] = true;
+      const newDate = addDays(currentMonday, toDay);
+      const newDateStr = newDate.getFullYear() + '-' +
+        String(newDate.getMonth()+1).padStart(2,'0') + '-' +
+        String(newDate.getDate()).padStart(2,'0');
+      const movedCard = {
+        ...task, uid: 'moved_'+Date.now(), display_type:'one_time',
+        _dayIdx: toDay, slot: SLOTS2[toSlot]||'night', _slotIdx: toSlot,
+        weekday_index: toDay, order: 99, repeat_key: null,
+        _fromDateExact: newDateStr, date: newDateStr
+      };
+      lo.added.push(movedCard);
+    }
+    saveLocal(); render();
+    return;
+  }
+  _pendingMove = {task: taskRef, toDay, toSlot};
   const slotNames = {0:'予定',1:'朝',2:'午前',3:'午後',4:'夜'};
   document.getElementById('moveModalTitle').textContent =
     DAYS_JP2[toDay] + '曜日の' + (slotNames[toSlot]||'') + 'に移動しますか？';
@@ -5875,13 +7761,9 @@ function confirmMove() {
   const SLOTS2 = ['plan','morning','am','pm','night'];
 
   const allTasks = getTasksForWeek();
-  const keyParts = task.key ? task.key.split('-') : [];
-  const fromDayIdx = keyParts.length >= 1 ? parseInt(keyParts[0]) : -1;
-  const fromSlotIdx = keyParts.length >= 2 ? parseInt(keyParts[1]) : -1;
-  const orig = allTasks.find(t =>
-    (t.uid === task.uid || t.id === task.id) &&
-    t._dayIdx === fromDayIdx && t._slotIdx === fromSlotIdx
-  ) || allTasks.find(t => t.uid === task.uid || t.id === task.id);
+  // uidで完全一致
+  const orig = allTasks.find(t => t.uid === task.uid)
+    || allTasks.find(t => t.id === task.id);
   if (!orig) { closeMoveModal(); return; }
 
   if (type === 'weekly') {
@@ -5920,11 +7802,17 @@ function confirmMove() {
     }
     const addIdx = lo.added.findIndex(a => a.uid === orig.uid);
     if (addIdx >= 0) lo.added.splice(addIdx, 1);
-    lo.added.push({
+    const newDate = addDays(currentMonday, toDay);
+    const newDateStr = newDate.getFullYear() + '-' +
+      String(newDate.getMonth()+1).padStart(2,'0') + '-' +
+      String(newDate.getDate()).padStart(2,'0');
+    const movedCard = {
       ...orig, uid:'moved_'+Date.now(), display_type:'one_time',
       _dayIdx:toDay, slot:SLOTS2[toSlot]||'night', _slotIdx:toSlot,
-      weekday_index:toDay, order:99, repeat_key:null
-    });
+      weekday_index:toDay, order:99, repeat_key:null,
+      _fromDateExact: newDateStr, date: newDateStr
+    };
+    lo.added.push(movedCard);
   }
   saveLocal(); closeMoveModal(); render();
 }
@@ -6054,15 +7942,22 @@ async function loadFromFirestore() {
 }
 
 // Firestoreにデータを保存する（既存のsaveLocal関数を上書き）
+let _savingToFirestore = false;
 const _origSaveLocal = saveLocal;
 window.saveLocal = function() {
   _origSaveLocal();
+  _savingToFirestore = true;
   // Firestoreにも保存
   db.collection('schedules').doc('main').set({
     overrides: localOverrides,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
     updatedBy: DEVICE_ID
-  }).catch(e => console.log('Firestore保存エラー:', e));
+  }).then(() => {
+    setTimeout(() => { _savingToFirestore = false; }, 2000);
+  }).catch(e => {
+    console.log('Firestore保存エラー:', e);
+    _savingToFirestore = false;
+  });
 };
 
 // リアルタイム同期（他のデバイスの変更を受信）
@@ -6070,6 +7965,8 @@ try {
   db.collection('schedules').doc('main').onSnapshot(doc => {
     if (doc.exists) {
       const data = doc.data();
+      // 自分の保存中、または自分のデバイスからの更新はスキップ
+      if (_savingToFirestore) return;
       if (data.updatedBy === DEVICE_ID) return;
       if (data.overrides) {
         localOverrides = data.overrides;
@@ -6468,12 +8365,222 @@ async function checkAutoSaveRecords() {
   }
 }
 
+// ===== 全モーダル共通ドラッグ =====
+function initModalDrag(bgId) {
+  const bg = document.getElementById(bgId);
+  if (!bg) return;
+  const modal = bg.querySelector('.modal');
+  const hdr   = bg.querySelector('.modal-hdr');
+  if (!modal || !hdr) return;
+  if (hdr._dragInited) return;
+  hdr._dragInited = true;
+  hdr.style.cursor = 'grab';
+  let dragging = false, ox = 0, oy = 0;
+  const onDown = e => {
+    if (e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT') return;
+    dragging = true;
+    // modalをfixedに切り替えて現在位置を維持
+    if (modal.style.position !== 'fixed') {
+      const r = modal.getBoundingClientRect();
+      modal.style.position = 'fixed';
+      modal.style.left = r.left + 'px';
+      modal.style.top  = r.top  + 'px';
+      modal.style.margin = '0';
+      bg.style.alignItems = 'unset';
+      bg.style.justifyContent = 'unset';
+    }
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    const cy = e.touches ? e.touches[0].clientY : e.clientY;
+    const r = modal.getBoundingClientRect();
+    ox = cx - r.left; oy = cy - r.top;
+    hdr.style.cursor = 'grabbing';
+    e.preventDefault();
+  };
+  const onMove = e => {
+    if (!dragging) return;
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    const cy = e.touches ? e.touches[0].clientY : e.clientY;
+    const x = Math.max(0, Math.min(window.innerWidth  - modal.offsetWidth,  cx - ox));
+    const y = Math.max(0, Math.min(window.innerHeight - modal.offsetHeight, cy - oy));
+    modal.style.left = x + 'px';
+    modal.style.top  = y + 'px';
+    e.preventDefault();
+  };
+  const onUp = () => { dragging = false; hdr.style.cursor = 'grab'; };
+  hdr.addEventListener('mousedown',  onDown, { passive: false });
+  hdr.addEventListener('touchstart', onDown, { passive: false });
+  document.addEventListener('mousemove',  onMove, { passive: false });
+  document.addEventListener('touchmove',  onMove, { passive: false });
+  document.addEventListener('mouseup',  onUp);
+  document.addEventListener('touchend', onUp);
+}
+
+// modalが開くたびに位置をリセットしてドラッグ初期化
+const _origOpenModal = window._origOpenModal;
+function resetAndInitModalDrag(bgId) {
+  const bg = document.getElementById(bgId);
+  if (!bg) return;
+  const modal = bg.querySelector('.modal');
+  if (modal) { modal.style.position=''; modal.style.left=''; modal.style.top=''; modal.style.margin=''; }
+  const bgEl = bg;
+  bgEl.style.alignItems = ''; bgEl.style.justifyContent = '';
+  initModalDrag(bgId);
+}
+
+// 既存のopen関数をラップしてドラッグ初期化を注入
+['aiModal','proposeModal','gnorevModal','detailModal','addModal','copyModal',
+ 'statsModal','ruleChatModal','saveRangeModal','repeatRangeModal'].forEach(id => {
+  const bg = document.getElementById(id);
+  if (!bg) return;
+  const observer = new MutationObserver(() => {
+    if (bg.classList.contains('open') || bg.style.display === 'flex') {
+      resetAndInitModalDrag(id);
+    }
+  });
+  observer.observe(bg, { attributes: true, attributeFilter: ['class','style'] });
+});
+
+// ===== 月カレンダーモーダル（翌月・先月ボタン用）=====
+let _monthCalYear = 0, _monthCalMonth = 0;
+function openMonthCalModal(offsetMonth) {
+  const base = getTodayJST();
+  base.setMonth(base.getMonth() + offsetMonth);
+  _monthCalYear  = base.getFullYear();
+  _monthCalMonth = base.getMonth() + 1;
+  renderMonthCalModal();
+  document.getElementById('monthCalModal').classList.add('open');
+  resetAndInitModalDrag('monthCalModal');
+}
+function renderMonthCalModal() {
+  const y = _monthCalYear, m = _monthCalMonth;
+  document.getElementById('monthCalTitle').textContent = m + '月 ' + y;
+  const grid = document.getElementById('monthCalGrid');
+  grid.innerHTML = '';
+  const first = new Date(y, m-1, 1).getDay(); // 0=日
+  const days  = new Date(y, m, 0).getDate();
+  const offset = first === 0 ? 6 : first - 1; // 月曜始まり
+  for (let i = 0; i < offset; i++) {
+    const blank = document.createElement('div'); grid.appendChild(blank);
+  }
+  const today = getTodayJST();
+  for (let d = 1; d <= days; d++) {
+    const dt = new Date(y, m-1, d);
+    const cell = document.createElement('div');
+    cell.textContent = d;
+    cell.style.cssText = 'padding:6px;text-align:center;border-radius:50%;cursor:pointer;font-size:14px;font-weight:600;line-height:1.4;';
+    const isToday = dt.toDateString() === today.toDateString();
+    const dow = dt.getDay();
+    if (isToday) { cell.style.background = 'var(--navy)'; cell.style.color = 'white'; }
+    else if (dow === 0) cell.style.color = '#e24b4a';
+    else if (dow === 6) cell.style.color = '#378add';
+    cell.onmouseover = () => { if (!isToday) cell.style.background = '#f0f2f8'; };
+    cell.onmouseout  = () => { if (!isToday) cell.style.background = ''; };
+    cell.onclick = () => {
+      currentMonday = getMonday(dt);
+      render(); updateNavLabels();
+      document.getElementById('monthCalModal').classList.remove('open');
+    };
+    grid.appendChild(cell);
+  }
+}
+
+// ===== コピーカレンダーをコピー元の月で開く & 元の日を薄丸表示 =====
+let _copySourceDate = null;
+const _origCopyTask = window.copyTask;
+// copyTask呼び出し時にコピー元日付を記録
+function patchCopyCalendar() {
+  const origCopyTask = copyTask;
+  window.copyTask = function() {
+    const t = document.getElementById('detailModal')._task;
+    if (t && (t._fromDateExact || t.date)) {
+      _copySourceDate = new Date((t._fromDateExact || t.date) + 'T00:00:00');
+    } else {
+      // 現在週の表示からコピー元の日付を推定
+      _copySourceDate = null;
+    }
+    origCopyTask();
+  };
+}
+document.addEventListener('DOMContentLoaded', () => { patchCopyCalendar(); });
+
+// ===== バックアップ機能 =====
+function manualBackup() {
+  const now = new Date();
+  const jst = new Date(now.getTime() + 9*60*60*1000);
+  const ts = jst.toISOString().slice(0,16).replace('T','_').replace(/:/g,'');
+  const data = JSON.stringify({ overrides: localOverrides, savedAt: jst.toISOString() }, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'kota_backup_' + ts + '.json';
+  a.click(); URL.revokeObjectURL(url);
+  showToast('💾 バックアップをダウンロードしました', 2500);
+}
+
+async function autoBackup() {
+  try {
+    if (typeof db === 'undefined') return;
+    const now = new Date();
+    const jst = new Date(now.getTime() + 9*60*60*1000);
+    const dateStr = jst.toISOString().slice(0,10);
+    const existing = await db.collection('backups').doc(dateStr).get();
+    if (existing.exists) {
+      const label = document.getElementById('lastAutoBackupLabel');
+      if (label) label.textContent = '最終: ' + dateStr;
+      return;
+    }
+    await db.collection('backups').doc(dateStr).set({
+      overrides: localOverrides,
+      savedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    const label = document.getElementById('lastAutoBackupLabel');
+    if (label) label.textContent = '最終: ' + dateStr;
+    console.log('自動バックアップ完了:', dateStr);
+  } catch(e) { console.log('自動バックアップエラー:', e); }
+}
+
+async function showBackupHistory() {
+  document.getElementById('aiModal').classList.remove('open');
+  const listEl = document.getElementById('backupList');
+  listEl.innerHTML = '<div style="text-align:center;color:#888;padding:20px;">読み込み中...</div>';
+  document.getElementById('backupModal').classList.add('open');
+  try {
+    const snap = await db.collection('backups').orderBy('savedAt', 'desc').limit(7).get();
+    if (snap.empty) { listEl.innerHTML = '<div style="text-align:center;color:#888;padding:20px;">バックアップがありません</div>'; return; }
+    listEl.innerHTML = '';
+    snap.forEach(doc => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;background:#f8f8f8;border-radius:10px;padding:12px 14px;';
+      row.innerHTML =
+        '<div style="font-size:14px;font-weight:700;color:#1a2744;">' + doc.id + '</div>' +
+        '<button onclick="restoreBackup(\'' + doc.id + '\')" style="background:#534AB7;border:none;color:white;border-radius:9999px;padding:6px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">復元</button>';
+      listEl.appendChild(row);
+    });
+  } catch(e) { listEl.innerHTML = '<div style="text-align:center;color:#e24b4a;padding:20px;">読み込みエラー</div>'; }
+}
+
+async function restoreBackup(dateStr) {
+  if (!confirm(dateStr + ' のバックアップから復元しますか？\n現在のデータは上書きされます。')) return;
+  try {
+    const doc = await db.collection('backups').doc(dateStr).get();
+    if (!doc.exists) { alert('バックアップが見つかりません'); return; }
+    takeSnapshot();
+    localOverrides = doc.data().overrides || {};
+    saveLocal(); render();
+    document.getElementById('backupModal').classList.remove('open');
+    showToast('✅ ' + dateStr + ' のバックアップから復元しました', 3000);
+  } catch(e) { alert('復元エラー: ' + e.message); }
+}
+
 // セッション中は再入力不要
 window.addEventListener('DOMContentLoaded', function() {
   if (localStorage.getItem('auth') === '1') {
     document.getElementById('pwScreen').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
-    loadFromFirestore().then(() => { render(); checkAutoSaveRecords(); });
+    loadFromFirestore().then(() => {
+      render(); checkAutoSaveRecords();
+      setTimeout(autoBackup, 3000);
+    });
   }
 });
 </script>
