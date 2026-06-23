@@ -876,8 +876,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
           </select>
         </div>
         <div class="field">
-          <label>課題本の名前（例：算数課題ノート）</label>
+          <label>課題本の名前（例：算数課題ノート）<span style="font-size:11px;color:#888;font-weight:400;"> ※3文字程度の省略名称を推奨</span></label>
           <input type="text" id="kadaiBookName" placeholder="例：夏期算数課題ノート" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;">
+        </div>
+        <div class="field">
+          <label>カード略称（1〜2文字）<span style="font-size:11px;color:#888;font-weight:400;"> ★略称 p.XX-XX でカード上に表示</span></label>
+          <input type="text" id="kadaiShortName" placeholder="例：算" maxlength="2" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;">
         </div>
         <div class="field">
           <label>総ページ数</label>
@@ -1677,7 +1681,6 @@ function render() {
     const tempCls = t._tempCard ? ' temp-card' : '';
     card.className = 'card ' + cls + aiCls + tempCls;
     const name = t.unit_name || '';
-    const displayName = name;
     const span = document.createElement('span');
     span.style.cssText = 'pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;display:flex;align-items:center;justify-content:center;gap:3px;width:100%;';
     if (t._kadaiStar) {
@@ -1692,7 +1695,12 @@ function render() {
     }
     const txt = document.createElement('span');
     txt.style.cssText = 'pointer-events:none;';
-    txt.textContent = displayName.length > 7 ? displayName.slice(0,7) : displayName;
+    if (t._kadaiStar && t._kadaiShortName && t.note) {
+      // 略称 + ページ範囲（例：算 p.1-10）
+      txt.textContent = t._kadaiShortName + ' ' + t.note;
+    } else {
+      txt.textContent = name.length > 7 ? name.slice(0,7) : name;
+    }
     span.appendChild(txt);
     card.appendChild(span);
     // 選択モード中はチェックボックスを表示
@@ -5065,6 +5073,7 @@ function openKadaiModal() {
   const fmt = d => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
   document.getElementById('kadaiStartDate').value = fmt(today);
   document.getElementById('kadaiDueDate').value = fmt(due);
+  document.getElementById('kadaiShortName').value = '';
   document.getElementById('kadaiStep1').style.display = '';
   document.getElementById('kadaiStep2').style.display = 'none';
   document.getElementById('kadaiError').textContent = '';
@@ -5683,6 +5692,7 @@ function kadaiBack() {
 async function runKadaiDistribute() {
   const subject   = document.getElementById('kadaiSubject').value;
   const bookName  = document.getElementById('kadaiBookName').value.trim() || subject + '課題';
+  const shortName = document.getElementById('kadaiShortName').value.trim() || bookName.slice(0,2);
   const pages     = parseInt(document.getElementById('kadaiPages').value);
   const startStr  = document.getElementById('kadaiStartDate').value;
   const dueStr    = document.getElementById('kadaiDueDate').value;
@@ -5804,7 +5814,7 @@ async function runKadaiDistribute() {
 
     kadaiPendingCards = parsed.cards.map(c => ({
       date: c.date, slot: c.slot, pages: c.pages,
-      subject, bookName, note: c.note || ''
+      subject, bookName, shortName, note: 'p.' + c.pages
     }));
 
     const SLOT_JP = { pm:'午後', night:'夜', am:'午前' };
@@ -5825,9 +5835,7 @@ async function runKadaiDistribute() {
         STAR_SVG +
         '<div style="width:76px;font-size:13px;font-weight:700;color:#1a2744;flex-shrink:0;">' + dateLabel + '</div>' +
         '<div style="width:32px;font-size:12px;color:#555;flex-shrink:0;">' + (SLOT_JP[c.slot]||c.slot) + '</div>' +
-        '<div style="flex:1;font-size:13px;color:#1a2744;">' +
-        bookName + ' <span style="font-weight:700;">p.' + c.pages + '</span>' +
-        (c.note ? '<span style="color:#555;font-size:11px;"> ' + c.note + '</span>' : '') + '</div>' +
+        '<div style="flex:1;font-size:13px;color:#1a2744;font-weight:700;">' + shortName + ' p.' + c.pages + '</div>' +
         '<button onclick="kadaiRemoveCard(' + i + ')" style="background:none;border:none;color:#888;font-size:16px;cursor:pointer;flex-shrink:0;padding:0 2px;">×</button>';
       listEl.appendChild(row);
     });
@@ -5858,9 +5866,7 @@ function kadaiRemoveCard(idx) {
       STAR_SVG2 +
       '<div style="width:76px;font-size:13px;font-weight:700;color:#1a2744;flex-shrink:0;">' + dateLabel + '</div>' +
       '<div style="width:32px;font-size:12px;color:#555;flex-shrink:0;">' + (SLOT_JP2[c.slot]||c.slot) + '</div>' +
-      '<div style="flex:1;font-size:13px;color:#1a2744;">' +
-      c.bookName + ' <span style="font-weight:700;">p.' + c.pages + '</span>' +
-      (c.note ? '<span style="color:#555;font-size:11px;"> ' + c.note + '</span>' : '') + '</div>' +
+      '<div style="flex:1;font-size:13px;color:#1a2744;font-weight:700;">' + (c.shortName||c.bookName) + ' p.' + c.pages + '</div>' +
       '<button onclick="kadaiRemoveCard(' + i + ')" style="background:none;border:none;color:#888;font-size:16px;cursor:pointer;flex-shrink:0;padding:0 2px;">×</button>';
     listEl.appendChild(row);
   });
@@ -5883,10 +5889,11 @@ function kadaiConfirm() {
       weekday_index: (dt.getDay() + 6) % 7,
       slot: c.slot, subject: c.subject,
       unit_name: c.bookName + ' p.' + c.pages,
+      _kadaiShortName: c.shortName || c.bookName.slice(0,2),
       color: SUBJECT_BG3[c.subject] || '#FFB347',
       _kadaiStar: true,
       study_time: null,
-      display_type: 'one_time', note: c.note || '',
+      display_type: 'one_time', note: 'p.' + c.pages,
       _fromDateExact: c.date
     });
   });
