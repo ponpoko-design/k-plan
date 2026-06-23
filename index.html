@@ -7349,13 +7349,8 @@ function openMoveModal(taskRef, toDay, toSlot) {
   if (taskRef._fromDateExact !== undefined || taskRef.display_type !== undefined) {
     task = taskRef;
   } else {
-    // keyからdayIdx・slotIdxを取得して正確に特定
-    const keyParts = (taskRef.key || '').split('-');
-    const keyDay  = keyParts.length >= 1 ? parseInt(keyParts[0]) : -1;
-    const keySlot = keyParts.length >= 2 ? parseInt(keyParts[1]) : -1;
-    task = allTasks.find(t =>
-      t.uid === taskRef.uid && t._dayIdx === keyDay && t._slotIdx === keySlot
-    ) || allTasks.find(t => t.uid === taskRef.uid) || taskRef;
+    // uidで完全一致（同スロット複数カードでもuidは異なる）
+    task = allTasks.find(t => t.uid === taskRef.uid) || taskRef;
   }
 
   // weeklyカード（繰り返し）のみポップアップ表示、それ以外は直接移動
@@ -7419,15 +7414,9 @@ function confirmMove() {
   const SLOTS2 = ['plan','morning','am','pm','night'];
 
   const allTasks = getTasksForWeek();
-  const keyParts = task.key ? task.key.split('-') : [];
-  const fromDayIdx = keyParts.length >= 1 ? parseInt(keyParts[0]) : -1;
-  const fromSlotIdx = keyParts.length >= 2 ? parseInt(keyParts[1]) : -1;
-  const orig = allTasks.find(t =>
-    (t.uid === task.uid || t.id === task.id) &&
-    t._dayIdx === fromDayIdx && t._slotIdx === fromSlotIdx
-  ) || allTasks.find(t =>
-    (t.uid === task.uid || t.id === task.id) && t._dayIdx === fromDayIdx
-  ) || allTasks.find(t => t.uid === task.uid || t.id === task.id);
+  // uidで完全一致
+  const orig = allTasks.find(t => t.uid === task.uid)
+    || allTasks.find(t => t.id === task.id);
   if (!orig) { closeMoveModal(); return; }
 
   if (type === 'weekly') {
