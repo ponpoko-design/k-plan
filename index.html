@@ -56,6 +56,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 
 /* タスクカード */
 .card{border-radius:4px;padding:3px 5px;font-size:13px;font-weight:700;cursor:grab;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none !important;-webkit-user-select:none !important;-moz-user-select:none !important;-ms-user-select:none !important;-webkit-touch-callout:none !important;-webkit-user-drag:none;line-height:1.5;text-align:center;touch-action:none;-webkit-tap-highlight-color:rgba(0,0,0,0)!important;outline:none;}
+.card.kadai-card{padding:0;display:flex;align-items:stretch;overflow:hidden;}
+.card.kadai-card .kadai-star-block{background:#ff991c;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:18px;min-height:100%;}
+.card.kadai-card .kadai-text{flex:1;display:flex;align-items:center;justify-content:center;padding:3px 4px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
 .card *{user-select:none !important;-webkit-user-select:none !important;-webkit-touch-callout:none !important;pointer-events:none;}
 .card:active,.card:focus,.card:focus-visible{cursor:grabbing;outline:none!important;box-shadow:none!important;transform:none!important;opacity:1!important;}
 .card-ghost{opacity:0.3!important;background:#ccc!important;}
@@ -1684,25 +1687,28 @@ function render() {
     const span = document.createElement('span');
     span.style.cssText = 'pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;display:flex;align-items:center;justify-content:center;gap:3px;width:100%;';
     if (t._kadaiStar) {
-      const starSvg = document.createElementNS('http://www.w3.org/2000/svg','svg');
-      starSvg.setAttribute('width','10'); starSvg.setAttribute('height','10');
-      starSvg.setAttribute('viewBox','0 0 24 24');
-      starSvg.style.cssText = 'flex-shrink:0;fill:#ff991c;';
-      const poly = document.createElementNS('http://www.w3.org/2000/svg','polygon');
-      poly.setAttribute('points','12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26');
-      starSvg.appendChild(poly);
-      span.appendChild(starSvg);
-    }
-    const txt = document.createElement('span');
-    txt.style.cssText = 'pointer-events:none;';
-    if (t._kadaiStar && t._kadaiShortName && t.note) {
-      // 略称 + ページ範囲（例：算 p.1-10）
-      txt.textContent = t._kadaiShortName + ' ' + t.note;
+      // 2色ブロック構造
+      card.classList.add('kadai-card');
+      // 左：オレンジ★ブロック
+      const starBlock = document.createElement('div');
+      starBlock.className = 'kadai-star-block';
+      starBlock.style.pointerEvents = 'none';
+      starBlock.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="white" style="display:block;flex-shrink:0;pointer-events:none;"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>';
+      // 右：教科色テキストブロック
+      const textBlock = document.createElement('div');
+      textBlock.className = 'kadai-text';
+      textBlock.style.pointerEvents = 'none';
+      const label = (t._kadaiShortName && t.note) ? t._kadaiShortName + ' ' + t.note : name.slice(0,7);
+      textBlock.textContent = label;
+      card.appendChild(starBlock);
+      card.appendChild(textBlock);
     } else {
+      const txt = document.createElement('span');
+      txt.style.cssText = 'pointer-events:none;';
       txt.textContent = name.length > 7 ? name.slice(0,7) : name;
+      span.appendChild(txt);
+      card.appendChild(span);
     }
-    span.appendChild(txt);
-    card.appendChild(span);
     // 選択モード中はチェックボックスを表示
     if (_multiSelectMode) {
       const chk = document.createElement('span');
@@ -1736,15 +1742,26 @@ function render() {
           const rect = card.getBoundingClientRect();
           pcClone = document.createElement('div');
           pcClone.className = card.className;
-          pcClone.textContent = span.textContent;
-          Object.assign(pcClone.style, {
-            position:'fixed', left:rect.left+'px', top:rect.top+'px',
-            width:rect.width+'px', opacity:'0.85', pointerEvents:'none',
-            zIndex:'9999', transform:'scale(1.08)',
-            boxShadow:'0 6px 20px rgba(0,0,0,0.35)',
-            borderRadius:'4px', padding:'3px 5px',
-            fontSize:'13px', fontWeight:'700', textAlign:'center'
-          });
+          if (card.classList.contains('kadai-card')) {
+            pcClone.innerHTML = card.innerHTML;
+            Object.assign(pcClone.style, {
+              position:'fixed', left:rect.left+'px', top:rect.top+'px',
+              width:rect.width+'px', opacity:'0.85', pointerEvents:'none',
+              zIndex:'9999', transform:'scale(1.08)',
+              boxShadow:'0 6px 20px rgba(0,0,0,0.35)',
+              borderRadius:'4px'
+            });
+          } else {
+            pcClone.textContent = span.textContent;
+            Object.assign(pcClone.style, {
+              position:'fixed', left:rect.left+'px', top:rect.top+'px',
+              width:rect.width+'px', opacity:'0.85', pointerEvents:'none',
+              zIndex:'9999', transform:'scale(1.08)',
+              boxShadow:'0 6px 20px rgba(0,0,0,0.35)',
+              borderRadius:'4px', padding:'3px 5px',
+              fontSize:'13px', fontWeight:'700', textAlign:'center'
+            });
+          }
           document.body.appendChild(pcClone);
           card.style.opacity = '0.3';
           document.body.style.userSelect = 'none';
