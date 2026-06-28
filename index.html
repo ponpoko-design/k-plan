@@ -1770,22 +1770,101 @@ function getTasksForWeek() {
 // ===== Render =====
 function render() {
   const today = getTodayJST();
+  const phonePortrait = isPhone() && isPortrait();
+
+  if (phonePortrait) {
+    // ===== スマホ縦向き：昨日・今日・明日の3日表示 =====
+    if (!phoneCenterDate) initPhoneViewStart();
+    const spDates = getPhoneViewDates(); // [昨日, 今日, 明日]
+    const SLOTS = 5;
+
+    // グリッド列設定（ラベル+3列）
+    const gridCols = '28px repeat(3, 1fr)';
+    document.querySelectorAll('.cal-head, .time-row').forEach(el => {
+      el.style.gridTemplateColumns = gridCols;
+    });
+
+    // ヘッダー：col0〜2を昨日・今日・明日に割り当て、col3〜6は非表示
+    for (let i = 0; i < 7; i++) {
+      const cell = document.getElementById('hd'+i);
+      if (!cell) continue;
+      if (i < 3) {
+        const d = spDates[i];
+        const m = d.getMonth()+1, da = d.getDate();
+        const dow = (d.getDay()+6)%7; // 0=月〜6=日
+        cell.textContent = m+'/'+da+'('+DAYS_JP[dow]+')';
+        const isToday = d.getTime() === today.getTime();
+        cell.className = 'cal-hcell' + (isToday ? ' today' : '');
+        cell.style.display = '';
+      } else {
+        cell.style.display = 'none';
+      }
+    }
+
+    // セルをクリアして非表示/表示設定
+    for (let d = 0; d < 7; d++) for (let s = 0; s < SLOTS; s++) {
+      const cell = document.getElementById('c'+d+'-'+s);
+      if (!cell) continue;
+      cell.innerHTML = '';
+      cell.onclick = null;
+      if (d < 3) {
+        cell.style.display = '';
+        const colDate = spDates[d];
+        const colDateStr = dateKey(colDate);
+        cell.ondragover = ev => { ev.preventDefault(); cell.classList.add('drag-over'); };
+        cell.ondragleave = () => cell.classList.remove('drag-over');
+        cell.ondrop = ev => { ev.preventDefault(); cell.classList.remove('drag-over'); dropTask(d, s); };
+      } else {
+        cell.style.display = 'none';
+      }
+    }
+
+    // タスク描画：各日のタスクをcol0〜2に配置
+    for (let colIdx = 0; colIdx < 3; colIdx++) {
+      const colDate = spDates[colIdx];
+      const colMonday = getMonday(colDate);
+      const colDayIdx = Math.round((colDate - colMonday) / 86400000);
+      // その週のタスクを取得
+      const savedMonday = currentMonday;
+      currentMonday = colMonday;
+      const colTasks = getTasksForWeek();
+      currentMonday = savedMonday;
+      colTasks.sort((a,b) => (a.order||99) - (b.order||99));
+      colTasks.forEach(t => {
+        if (t._dayIdx !== colDayIdx) return;
+        // _dayIdxをcolIdxにリマップして通常のcellに配置
+        const remapped = Object.assign({}, t, { _dayIdx: colIdx });
+        const cell = document.getElementById('c'+colIdx+'-'+t._slotIdx);
+        if (!cell) return;
+        _renderCard(remapped, cell, t);
+      });
+      // 空セルタップで追加
+      for (let s = 0; s < SLOTS; s++) {
+        const cell = document.getElementById('c'+colIdx+'-'+s);
+        if (!cell) continue;
+        const capturedDate = colDate, capturedSlot = s, capturedColMonday = colMonday;
+        cell.onclick = (e) => {
+          if (e.target !== cell) return;
+          const savedM = currentMonday;
+          currentMonday = capturedColMonday;
+          openAdd(Math.round((capturedDate - capturedColMonday) / 86400000), capturedSlot, dateKey(capturedDate));
+          currentMonday = savedM;
+        };
+      }
+    }
+    return; // SP縦向きはここで終了
+  }
+
+  // ===== 通常表示（横向き・PC・iPad）=====
   const dates = getWeekDates();
 
-  // スマホ縦向きかどうか判定
-  const phonePortrait = isPhone() && isPortrait();
-  const visibleIndices = phonePortrait ? getPhoneViewIndices() : [0,1,2,3,4,5,6];
-
-  // ヘッダーの列数をCSSで動的に設定
-  const colCount = phonePortrait ? 3 : 7;
-  const lblW = phonePortrait ? '28px' : '28px';
-  const gridCols = `${lblW} repeat(${colCount}, 1fr)`;
+  // グリッド列設定（ラベル+7列）
+  const gridCols7 = '28px repeat(7, 1fr)';
   document.querySelectorAll('.cal-head, .time-row').forEach(el => {
-    el.style.gridTemplateColumns = gridCols;
+    el.style.gridTemplateColumns = gridCols7;
   });
 
   // ヘッダー
-  let visCol = 0;
   for (let i = 0; i < 7; i++) {
     const cell = document.getElementById('hd'+i);
     if (!cell) continue;
@@ -1794,15 +1873,7 @@ function render() {
     cell.textContent = m+'/'+da+'('+DAYS_JP[i]+')';
     const isToday = d.getTime() === today.getTime();
     cell.className = 'cal-hcell' + (isToday ? ' today' : '');
-    if (phonePortrait) {
-      if (visibleIndices.includes(i)) {
-        cell.style.display = '';
-      } else {
-        cell.style.display = 'none';
-      }
-    } else {
-      cell.style.display = '';
-    }
+    cell.style.display = '';
   }
 
   // セルクリア
@@ -1811,14 +1882,10 @@ function render() {
     if (!cell) continue;
     cell.innerHTML = '';
     cell.onclick = null;
+    cell.style.display = '';
     cell.ondragover = ev => { ev.preventDefault(); cell.classList.add('drag-over'); };
     cell.ondragleave = () => cell.classList.remove('drag-over');
     cell.ondrop = ev => { ev.preventDefault(); cell.classList.remove('drag-over'); dropTask(d, s); };
-    if (phonePortrait) {
-      cell.style.display = visibleIndices.includes(d) ? '' : 'none';
-    } else {
-      cell.style.display = '';
-    }
   }
 
   // タスク描画
@@ -1829,6 +1896,14 @@ function render() {
   tasks.forEach(t => {
     const cell = document.getElementById('c'+t._dayIdx+'-'+t._slotIdx);
     if (!cell) return;
+    _renderCard(t, cell, t);
+  });
+}
+
+// カード描画ヘルパー（SP縦向き・通常共用）
+// tDisplay: 表示用（_dayIdxがリマップ済み）、tOrig: 元のタスクオブジェクト（イベント処理用）
+function _renderCard(tDisplay, cell, tOrig) {
+  const t = tOrig; // イベント・D&D処理は元のtを使う
     const card = document.createElement('div');
     const cls = SUBJ_CLASS[t.subject] || 'plan';
     const aiCls = t._aiSuggest ? ' ai-suggest' : '';
@@ -1972,7 +2047,6 @@ function render() {
     // タッチはすべて_tStart/_tEndで処理（_addTouch経由）
     // ここでは登録しない
     cell.appendChild(card);
-  });
 }
 
 // ===== D&D =====
@@ -7388,19 +7462,36 @@ document.addEventListener('selectstart', e => e.preventDefault());
 function isPhone() { return window.innerWidth < 768; }
 function isPortrait() { return window.innerHeight > window.innerWidth; }
 
-// スマホ縦向き時の表示開始インデックス（0-6、今日を中央に）
-let phoneViewStart = 0; // 表示する最初の曜日インデックス（0=月〜6=日）
-
-function getPhoneViewIndices() {
-  // 今日の曜日インデックスを中央にした3日間
-  return [phoneViewStart, (phoneViewStart+1)%7, (phoneViewStart+2)%7];
-}
+// ===== スマホ縦向き：絶対日付オフセット方式 =====
+// phoneCenterDate: 中央に表示する日（Date）。常にJST当日基準で管理。
+let phoneCenterDate = null;
 
 function initPhoneViewStart() {
-  const today = getTodayJST();
-  const todayIdx = (today.getDay()+6)%7;
-  // 今日を中央（インデックス1）にする → startは前日
-  phoneViewStart = (todayIdx - 1 + 7) % 7;
+  phoneCenterDate = getTodayJST();
+  // currentMondayも中央日の週に合わせる
+  currentMonday = getMonday(phoneCenterDate);
+}
+
+// 中央日の前日・今日・翌日の3日を返す
+// 週またぎ対応：各日のMonday+dayIdxを計算して返す
+function getPhoneViewIndices() {
+  if (!phoneCenterDate) initPhoneViewStart();
+  const centerMonday = getMonday(phoneCenterDate);
+  const centerIdx = Math.round((phoneCenterDate - centerMonday) / 86400000);
+  // 昨日・今日・明日
+  const offsets = [-1, 0, 1];
+  return offsets.map(o => {
+    const absIdx = centerIdx + o;
+    if (absIdx < 0) return { weekOffset: -1, dayIdx: absIdx + 7 };
+    if (absIdx > 6) return { weekOffset: 1, dayIdx: absIdx - 7 };
+    return { weekOffset: 0, dayIdx: absIdx };
+  });
+}
+
+// 表示する3日のDateを返す
+function getPhoneViewDates() {
+  if (!phoneCenterDate) initPhoneViewStart();
+  return [-1, 0, 1].map(o => addDays(phoneCenterDate, o));
 }
 
 function navPrev() {
@@ -7430,17 +7521,11 @@ function navNextMonth() {
   resetAndInitModalDrag('monthCalModal');
 }
 function phoneMoveDays(dir) {
-  phoneViewStart = (phoneViewStart + dir + 7) % 7;
-  // 月曜（0）から戻ったら前週へ、日曜（6）から進んだら翌週へ
-  if (dir === -1 && phoneViewStart === 6) {
-    phoneViewStart = 6;
-    changeWeek(-1);
-  } else if (dir === 1 && phoneViewStart === 0) {
-    phoneViewStart = 0;
-    changeWeek(1);
-  } else {
-    render();
-  }
+  if (!phoneCenterDate) initPhoneViewStart();
+  phoneCenterDate = addDays(phoneCenterDate, dir);
+  // currentMondayを中央日の週に合わせる（週またぎ自動対応）
+  currentMonday = getMonday(phoneCenterDate);
+  render();
   updateNavLabels();
 }
 function updateNavLabels() {
