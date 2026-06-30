@@ -2741,7 +2741,16 @@ function copyTask() {
   const t = document.getElementById('detailModal')._task;
   if (!t) return;
   // コピーモーダルを開く
-  const srcDate = addDays(currentMonday, t._dayIdx);
+  // 元の日付を正確に取得（SP縦向きで_dayIdxがリマップされていても正しく動く）
+  let srcDate;
+  if (t._fromDateExact) {
+    srcDate = new Date(t._fromDateExact + 'T00:00:00');
+  } else if (t.date) {
+    srcDate = new Date(t.date);
+    srcDate.setHours(0,0,0,0);
+  } else {
+    srcDate = addDays(currentMonday, t._dayIdx);
+  }
   const m = srcDate.getMonth()+1, d = srcDate.getDate();
   const slotLabel = {plan:'予定',morning:'朝',am:'午前',pm:'午後',night:'夜'}[t.slot]||'夜';
   const typeLabel = t.display_type==='weekly'?'毎週くりかえす予定':'今回だけの予定';
@@ -2881,11 +2890,9 @@ function confirmCopy(){
       _slotIdx:SLOT_IDX[targetSlot]||0,
       is_hidden:'no'
     };
-    // _fromDateExactがある場合（課題カード等）はコピー先日付に更新
-    if (copiedCard._fromDateExact) {
-      copiedCard._fromDateExact = selectedStr;
-      copiedCard.date = selectedStr;
-    }
+    // コピー先日付を必ずdateと_fromDateExactに設定
+    copiedCard._fromDateExact = selectedStr;
+    copiedCard.date = selectedStr;
     localOverrides[wk].added.push(copiedCard);
   }
   saveLocal();
