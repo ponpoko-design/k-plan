@@ -197,7 +197,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
       <button id="multiSelectToggle" onclick="toggleMultiSelect()"
         style="background:white;border:1.5px solid #ccc;color:#888;border-radius:14px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">複数選択</button>
       <button class="undo-btn" onclick="undoLast()"
-        style="background:white;border:1.5px solid #ccc;color:#888;border-radius:14px;padding:3px 18px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;opacity:0.35;pointer-events:none;">↩</button>
+        style="background:white;border:1.5px solid #ccc;color:#888;border-radius:14px;padding:3px 18px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">↩</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px;">
       <button class="month-btn" id="btnNextMonth" onclick="navNextMonth()">翌月 <svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor"><polygon points="0,0 0,12 10,6"/></svg></button>
@@ -8169,6 +8169,7 @@ window.addEventListener('resize', fitModals);
 // 初期表示：スマホ縦向きは今日を中央に
 initPhoneViewStart();
 updateNavLabels();
+updateUndoBtn();
 // 画面向き変更時に再レンダリング
 window.addEventListener('orientationchange', () => {
   setTimeout(() => { initPhoneViewStart(); render(); updateNavLabels(); }, 100);
