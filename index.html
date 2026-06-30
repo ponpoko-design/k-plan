@@ -226,8 +226,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
     <button class="bnav-btn active" onclick="goHome()">
       <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
     </button>
-    <button class="bnav-btn" onclick="showToast('現在作成中です 🚧', 2000)">
-      <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    <button class="bnav-btn" onclick="openRangeStats()">
+      <svg viewBox="0 0 24 24"><path d="M1 12S5 5 12 5s11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
     </button>
     <button class="bnav-btn" onclick="openAIModal()">
       <svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M12 2v4M8 2h8"/><circle cx="9" cy="13" r="1.5" fill="currentColor" stroke="none"/><circle cx="15" cy="13" r="1.5" fill="currentColor" stroke="none"/><line x1="9" y1="17" x2="15" y2="17"/><line x1="7" y1="8" x2="7" y2="6"/><line x1="17" y1="8" x2="17" y2="6"/></svg>
@@ -1449,6 +1449,30 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
           <button onclick="closeRepeatRangeModal()" style="flex:1;background:white;border:2px solid #ccc;color:#888;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">やめる</button>
           <button onclick="confirmRepeatRange()" style="flex:2;background:var(--navy);border:none;color:white;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">繰り返す予定に変更</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 期間集計モーダル -->
+  <div class="modal-bg" id="rangeStatsModal">
+    <div class="modal" style="width:min(520px,96vw);max-height:88vh;display:flex;flex-direction:column;">
+      <div class="modal-hdr" style="background:#1a2744;padding:14px 18px;flex-shrink:0;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><path d="M1 12S5 5 12 5s11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span style="font-size:16px;font-weight:700;">期間を指定して集計</span>
+        </div>
+        <button class="modal-close" ontouchend="event.preventDefault();closeRangeStats();" onclick="closeRangeStats()">×</button>
+      </div>
+      <div style="padding:16px 18px;flex-shrink:0;border-bottom:1px solid #eee;">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <input type="date" id="rangeStatsFrom" style="border:1.5px solid #ccc;border-radius:9999px;padding:7px 14px;font-size:14px;font-family:inherit;color:#1a2744;">
+          <span style="color:#888;font-size:13px;">〜</span>
+          <input type="date" id="rangeStatsTo" style="border:1.5px solid #ccc;border-radius:9999px;padding:7px 14px;font-size:14px;font-family:inherit;color:#1a2744;">
+          <button onclick="runRangeStats()" style="background:#1a2744;color:white;border:none;border-radius:9999px;padding:8px 20px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">集計</button>
+        </div>
+      </div>
+      <div id="rangeStatsResult" style="overflow-y:auto;padding:16px 18px;flex:1;">
+        <div style="color:#aaa;font-size:13px;text-align:center;padding:20px 0;">期間を選んで「集計」を押してください</div>
       </div>
     </div>
   </div>
@@ -4026,6 +4050,115 @@ function switchStatsTab(tab) {
 }
 function closeStats() { document.getElementById('statsModal').classList.remove('open'); updateFloatingClose(); }
 
+// ===== 期間指定集計 =====
+function openRangeStats() {
+  // デフォルト：今月1日〜今日
+  const today = getTodayJST();
+  const y = today.getFullYear(), m = today.getMonth()+1, d = today.getDate();
+  const fromDefault = y+'-'+String(m).padStart(2,'0')+'-01';
+  const toDefault = y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+  document.getElementById('rangeStatsFrom').value = fromDefault;
+  document.getElementById('rangeStatsTo').value = toDefault;
+  document.getElementById('rangeStatsResult').innerHTML = '<div style="color:#aaa;font-size:13px;text-align:center;padding:20px 0;">期間を選んで「集計」を押してください</div>';
+  document.getElementById('rangeStatsModal').classList.add('open');
+  updateFloatingClose();
+}
+function closeRangeStats() { document.getElementById('rangeStatsModal').classList.remove('open'); updateFloatingClose(); }
+
+function calcRangeTotal(fromDate, toDate) {
+  const bySubj = {};
+  const today = getTodayJST();
+  const completedSlots = getCompletedSlots();
+  const SKIP_SUBJ = new Set(['予定','祝日','習い事']);
+
+  // fromDate〜toDateに含まれる全週のmondayを列挙
+  const mondaySet = new Map();
+  let cur = new Date(fromDate); cur.setHours(0,0,0,0);
+  const end = new Date(toDate); end.setHours(0,0,0,0);
+  while (cur <= end && cur <= today) {
+    const mon = getMonday(new Date(cur));
+    mondaySet.set(dateKey(mon), new Date(mon));
+    cur = addDays(cur, 1);
+  }
+
+  mondaySet.forEach((mondayDate) => {
+    const savedMonday = currentMonday;
+    currentMonday = new Date(mondayDate);
+    const tasks = getTasksForWeek();
+    currentMonday = savedMonday;
+
+    tasks.forEach(t => {
+      if (!t.study_time) return;
+      if (SKIP_SUBJ.has(t.subject)) return;
+      const taskDate = new Date(mondayDate);
+      taskDate.setDate(taskDate.getDate() + t._dayIdx);
+      taskDate.setHours(0,0,0,0);
+      // 期間外スキップ
+      if (taskDate < fromDate || taskDate > toDate) return;
+      if (taskDate > today) return;
+      const isToday = taskDate.getTime() === today.getTime();
+      if (isToday && !completedSlots.includes(t.slot)) return;
+      bySubj[t.subject] = (bySubj[t.subject]||0) + t.study_time;
+    });
+  });
+  return bySubj;
+}
+
+function runRangeStats() {
+  const fromStr = document.getElementById('rangeStatsFrom').value;
+  const toStr = document.getElementById('rangeStatsTo').value;
+  if (!fromStr || !toStr) { showToast('期間を入力してください'); return; }
+  const fromDate = new Date(fromStr+'T00:00:00'); fromDate.setHours(0,0,0,0);
+  const toDate = new Date(toStr+'T00:00:00'); toDate.setHours(0,0,0,0);
+  if (fromDate > toDate) { showToast('開始日は終了日より前にしてください'); return; }
+
+  const data = calcRangeTotal(fromDate, toDate);
+  const total = Object.values(data).reduce((a,b)=>a+b,0);
+  const MAIN_SUBJ = ['算数','国語','理科','社会'];
+  const mainData = {};
+  MAIN_SUBJ.forEach(s => { if (data[s]) mainData[s] = data[s]; });
+
+  const sm = isPhone();
+  const sz = sm ? 155 : 200;
+
+  // 期間ラベル
+  const fmtD = d => { const [y,m,da] = d.split('-'); return parseInt(m)+'月'+parseInt(da)+'日'; };
+  const rangeLabel = fmtD(fromStr)+'〜'+fmtD(toStr);
+
+  let html = `<div style="font-size:${sm?13:15}px;font-weight:700;color:#1a2744;margin-bottom:10px;">${rangeLabel}の集計</div>`;
+  html += `<div style="display:flex;gap:6px;align-items:center;margin-bottom:12px;background:#f4f6fb;border-radius:8px;padding:8px 12px;">
+    <span style="font-size:11px;color:#888;">合計</span>
+    <span style="font-size:${sm?16:20}px;font-weight:700;color:#1a2744;font-family:'Inter',sans-serif;">${fmtTime(total)}</span>
+  </div>`;
+
+  if (total === 0) {
+    html += '<div style="color:#aaa;font-size:13px;text-align:center;padding:16px 0;">この期間に記録された学習時間はありません</div>';
+  } else {
+    html += `<div style="font-size:12px;color:#888;margin-bottom:6px;font-weight:500;">学習時間の内訳</div>`;
+    html += renderBarChart(null, data, null);
+    html += `<div style="font-size:12px;color:#888;margin:10px 0 4px;font-weight:500;">割合</div>`;
+    html += `<div style="display:flex;gap:${sm?8:12}px;margin-top:8px;align-items:flex-start;">
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;">
+        <div style="font-size:11px;color:#888;font-weight:700;margin-bottom:4px;">全体</div>
+        <canvas id="pieRangeAll" width="${sz*2}" height="${sz*2}" style="width:${sz}px;height:${sz}px;max-width:100%;"></canvas>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;">
+        <div style="font-size:11px;color:#888;font-weight:700;margin-bottom:4px;">4教科のみ</div>
+        <canvas id="pieRangeMain" width="${sz*2}" height="${sz*2}" style="width:${sz}px;height:${sz}px;max-width:100%;"></canvas>
+      </div>
+    </div>`;
+  }
+
+  document.getElementById('rangeStatsResult').innerHTML = html;
+
+  if (total > 0) {
+    setTimeout(() => {
+      renderPieChart('pieRangeAll', null, data);
+      renderPieChart('pieRangeMain', null, mainData);
+    }, 50);
+  }
+}
+
 function changeWeek(dir) {
   currentMonday = addDays(currentMonday, dir*7);
   render();
@@ -4188,6 +4321,7 @@ function closeAnyModal() {
   else if (id === 'deleteConfirmModal') closeDeleteConfirm();
   else if (id === 'copyModal') closeCopyModal();
   else if (id === 'statsModal') closeStats();
+  else if (id === 'rangeStatsModal') closeRangeStats();
   else if (id === 'saveRangeModal') closeSaveRangeModal();
   else if (id === 'repeatRangeModal') closeRepeatRangeModal();
   else openModal.classList.remove('open');
@@ -8521,7 +8655,7 @@ function resetAndInitModalDrag(bgId) {
 
 // 既存のopen関数をラップしてドラッグ初期化を注入
 ['aiModal','proposeModal','gnorevModal','detailModal','addModal','copyModal',
- 'statsModal','ruleChatModal','saveRangeModal','repeatRangeModal'].forEach(id => {
+ 'statsModal','ruleChatModal','saveRangeModal','repeatRangeModal','rangeStatsModal'].forEach(id => {
   const bg = document.getElementById(id);
   if (!bg) return;
   const observer = new MutationObserver(() => {
