@@ -1463,12 +1463,24 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
         </div>
         <button class="modal-close" ontouchend="event.preventDefault();closeRangeStats();" onclick="closeRangeStats()">×</button>
       </div>
-      <div style="padding:16px 18px;flex-shrink:0;border-bottom:1px solid #eee;">
+      <!-- 期間A -->
+      <div style="padding:12px 16px;flex-shrink:0;border-bottom:1px solid #eee;background:#fafafa;">
+        <div style="font-size:11px;font-weight:700;color:#888;margin-bottom:6px;">期間 A</div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <input type="date" id="rangeStatsFrom" style="border:1.5px solid #ccc;border-radius:9999px;padding:7px 14px;font-size:14px;font-family:inherit;color:#1a2744;">
+          <input type="date" id="rangeStatsFrom" style="border:1.5px solid #ccc;border-radius:9999px;padding:6px 12px;font-size:13px;font-family:inherit;color:#1a2744;">
           <span style="color:#888;font-size:13px;">〜</span>
-          <input type="date" id="rangeStatsTo" style="border:1.5px solid #ccc;border-radius:9999px;padding:7px 14px;font-size:14px;font-family:inherit;color:#1a2744;">
-          <button onclick="runRangeStats()" style="background:#1a2744;color:white;border:none;border-radius:9999px;padding:8px 20px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">集計</button>
+          <input type="date" id="rangeStatsTo" style="border:1.5px solid #ccc;border-radius:9999px;padding:6px 12px;font-size:13px;font-family:inherit;color:#1a2744;">
+          <button onclick="runRangeStats()" style="background:#1a2744;color:white;border:none;border-radius:9999px;padding:6px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">集計</button>
+        </div>
+      </div>
+      <!-- 期間B（比較用） -->
+      <div style="padding:12px 16px;flex-shrink:0;border-bottom:2px solid #eee;">
+        <div style="font-size:11px;font-weight:700;color:#888;margin-bottom:6px;">期間 B <span style="font-weight:400;color:#bbb;">（比較したいときだけ入力）</span></div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <input type="date" id="rangeStatsFromB" style="border:1.5px solid #ccc;border-radius:9999px;padding:6px 12px;font-size:13px;font-family:inherit;color:#1a2744;">
+          <span style="color:#888;font-size:13px;">〜</span>
+          <input type="date" id="rangeStatsToB" style="border:1.5px solid #ccc;border-radius:9999px;padding:6px 12px;font-size:13px;font-family:inherit;color:#1a2744;">
+          <button onclick="runRangeStats()" style="background:#534AB7;color:white;border:none;border-radius:9999px;padding:6px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">集計</button>
         </div>
       </div>
       <div id="rangeStatsResult" style="overflow-y:auto;padding:16px 18px;flex:1;">
@@ -4052,13 +4064,14 @@ function closeStats() { document.getElementById('statsModal').classList.remove('
 
 // ===== 期間指定集計 =====
 function openRangeStats() {
-  // デフォルト：今月1日〜今日
   const today = getTodayJST();
   const y = today.getFullYear(), m = today.getMonth()+1, d = today.getDate();
   const fromDefault = y+'-'+String(m).padStart(2,'0')+'-01';
   const toDefault = y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
   document.getElementById('rangeStatsFrom').value = fromDefault;
   document.getElementById('rangeStatsTo').value = toDefault;
+  document.getElementById('rangeStatsFromB').value = '';
+  document.getElementById('rangeStatsToB').value = '';
   document.getElementById('rangeStatsResult').innerHTML = '<div style="color:#aaa;font-size:13px;text-align:center;padding:20px 0;">期間を選んで「集計」を押してください</div>';
   document.getElementById('rangeStatsModal').classList.add('open');
   updateFloatingClose();
@@ -4070,8 +4083,6 @@ function calcRangeTotal(fromDate, toDate) {
   const today = getTodayJST();
   const completedSlots = getCompletedSlots();
   const SKIP_SUBJ = new Set(['予定','祝日','習い事']);
-
-  // fromDate〜toDateに含まれる全週のmondayを列挙
   const mondaySet = new Map();
   let cur = new Date(fromDate); cur.setHours(0,0,0,0);
   const end = new Date(toDate); end.setHours(0,0,0,0);
@@ -4080,20 +4091,17 @@ function calcRangeTotal(fromDate, toDate) {
     mondaySet.set(dateKey(mon), new Date(mon));
     cur = addDays(cur, 1);
   }
-
   mondaySet.forEach((mondayDate) => {
     const savedMonday = currentMonday;
     currentMonday = new Date(mondayDate);
     const tasks = getTasksForWeek();
     currentMonday = savedMonday;
-
     tasks.forEach(t => {
       if (!t.study_time) return;
       if (SKIP_SUBJ.has(t.subject)) return;
       const taskDate = new Date(mondayDate);
       taskDate.setDate(taskDate.getDate() + t._dayIdx);
       taskDate.setHours(0,0,0,0);
-      // 期間外スキップ
       if (taskDate < fromDate || taskDate > toDate) return;
       if (taskDate > today) return;
       const isToday = taskDate.getTime() === today.getTime();
@@ -4104,59 +4112,162 @@ function calcRangeTotal(fromDate, toDate) {
   return bySubj;
 }
 
-function runRangeStats() {
-  const fromStr = document.getElementById('rangeStatsFrom').value;
-  const toStr = document.getElementById('rangeStatsTo').value;
-  if (!fromStr || !toStr) { showToast('期間を入力してください'); return; }
-  const fromDate = new Date(fromStr+'T00:00:00'); fromDate.setHours(0,0,0,0);
-  const toDate = new Date(toStr+'T00:00:00'); toDate.setHours(0,0,0,0);
-  if (fromDate > toDate) { showToast('開始日は終了日より前にしてください'); return; }
-
-  const data = calcRangeTotal(fromDate, toDate);
-  const total = Object.values(data).reduce((a,b)=>a+b,0);
-  const MAIN_SUBJ = ['算数','国語','理科','社会'];
-  const mainData = {};
-  MAIN_SUBJ.forEach(s => { if (data[s]) mainData[s] = data[s]; });
-
+function _buildRangeHtml(data, label, pieAllId, pieMainId) {
   const sm = isPhone();
   const sz = sm ? 155 : 200;
-
-  // 期間ラベル
-  const fmtD = d => { const [y,m,da] = d.split('-'); return parseInt(m)+'月'+parseInt(da)+'日'; };
-  const rangeLabel = fmtD(fromStr)+'〜'+fmtD(toStr);
-
-  let html = `<div style="font-size:${sm?13:15}px;font-weight:700;color:#1a2744;margin-bottom:10px;">${rangeLabel}の集計</div>`;
-  html += `<div style="display:flex;gap:6px;align-items:center;margin-bottom:12px;background:#f4f6fb;border-radius:8px;padding:8px 12px;">
+  const MAIN_SUBJ = ['算数','国語','理科','社会'];
+  const total = Object.values(data).reduce((a,b)=>a+b,0);
+  const mainData = {};
+  MAIN_SUBJ.forEach(s => { if (data[s]) mainData[s] = data[s]; });
+  let html = `<div style="font-size:${sm?13:14}px;font-weight:700;color:#1a2744;margin-bottom:8px;">${label}の集計</div>`;
+  html += `<div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;background:#f4f6fb;border-radius:8px;padding:7px 12px;">
     <span style="font-size:11px;color:#888;">合計</span>
-    <span style="font-size:${sm?16:20}px;font-weight:700;color:#1a2744;font-family:'Inter',sans-serif;">${fmtTime(total)}</span>
+    <span style="font-size:${sm?16:18}px;font-weight:700;color:#1a2744;font-family:'Inter',sans-serif;">${fmtTime(total)}</span>
   </div>`;
-
   if (total === 0) {
-    html += '<div style="color:#aaa;font-size:13px;text-align:center;padding:16px 0;">この期間に記録された学習時間はありません</div>';
+    html += '<div style="color:#aaa;font-size:13px;text-align:center;padding:12px 0;">この期間に記録された学習時間はありません</div>';
   } else {
-    html += `<div style="font-size:12px;color:#888;margin-bottom:6px;font-weight:500;">学習時間の内訳</div>`;
+    html += `<div style="font-size:12px;color:#888;margin-bottom:5px;font-weight:500;">学習時間の内訳</div>`;
     html += renderBarChart(null, data, null);
-    html += `<div style="font-size:12px;color:#888;margin:10px 0 4px;font-weight:500;">割合</div>`;
-    html += `<div style="display:flex;gap:${sm?8:12}px;margin-top:8px;align-items:flex-start;">
+    html += `<div style="font-size:12px;color:#888;margin:8px 0 4px;font-weight:500;">割合</div>`;
+    html += `<div style="display:flex;gap:${sm?8:12}px;margin-top:6px;align-items:flex-start;">
       <div style="flex:1;display:flex;flex-direction:column;align-items:center;">
         <div style="font-size:11px;color:#888;font-weight:700;margin-bottom:4px;">全体</div>
-        <canvas id="pieRangeAll" width="${sz*2}" height="${sz*2}" style="width:${sz}px;height:${sz}px;max-width:100%;"></canvas>
+        <canvas id="${pieAllId}" width="${sz*2}" height="${sz*2}" style="width:${sz}px;height:${sz}px;max-width:100%;"></canvas>
       </div>
       <div style="flex:1;display:flex;flex-direction:column;align-items:center;">
         <div style="font-size:11px;color:#888;font-weight:700;margin-bottom:4px;">4教科のみ</div>
-        <canvas id="pieRangeMain" width="${sz*2}" height="${sz*2}" style="width:${sz}px;height:${sz}px;max-width:100%;"></canvas>
+        <canvas id="${pieMainId}" width="${sz*2}" height="${sz*2}" style="width:${sz}px;height:${sz}px;max-width:100%;"></canvas>
       </div>
     </div>`;
   }
+  return { html, total, mainData };
+}
 
-  document.getElementById('rangeStatsResult').innerHTML = html;
+function _buildDiffHtml(dataA, dataB, labelA, labelB) {
+  const sm = isPhone();
+  const sz = sm ? 140 : 170;
+  const MAIN_SUBJ = ['算数','国語','理科','社会'];
+  const ORDER = ['算数','国語','理科','社会','学校の宿題'];
+  const totalA = Object.values(dataA).reduce((a,b)=>a+b,0);
+  const totalB = Object.values(dataB).reduce((a,b)=>a+b,0);
+  const diff = totalA - totalB;
+  const diffStr = (diff>=0?'+':'-')+fmtTime(Math.abs(diff));
+  const diffColor = diff>=0?'#2a7a2a':'#c0392b';
+  const mainA = {}, mainB = {};
+  MAIN_SUBJ.forEach(s => { if (dataA[s]) mainA[s] = dataA[s]; if (dataB[s]) mainB[s] = dataB[s]; });
 
-  if (total > 0) {
-    setTimeout(() => {
-      renderPieChart('pieRangeAll', null, data);
-      renderPieChart('pieRangeMain', null, mainData);
-    }, 50);
+  // 全教科のunion
+  const allSubjs = [...new Set([...Object.keys(dataA), ...Object.keys(dataB)])];
+  allSubjs.sort((a,b) => {
+    const ai = ORDER.indexOf(a), bi = ORDER.indexOf(b);
+    if (ai>=0 && bi>=0) return ai-bi;
+    if (ai>=0) return -1; if (bi>=0) return 1; return 0;
+  });
+  const maxVal = Math.max(...allSubjs.map(s => Math.max(dataA[s]||0, dataB[s]||0)), 1);
+
+  let html = `<div style="border-top:2px dashed #ddd;margin:14px 0 10px;"></div>`;
+  html += `<div style="font-size:${sm?13:14}px;font-weight:700;color:#1a2744;margin-bottom:8px;">A と B の比較</div>`;
+  // 合計サマリー
+  html += `<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;background:#f4f6fb;border-radius:8px;padding:7px 12px;flex-wrap:wrap;">
+    <span style="font-size:11px;color:#888;">A</span>
+    <span style="font-size:${sm?14:16}px;font-weight:700;color:#1a2744;font-family:'Inter',sans-serif;">${fmtTime(totalA)}</span>
+    <span style="color:#ccc;">／</span>
+    <span style="font-size:11px;color:#888;">B</span>
+    <span style="font-size:${sm?14:16}px;font-weight:700;color:#888;font-family:'Inter',sans-serif;">${fmtTime(totalB)}</span>
+    <span style="color:#ccc;">／</span>
+    <span style="font-size:11px;color:#888;">差（A−B）</span>
+    <span style="font-size:${sm?14:16}px;font-weight:700;color:${diffColor};font-family:'Inter',sans-serif;">${diffStr}</span>
+  </div>`;
+
+  // 教科別比較バー
+  html += `<div style="font-size:12px;color:#888;margin-bottom:6px;font-weight:500;">教科別 比較</div>`;
+  allSubjs.forEach(subj => {
+    const vA = dataA[subj]||0, vB = dataB[subj]||0;
+    const d = vA - vB;
+    const dStr = (d>=0?'+':'-')+fmtTime(Math.abs(d));
+    const dCol = d>0?'#2a7a2a':d<0?'#c0392b':'#888';
+    const colors = SUBJ_COLOR[subj] || ['#eee','#333'];
+    const pA = Math.round(vA/maxVal*100), pB = Math.round(vB/maxVal*100);
+    html += `<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
+      <div style="width:${sm?68:80}px;text-align:center;font-size:${sm?10:11}px;font-weight:700;background:${colors[0]};color:${colors[1]};padding:2px 4px;border-radius:4px;flex-shrink:0;white-space:nowrap;">${subj}</div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:2px;">
+        <div style="background:#eee;border-radius:3px;height:8px;"><div style="background:${colors[0]};height:8px;border-radius:3px;width:${pA}%;"></div></div>
+        <div style="background:#eee;border-radius:3px;height:8px;"><div style="background:${colors[0]};height:8px;border-radius:3px;width:${pB}%;opacity:0.45;"></div></div>
+      </div>
+      <span style="font-size:${sm?11:12}px;font-weight:700;color:${dCol};min-width:${sm?52:60}px;text-align:right;font-family:'Inter',sans-serif;">${dStr}</span>
+    </div>`;
+  });
+  // バー凡例
+  html += `<div style="display:flex;gap:14px;margin-bottom:12px;margin-top:2px;">
+    <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:#555;"><div style="width:18px;height:6px;background:#888;border-radius:2px;"></div>A（濃い）</div>
+    <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:#555;"><div style="width:18px;height:6px;background:#bbb;border-radius:2px;opacity:0.6;"></div>B（薄い）</div>
+  </div>`;
+
+  // 4教科のみ円グラフ（A・Bを横並び）
+  html += `<div style="font-size:12px;color:#888;margin-bottom:6px;font-weight:500;">4教科の割合 比較</div>`;
+  html += `<div style="display:flex;gap:${sm?8:12}px;align-items:flex-start;">
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;">
+      <div style="font-size:11px;color:#888;font-weight:700;margin-bottom:4px;">A</div>
+      <canvas id="pieCompA" width="${sz*2}" height="${sz*2}" style="width:${sz}px;height:${sz}px;max-width:100%;"></canvas>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;">
+      <div style="font-size:11px;color:#888;font-weight:700;margin-bottom:4px;">B</div>
+      <canvas id="pieCompB" width="${sz*2}" height="${sz*2}" style="width:${sz}px;height:${sz}px;max-width:100%;"></canvas>
+    </div>
+  </div>`;
+
+  return { html, mainA, mainB };
+}
+
+function runRangeStats() {
+  const fromStr = document.getElementById('rangeStatsFrom').value;
+  const toStr = document.getElementById('rangeStatsTo').value;
+  const fromStrB = document.getElementById('rangeStatsFromB').value;
+  const toStrB = document.getElementById('rangeStatsToB').value;
+  if (!fromStr || !toStr) { showToast('期間Aを入力してください'); return; }
+  const fromDate = new Date(fromStr+'T00:00:00'); fromDate.setHours(0,0,0,0);
+  const toDate = new Date(toStr+'T00:00:00'); toDate.setHours(0,0,0,0);
+  if (fromDate > toDate) { showToast('期間Aの開始日は終了日より前にしてください'); return; }
+
+  const fmtD = s => { const [y,m,d] = s.split('-'); return parseInt(m)+'月'+parseInt(d)+'日'; };
+  const dataA = calcRangeTotal(fromDate, toDate);
+  const { html: htmlA, mainData: mainA } = _buildRangeHtml(dataA, fmtD(fromStr)+'〜'+fmtD(toStr), 'pieRangeAllA', 'pieRangeMainA');
+
+  const hasB = fromStrB && toStrB;
+  let fullHtml = htmlA;
+  let diffInfo = null;
+
+  if (hasB) {
+    const fromDateB = new Date(fromStrB+'T00:00:00'); fromDateB.setHours(0,0,0,0);
+    const toDateB = new Date(toStrB+'T00:00:00'); toDateB.setHours(0,0,0,0);
+    if (fromDateB > toDateB) { showToast('期間Bの開始日は終了日より前にしてください'); return; }
+    const dataB = calcRangeTotal(fromDateB, toDateB);
+    const { html: htmlB, mainData: mainB } = _buildRangeHtml(dataB, fmtD(fromStrB)+'〜'+fmtD(toStrB), 'pieRangeAllB', 'pieRangeMainB');
+    fullHtml += htmlB;
+    const { html: htmlDiff, mainA: mA, mainB: mB } = _buildDiffHtml(dataA, dataB, 'A', 'B');
+    fullHtml += htmlDiff;
+    diffInfo = { mA, mB, dataA, dataB };
   }
+
+  document.getElementById('rangeStatsResult').innerHTML = fullHtml;
+
+  setTimeout(() => {
+    const totalA = Object.values(dataA).reduce((a,b)=>a+b,0);
+    if (totalA > 0) {
+      renderPieChart('pieRangeAllA', null, dataA);
+      renderPieChart('pieRangeMainA', null, mainA);
+    }
+    if (hasB && diffInfo) {
+      const totalB = Object.values(diffInfo.dataB).reduce((a,b)=>a+b,0);
+      if (totalB > 0) {
+        renderPieChart('pieRangeAllB', null, diffInfo.dataB);
+        renderPieChart('pieRangeMainB', null, diffInfo.mB);
+      }
+      if (Object.keys(diffInfo.mA).length > 0) renderPieChart('pieCompA', null, diffInfo.mA);
+      if (Object.keys(diffInfo.mB).length > 0) renderPieChart('pieCompB', null, diffInfo.mB);
+    }
+  }, 50);
 }
 
 function changeWeek(dir) {
@@ -8127,6 +8238,8 @@ render();
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script>
 // ===== Firebase初期化 =====
+let db = null;
+try {
 const firebaseConfig = {
   apiKey: "AIzaSyCNwD87rfjGlAlx6Xpr5UnYjh6PPof2Pxg",
   authDomain: "k-plan-bf484.firebaseapp.com",
@@ -8135,8 +8248,11 @@ const firebaseConfig = {
   messagingSenderId: "255850303553",
   appId: "1:255850303553:web:e5608c4a17fdd9bcbeb6c0"
 };
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+if (typeof firebase !== 'undefined') {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+}
+} catch(e) { console.log('Firebase初期化スキップ:', e.message); }
 
 // ===== Firestore同期 =====
 const DEVICE_ID = localStorage.getItem('deviceId') || ('device_' + Date.now());
@@ -8144,6 +8260,7 @@ localStorage.setItem('deviceId', DEVICE_ID);
 
 // Firestoreからデータを読み込む
 async function loadFromFirestore() {
+  if (!db) return;
   try {
     const doc = await db.collection('schedules').doc('main').get();
     if (doc.exists) {
@@ -8172,6 +8289,7 @@ let _savingToFirestore = false;
 const _origSaveLocal = saveLocal;
 window.saveLocal = function() {
   _origSaveLocal();
+  if (!db) return;
   _savingToFirestore = true;
   // Firestoreにも保存
   db.collection('schedules').doc('main').set({
@@ -8188,7 +8306,7 @@ window.saveLocal = function() {
 
 // リアルタイム同期（他のデバイスの変更を受信）
 try {
-  db.collection('schedules').doc('main').onSnapshot(doc => {
+  if (db) db.collection('schedules').doc('main').onSnapshot(doc => {
     if (doc.exists) {
       const data = doc.data();
       // 自分の保存中、または自分のデバイスからの更新はスキップ
