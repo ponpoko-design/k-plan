@@ -8438,6 +8438,7 @@ const DEFAULT_AI_RULES = {
 
 async function loadAiRules() {
   if (aiRulesCache) return aiRulesCache;
+  if (!db) return DEFAULT_AI_RULES;
   try {
     const doc = await db.collection('ai_rules').doc('main').get();
     if (doc.exists) {
@@ -8650,6 +8651,7 @@ function buildMonthRecord(year, month) {
 
 // 自動保存チェック（アプリを開いたときに実行）
 async function checkAutoSaveRecords() {
+  if (!db) return;
   const now = getNowJST();
   const jstHour = now.getUTCHours();
   const jstDay = now.getUTCDay(); // 0=日
@@ -8863,7 +8865,7 @@ function manualBackup() {
 
 async function autoBackup() {
   try {
-    if (typeof db === 'undefined') return;
+    if (!db) return;
     const now = new Date();
     const jst = new Date(now.getTime() + 9*60*60*1000);
     const dateStr = jst.toISOString().slice(0,10);
@@ -8884,6 +8886,7 @@ async function autoBackup() {
 }
 
 async function showBackupHistory() {
+  if (!db) { showToast('バックアップ機能はオフラインでは使えません'); return; }
   document.getElementById('aiModal').classList.remove('open');
   const listEl = document.getElementById('backupList');
   listEl.innerHTML = '<div style="text-align:center;color:#888;padding:20px;">読み込み中...</div>';
@@ -8904,6 +8907,7 @@ async function showBackupHistory() {
 }
 
 async function restoreBackup(dateStr) {
+  if (!db) { showToast('バックアップ機能はオフラインでは使えません'); return; }
   if (!confirm(dateStr + ' のバックアップから復元しますか？\n現在のデータは上書きされます。')) return;
   try {
     const doc = await db.collection('backups').doc(dateStr).get();
