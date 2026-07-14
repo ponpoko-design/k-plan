@@ -6829,6 +6829,8 @@ async function runKadaiDistribute() {
     });
     const data = await res.json();
     const replyText = (data.content && data.content[0] && data.content[0].text) ? data.content[0].text : '';
+    console.log('[kadai] stop_reason:', data.stop_reason, 'replyText length:', replyText.length);
+    console.log('[kadai] replyText:', replyText.slice(0, 500));
 
     // JSONパース
     let parsed = null;
@@ -6839,7 +6841,8 @@ async function runKadaiDistribute() {
     } catch(e) { try { parsed = JSON.parse(replyText.trim()); } catch(e2) { parsed = null; } }
 
     if (!parsed || !parsed.cards || parsed.cards.length === 0) {
-      errEl.textContent = 'AIの応答を解析できませんでした。期間が長い場合はもう一度お試しください。';
+      const reason = data.stop_reason === 'max_tokens' ? 'トークン上限に達しました。もう一度お試しください。' : 'AIの応答を解析できませんでした。もう一度お試しください。';
+      errEl.textContent = reason;
       btn.disabled = false; btn.textContent = 'AIで分配する ✨';
       return;
     }
