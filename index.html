@@ -999,6 +999,25 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
           </div>
         </div>
         <div style="margin-top:4px;">
+          <button onclick="toggleKadaiLectureOption()" id="kadaiLectureToggle" style="background:none;border:none;color:#534AB7;font-size:13px;font-weight:700;cursor:pointer;padding:0;font-family:inherit;">▶ 講習期間あり（任意）</button>
+          <div id="kadaiLectureOption" style="display:none;margin-top:10px;background:#EDEAF9;border-radius:8px;padding:12px;border:1.5px solid #AFA9EC;">
+            <div style="font-size:12px;color:#666;margin-bottom:10px;">講習がある日をタップして選択してください。</div>
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+              <div style="flex:1;">
+                <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:3px;">講習 開始時刻</label>
+                <input type="time" id="kadaiLectureStart" value="08:45" style="width:100%;border:1.5px solid #AFA9EC;border-radius:8px;padding:7px 10px;font-size:15px;font-family:inherit;background:white;">
+              </div>
+              <div style="padding-top:18px;color:#888;font-weight:700;">〜</div>
+              <div style="flex:1;">
+                <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:3px;">講習 終了時刻</label>
+                <input type="time" id="kadaiLectureEnd" value="12:30" style="width:100%;border:1.5px solid #AFA9EC;border-radius:8px;padding:7px 10px;font-size:15px;font-family:inherit;background:white;">
+              </div>
+            </div>
+            <div id="kadaiLectureCal" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;"></div>
+            <div style="font-size:11px;color:#888;margin-top:8px;">選択した日：<span id="kadaiLectureCount" style="font-weight:700;color:#534AB7;">0日</span></div>
+          </div>
+        </div>
+        <div style="margin-top:8px;">
           <button onclick="toggleKadaiStep2Option()" id="kadaiStep2Toggle" style="background:none;border:none;color:#534AB7;font-size:13px;font-weight:700;cursor:pointer;padding:0;font-family:inherit;">▶ ページあたりの時間を入力（任意・再分配）</button>
           <div id="kadaiStep2Option" style="display:none;margin-top:10px;background:#EDEAF9;border-radius:8px;padding:12px;border:1.5px solid #AFA9EC;">
             <div style="font-size:12px;color:#888;margin-bottom:8px;">開始後、実際のペースがわかったら入力すると時間ベースで再分配できます。</div>
@@ -5703,6 +5722,13 @@ function openKadaiModal() {
   document.getElementById('kadaiStep1').style.display = '';
   document.getElementById('kadaiStep2').style.display = 'none';
   document.getElementById('kadaiError').textContent = '';
+  kadaiLectureDays = new Set();
+  document.getElementById('kadaiLectureOption').style.display = 'none';
+  document.getElementById('kadaiLectureToggle').textContent = '▶ 講習期間あり（任意）';
+  const countEl = document.getElementById('kadaiLectureCount');
+  if (countEl) countEl.textContent = '0日';
+  document.getElementById('kadaiLectureStart').value = '08:45';
+  document.getElementById('kadaiLectureEnd').value   = '12:30';
   const panel = document.getElementById('kadaiPanel');
   panel.style.display = 'flex';
   setTimeout(() => panel.classList.add('open'), 10);
@@ -6520,6 +6546,67 @@ function toggleKadaiStep2Option() {
   el.style.display = open ? 'none' : '';
   btn.textContent = (open ? '▶' : '▼') + ' ページあたりの時間を入力（任意・再分配）';
 }
+
+// ===== 講習日カレンダー =====
+let kadaiLectureDays = new Set(); // 選択中の講習日 "YYYY-MM-DD"
+
+function toggleKadaiLectureOption() {
+  const el  = document.getElementById('kadaiLectureOption');
+  const btn = document.getElementById('kadaiLectureToggle');
+  const isOpen = el.style.display !== 'none';
+  el.style.display = isOpen ? 'none' : '';
+  btn.textContent = (isOpen ? '▶' : '▼') + ' 講習期間あり（任意）';
+  if (!isOpen) renderKadaiLectureCal();
+}
+
+function renderKadaiLectureCal() {
+  const startStr = document.getElementById('kadaiStartDate').value;
+  const dueStr   = document.getElementById('kadaiDueDate').value;
+  const cal      = document.getElementById('kadaiLectureCal');
+  if (!startStr || !dueStr) { cal.innerHTML = '<div style="font-size:12px;color:#e24b4a;">先に開始日・提出日を入力してください</div>'; return; }
+  const start = new Date(startStr + 'T00:00:00');
+  const end   = new Date(dueStr   + 'T00:00:00');
+  if (start > end) { cal.innerHTML = '<div style="font-size:12px;color:#e24b4a;">日付が不正です</div>'; return; }
+
+  const DOW = ['日','月','火','水','木','金','土'];
+  const DOW_COLOR = ['#e05555','#333','#333','#333','#333','#333','#2255cc'];
+  let html = '';
+  // 曜日ヘッダー（月〜日）
+  ['月','火','水','木','金','土','日'].forEach(d => {
+    const c = d==='日'?'#e05555':d==='土'?'#2255cc':'#555';
+    html += `<div style="text-align:center;font-size:10px;font-weight:700;color:${c};padding:2px 0;">${d}</div>`;
+  });
+  // 最初の月曜日まで空白
+  const firstDow = start.getDay(); // 0=日
+  const blanksBefore = firstDow === 0 ? 6 : firstDow - 1;
+  for (let i = 0; i < blanksBefore; i++) html += '<div></div>';
+
+  const scan = new Date(start);
+  while (scan <= end) {
+    const key = scan.toISOString().slice(0,10);
+    const d   = scan.getDay();
+    const isSelected = kadaiLectureDays.has(key);
+    const dayColor = d===0?'#e05555':d===6?'#2255cc':'#333';
+    const bg    = isSelected ? '#534AB7' : '#fff';
+    const color = isSelected ? '#fff' : dayColor;
+    const border= isSelected ? '1.5px solid #534AB7' : '1.5px solid #ddd';
+    html += `<div onclick="toggleKadaiDay('${key}')" style="text-align:center;padding:4px 2px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;background:${bg};color:${color};border:${border};">${scan.getDate()}</div>`;
+    scan.setDate(scan.getDate() + 1);
+  }
+  cal.innerHTML = html;
+  updateKadaiLectureCount();
+}
+
+function toggleKadaiDay(key) {
+  if (kadaiLectureDays.has(key)) kadaiLectureDays.delete(key);
+  else kadaiLectureDays.add(key);
+  renderKadaiLectureCal();
+}
+
+function updateKadaiLectureCount() {
+  const el = document.getElementById('kadaiLectureCount');
+  if (el) el.textContent = kadaiLectureDays.size + '日';
+}
 function kadaiBack() {
   document.getElementById('kadaiStep1').style.display = '';
   document.getElementById('kadaiStep2').style.display = 'none';
@@ -6588,6 +6675,53 @@ async function runKadaiDistribute() {
       ? '・1ページ約' + minPerPg + '分。1回あたり上限' + maxMinVal + '分（上限ページ数=' + Math.floor(maxMinVal / minPerPg) + 'ページ）。\n'
       : '・1ページあたりの所要時間は不明のため、ページ数のみで分配する。\n';
 
+    // フォームで選択された講習日・時刻
+    const hasLecture = kadaiLectureDays.size > 0;
+    const lectureDatesSorted = Array.from(kadaiLectureDays).sort();
+    const lectureStartTime = document.getElementById('kadaiLectureStart').value || '08:45'; // "HH:MM"
+    const lectureEndTime   = document.getElementById('kadaiLectureEnd').value   || '12:30';
+    const lectureStartH = parseInt(lectureStartTime.split(':')[0]);
+    const lectureEndH   = parseInt(lectureEndTime.split(':')[0]);
+
+    // 講習時間からブロックされるスロット・使えるスロットを判定
+    // スロット時間帯: morning=〜8時台, am=9〜11時台, pm=12〜17時台, night=18時以降
+    function getLectureBlockedSlots(startH, endH) {
+      const blocked = [];
+      const available = [];
+      // morning（〜9時）
+      if (startH < 9) blocked.push('morning'); else available.push('morning(朝・漢字基礎力のみ)');
+      // am（9〜12時）
+      if (startH < 12 && endH > 9) blocked.push('am'); else available.push('am(午前・土日のみ)');
+      // pm（12〜17時）
+      if (startH < 17 && endH > 12) blocked.push('pm'); else available.push('pm(午後)');
+      // night（17時以降）
+      if (endH > 17) blocked.push('night'); else available.push('night(夜)');
+      return { blocked, available };
+    }
+    const { blocked: lectureBlocked, available: lectureAvailable } = getLectureBlockedSlots(lectureStartH, lectureEndH);
+
+    // 講習期間ノート（選択がある場合のみ追加）
+    let summerNote = '';
+    if (hasLecture) {
+      const kadaiStart = new Date(startStr + 'T00:00:00');
+      const kadaiEnd   = new Date(dueStr   + 'T00:00:00');
+      const nonLectureDays = [];
+      const scan = new Date(kadaiStart);
+      while (scan <= kadaiEnd) {
+        const key = scan.toISOString().slice(0,10);
+        if (!kadaiLectureDays.has(key)) nonLectureDays.push(key);
+        scan.setDate(scan.getDate() + 1);
+      }
+      summerNote =
+        '\n【講習期間の特別ルール】\n' +
+        '・講習時間: ' + lectureStartTime + '〜' + lectureEndTime + '\n' +
+        '・【講習がある日】講習時間中は使えない。ブロックされるスロット: ' + (lectureBlocked.join(', ') || 'なし') + '。使えるスロット: ' + (lectureAvailable.join(', ') || 'なし') + '。\n' +
+        '・【講習がある日】課題は使えるスロットに配置する。夜は既存の講習後パターンで埋まっている可能性があるため、午後が使える場合は午後を最優先にする。\n' +
+        '・【講習がない日】通常の曜日ルールに従うが、1回あたりのページ数を約2倍を目安に増やしてよい。\n' +
+        '・講習日一覧: ' + lectureDatesSorted.join(', ') + '\n' +
+        (nonLectureDays.length ? '・非講習日一覧: ' + nonLectureDays.join(', ') + '\n' : '');
+    }
+
     const prompt =
       'あなたは小学5年生（こうたくん）の課題本のページ分配AIです。\n\n' +
       '【課題情報】\n' +
@@ -6608,12 +6742,13 @@ async function runKadaiDistribute() {
       '土=朝・午前(am)・午後・夜。\n' +
       '日=朝・午前(am)・午後・夜。\n' +
       '夜は90分以内（既存タスクと合わせて）。\n' +
+      summerNote +
       '\n【分配ルール】\n' +
       '・総ページ数を必ず全部配分すること。ページを意図的に減らしてはいけない。\n' +
       '・提出日の2〜3日前を目標完了日とし、残り2〜3日は遅れた場合の予備日（バッファ日）として空けておく。\n' +
       '・スケジュールを見て既存タスクが多い日は少なめ、余裕のある日は多めに配分する。\n' +
       '・終日外出・旅行の予定がある日は入れない（予定欄に旅行・遠足・合宿等がある日）。\n' +
-      '・1回あたりのページ数は多くても20ページ以内を目安にする（1ページ時間が不明の場合）。\n' +
+      '・1回あたりのページ数は多くても20ページ以内を目安にする（講習がない日は40ページ以内でよい）。\n' +
       (minPerPg && maxMinVal ? '・時間情報があるので、1回あたり上限ページ数（' + Math.floor(maxMinVal / minPerPg) + 'ページ）を超えないよう分配する。\n' : '') +
       '\n【期間中のスケジュール（Firestoreから取得した最新データ）】\n' + scheduleTxt + '\n' +
       '【出力形式】\n' +
