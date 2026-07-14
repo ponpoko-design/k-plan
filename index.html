@@ -984,9 +984,15 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
           <label>カード略称（1〜2文字）<span style="font-size:11px;color:#888;font-weight:400;"> ★略称 p.XX-XX でカード上に表示</span></label>
           <input type="text" id="kadaiShortName" placeholder="例：算" maxlength="2" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;">
         </div>
-        <div class="field">
-          <label>総ページ数</label>
-          <input type="number" id="kadaiPages" placeholder="例：150" min="1" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;">
+        <div style="display:flex;gap:10px;">
+          <div class="field" style="flex:2;">
+            <label>総ページ数</label>
+            <input type="number" id="kadaiPages" placeholder="例：150" min="1" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;">
+          </div>
+          <div class="field" style="flex:1;">
+            <label>開始ページ<span style="font-size:11px;color:#888;font-weight:400;"> 省略時1</span></label>
+            <input type="number" id="kadaiStartPage" placeholder="例：4" min="1" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;">
+          </div>
         </div>
         <div style="display:flex;gap:10px;">
           <div class="field" style="flex:1;">
@@ -1032,6 +1038,14 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
                 <input type="date" id="kadaiVacationEnd" style="width:100%;border:1.5px solid #AFA9EC;border-radius:8px;padding:7px 10px;font-size:15px;font-family:inherit;background:white;">
               </div>
             </div>
+          </div>
+        </div>
+        <div style="margin-top:8px;">
+          <button onclick="toggleKadaiBlockedOption()" id="kadaiBlockedToggle" style="background:none;border:none;color:#534AB7;font-size:13px;font-weight:700;cursor:pointer;padding:0;font-family:inherit;">▶ 終日外出日あり（任意）</button>
+          <div id="kadaiBlockedOption" style="display:none;margin-top:10px;background:#EDEAF9;border-radius:8px;padding:12px;border:1.5px solid #AFA9EC;">
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">旅行・試合など1日スロットが使えない日をタップして選択してください。</div>
+            <div id="kadaiBlockedCal" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;"></div>
+            <div style="font-size:11px;color:#888;margin-top:8px;">選択した日：<span id="kadaiBlockedCount" style="font-weight:700;color:#534AB7;">0日</span></div>
           </div>
         </div>
         <div style="margin-top:8px;">
@@ -5736,6 +5750,7 @@ function openKadaiModal() {
   document.getElementById('kadaiStartDate').value = fmt(today);
   document.getElementById('kadaiDueDate').value = fmt(due);
   document.getElementById('kadaiShortName').value = '';
+  document.getElementById('kadaiStartPage').value = '';
   document.getElementById('kadaiStep1').style.display = '';
   document.getElementById('kadaiStep2').style.display = 'none';
   document.getElementById('kadaiError').textContent = '';
@@ -5750,6 +5765,11 @@ function openKadaiModal() {
   document.getElementById('kadaiVacationToggle').textContent = '▶ 長期休暇期間あり（任意）';
   document.getElementById('kadaiVacationStart').value = '';
   document.getElementById('kadaiVacationEnd').value   = '';
+  kadaiBlockedDays = new Set();
+  document.getElementById('kadaiBlockedOption').style.display = 'none';
+  document.getElementById('kadaiBlockedToggle').textContent = '▶ 終日外出日あり（任意）';
+  const blockedCountEl = document.getElementById('kadaiBlockedCount');
+  if (blockedCountEl) blockedCountEl.textContent = '0日';
   const panel = document.getElementById('kadaiPanel');
   panel.style.display = 'flex';
   setTimeout(() => panel.classList.add('open'), 10);
@@ -6570,6 +6590,7 @@ function toggleKadaiStep2Option() {
 
 // ===== 講習日カレンダー =====
 let kadaiLectureDays = new Set(); // 選択中の講習日 "YYYY-MM-DD"
+let kadaiBlockedDays  = new Set(); // 選択中の終日外出日 "YYYY-MM-DD"
 
 function toggleKadaiLectureOption() {
   const el  = document.getElementById('kadaiLectureOption');
@@ -6628,6 +6649,56 @@ function updateKadaiLectureCount() {
   const el = document.getElementById('kadaiLectureCount');
   if (el) el.textContent = kadaiLectureDays.size + '日';
 }
+function toggleKadaiBlockedOption() {
+  const el  = document.getElementById('kadaiBlockedOption');
+  const btn = document.getElementById('kadaiBlockedToggle');
+  const isOpen = el.style.display !== 'none';
+  el.style.display = isOpen ? 'none' : '';
+  btn.textContent = (isOpen ? '▶' : '▼') + ' 終日外出日あり（任意）';
+  if (!isOpen) renderKadaiBlockedCal();
+}
+
+function renderKadaiBlockedCal() {
+  const startStr = document.getElementById('kadaiStartDate').value;
+  const dueStr   = document.getElementById('kadaiDueDate').value;
+  const cal      = document.getElementById('kadaiBlockedCal');
+  if (!startStr || !dueStr) { cal.innerHTML = '<div style="font-size:12px;color:#e24b4a;">先に開始日・提出日を入力してください</div>'; return; }
+  const start = new Date(startStr + 'T00:00:00');
+  const end   = new Date(dueStr   + 'T00:00:00');
+  if (start > end) { cal.innerHTML = '<div style="font-size:12px;color:#e24b4a;">日付が不正です</div>'; return; }
+
+  let html = '';
+  ['月','火','水','木','金','土','日'].forEach(d => {
+    const c = d==='日'?'#e05555':d==='土'?'#2255cc':'#555';
+    html += `<div style="text-align:center;font-size:10px;font-weight:700;color:${c};padding:2px 0;">${d}</div>`;
+  });
+  const firstDow = start.getDay();
+  const blanksBefore = firstDow === 0 ? 6 : firstDow - 1;
+  for (let i = 0; i < blanksBefore; i++) html += '<div></div>';
+
+  const scan = new Date(start);
+  while (scan <= end) {
+    const key = scan.toISOString().slice(0,10);
+    const d   = scan.getDay();
+    const isSelected = kadaiBlockedDays.has(key);
+    const dayColor = d===0?'#e05555':d===6?'#2255cc':'#333';
+    const bg    = isSelected ? '#e05555' : '#fff';
+    const color = isSelected ? '#fff' : dayColor;
+    const border= isSelected ? '1.5px solid #e05555' : '1.5px solid #ddd';
+    html += `<div onclick="toggleKadaiBlockedDay('${key}')" style="text-align:center;padding:4px 2px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;background:${bg};color:${color};border:${border};">${scan.getDate()}</div>`;
+    scan.setDate(scan.getDate() + 1);
+  }
+  cal.innerHTML = html;
+  const el = document.getElementById('kadaiBlockedCount');
+  if (el) el.textContent = kadaiBlockedDays.size + '日';
+}
+
+function toggleKadaiBlockedDay(key) {
+  if (kadaiBlockedDays.has(key)) kadaiBlockedDays.delete(key);
+  else kadaiBlockedDays.add(key);
+  renderKadaiBlockedCal();
+}
+
 function toggleKadaiVacationOption() {
   const el  = document.getElementById('kadaiVacationOption');
   const btn = document.getElementById('kadaiVacationToggle');
@@ -6647,6 +6718,7 @@ async function runKadaiDistribute() {
   const bookName  = document.getElementById('kadaiBookName').value.trim() || subject + '課題';
   const shortName = document.getElementById('kadaiShortName').value.trim() || bookName.slice(0,2);
   const pages     = parseInt(document.getElementById('kadaiPages').value);
+  const startPage = parseInt(document.getElementById('kadaiStartPage').value) || 1;
   const startStr  = document.getElementById('kadaiStartDate').value;
   const dueStr    = document.getElementById('kadaiDueDate').value;
   const minPerPg  = parseFloat(document.getElementById('kadaiMinPerPage').value) || null;
@@ -6704,6 +6776,10 @@ async function runKadaiDistribute() {
       ? '・1ページ約' + minPerPg + '分。1回あたり上限' + maxMinVal + '分（上限ページ数=' + Math.floor(maxMinVal / minPerPg) + 'ページ）。\n'
       : '・1ページあたりの所要時間は不明のため、ページ数のみで分配する。\n';
 
+    // 終日外出日
+    const blockedDatesSorted = Array.from(kadaiBlockedDays).sort();
+    const hasBlocked = kadaiBlockedDays.size > 0;
+
     // 長期休暇期間の取得
     const vacStartStr = document.getElementById('kadaiVacationStart').value;
     const vacEndStr   = document.getElementById('kadaiVacationEnd').value;
@@ -6749,6 +6825,7 @@ async function runKadaiDistribute() {
     const scanD = new Date(kadaiStartD);
     while (scanD <= kadaiEndD) {
       const key = scanD.toISOString().slice(0,10);
+      if (kadaiBlockedDays.has(key)) { scanD.setDate(scanD.getDate() + 1); continue; } // 終日外出日はスキップ
       const isLecture = kadaiLectureDays.has(key);
       const isVac = hasVacation && scanD >= vacStart && scanD <= vacEnd;
       if (isLecture) {
@@ -6787,6 +6864,7 @@ async function runKadaiDistribute() {
       '科目: ' + subject + '\n' +
       '課題本名: ' + bookName + '\n' +
       '総ページ: ' + pages + 'ページ\n' +
+      '開始ページ: ' + startPage + '（最終ページ: ' + (startPage + pages - 1) + '）\n' +
       '開始日: ' + startStr + '\n' +
       '提出日: ' + dueStr + '（この日の前日までに完了すること）\n' +
       timeInfo +
@@ -6804,10 +6882,12 @@ async function runKadaiDistribute() {
       summerNote +
       '\n【分配ルール】\n' +
       '・総ページ数を必ず全部配分すること。ページを意図的に減らしてはいけない。\n' +
+      '・pagesフィールドは「開始ページ-終了ページ」形式で、開始ページ' + startPage + 'から始めて最終ページ' + (startPage + pages - 1) + 'で終わること。\n' +
       '・目標完了日は提出日の2日前とする。バッファは最大2日分のみ。それ以上空けてはいけない。\n' +
       '・分配期間は最大限使いきること。早く終わらせすぎず、期間全体に均等に分散させる。\n' +
       '・スケジュールを見て既存タスクが多い日は少なめ、余裕のある日は多めに配分する。\n' +
       '・終日外出・旅行の予定がある日は入れない（予定欄に旅行・遠足・合宿等がある日）。\n' +
+      (hasBlocked ? '・以下の日は終日使えないため配置しないこと: ' + blockedDatesSorted.join(', ') + '\n' : '') +
       '・1回あたりのページ数は多くても20ページ以内を目安にする（講習がない日は40ページ以内でよい）。\n' +
       (minPerPg && maxMinVal ? '・時間情報があるので、1回あたり上限ページ数（' + Math.floor(maxMinVal / minPerPg) + 'ページ）を超えないよう分配する。\n' : '') +
       '\n【期間中のスケジュール（Firestoreから取得した最新データ）】\n' + scheduleTxt + '\n' +
