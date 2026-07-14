@@ -6825,7 +6825,7 @@ async function runKadaiDistribute() {
     const res = await fetch('https://kota-ai-proxy.nacchukkim.workers.dev', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 2000, messages: [{ role: 'user', content: prompt }] })
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 4000, messages: [{ role: 'user', content: prompt }] })
     });
     const data = await res.json();
     const replyText = (data.content && data.content[0] && data.content[0].text) ? data.content[0].text : '';
@@ -6839,7 +6839,7 @@ async function runKadaiDistribute() {
     } catch(e) { try { parsed = JSON.parse(replyText.trim()); } catch(e2) { parsed = null; } }
 
     if (!parsed || !parsed.cards || parsed.cards.length === 0) {
-      errEl.textContent = 'AIの応答を解析できませんでした。もう一度お試しください。';
+      errEl.textContent = 'AIの応答を解析できませんでした。期間が長い場合はもう一度お試しください。';
       btn.disabled = false; btn.textContent = 'AIで分配する ✨';
       return;
     }
