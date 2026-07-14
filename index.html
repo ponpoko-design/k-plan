@@ -6761,6 +6761,11 @@ async function runKadaiDistribute() {
         const dt = new Date(scanMonday); dt.setDate(scanMonday.getDate() + d);
         if (dt < startDate || dt > dueDate) continue;
         const dateLabel = (dt.getMonth()+1) + '/' + dt.getDate() + '(' + DAY_JP[dt.getDay()] + ')';
+        const dtKey = dt.toISOString().slice(0,10);
+        if (kadaiBlockedDays.has(dtKey)) {
+          scheduleTxt += dateLabel + ': 【終日外出・課題配置禁止】\n';
+          continue;
+        }
         const dayTasks = wkTasks.filter(t => t._dayIdx === d);
         if (dayTasks.length > 0) {
           scheduleTxt += dateLabel + ': ' + dayTasks.map(t => (SLOT_LABELS2[t.slot]||t.slot) + '/' + t.subject + ':' + t.unit_name + (t.study_time ? '(' + t.study_time + '分)' : '')).join(' | ') + '\n';
@@ -6844,7 +6849,7 @@ async function runKadaiDistribute() {
         summerNote +=
           '・講習時間: ' + lectureStartTime + '〜' + lectureEndTime + '\n' +
           '・【講習がある日】ブロックされるスロット: ' + (lectureBlocked.join(', ') || 'なし') + '。使えるスロット: ' + (lectureAvailable.join(', ') || 'なし') + '。午後が使える場合は午後を最優先にする。\n' +
-          '・【講習がある日】使えるスロットがない場合でも、最低1〜2ページは夜など空き時間に配置してよい。\n' +
+          '・【講習がある日】1回あたりのページ数は基本2ページ以下にすること。使えるスロットに少量を配置する。\n' +
           '・講習日一覧: ' + lectureDaysInRange.join(', ') + '\n';
       }
 
@@ -6887,7 +6892,7 @@ async function runKadaiDistribute() {
       '・分配期間は最大限使いきること。早く終わらせすぎず、期間全体に均等に分散させる。\n' +
       '・スケジュールを見て既存タスクが多い日は少なめ、余裕のある日は多めに配分する。\n' +
       '・終日外出・旅行の予定がある日は入れない（予定欄に旅行・遠足・合宿等がある日）。\n' +
-      (hasBlocked ? '・以下の日は終日使えないため配置しないこと: ' + blockedDatesSorted.join(', ') + '\n' : '') +
+      (hasBlocked ? '・【絶対禁止】以下の日は終日外出のため課題を1ページも配置してはいけない: ' + blockedDatesSorted.join(', ') + '\n' : '') +
       '・1回あたりのページ数は多くても20ページ以内を目安にする（講習がない日は40ページ以内でよい）。\n' +
       (minPerPg && maxMinVal ? '・時間情報があるので、1回あたり上限ページ数（' + Math.floor(maxMinVal / minPerPg) + 'ページ）を超えないよう分配する。\n' : '') +
       '\n【期間中のスケジュール（Firestoreから取得した最新データ）】\n' + scheduleTxt + '\n' +
@@ -6927,7 +6932,9 @@ async function runKadaiDistribute() {
       return;
     }
 
-    kadaiPendingCards = parsed.cards.map(c => ({
+    // 終日外出日に配置されたカードをフィルタリング（安全ネット）
+    const filteredCards = parsed.cards.filter(c => !kadaiBlockedDays.has(c.date));
+    kadaiPendingCards = filteredCards.map(c => ({
       date: c.date, slot: c.slot, pages: c.pages,
       subject, bookName, shortName, note: 'p.' + c.pages
     }));
