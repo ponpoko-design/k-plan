@@ -6257,15 +6257,6 @@ async function runJukuPropose() {
     // 期間中のスケジュール取得
     const SLOT_LABELS3 = {plan:'予定',morning:'朝',am:'午前',pm:'午後',night:'夜'};
     const DAY_JP3 = ['日','月','火','水','木','金','土'];
-    // 終日外出日・長期休暇の変数をループより前に宣言
-    const blockedDatesSorted = Array.from(kadaiBlockedDays).sort();
-    const hasBlocked = kadaiBlockedDays.size > 0;
-    const vacStartStr = document.getElementById('kadaiVacationStart').value;
-    const vacEndStr   = document.getElementById('kadaiVacationEnd').value;
-    const hasVacation = !!(vacStartStr && vacEndStr);
-    const vacStart = hasVacation ? new Date(vacStartStr + 'T00:00:00') : null;
-    const vacEnd   = hasVacation ? new Date(vacEndStr   + 'T00:00:00') : null;
-
     const savedMonday = new Date(currentMonday);
     let scheduleTxt = '';
     let holidayList = [];
@@ -6762,6 +6753,15 @@ async function runKadaiDistribute() {
     const SLOT_LABELS2 = {plan:'予定',morning:'朝',am:'午前',pm:'午後',night:'夜'};
     const DAY_JP = ['日','月','火','水','木','金','土'];
 
+    // 終日外出日・長期休暇の変数（ループより前に宣言）
+    const blockedDatesSorted = Array.from(kadaiBlockedDays).sort();
+    const hasBlocked = kadaiBlockedDays.size > 0;
+    const vacStartStr2 = document.getElementById('kadaiVacationStart').value;
+    const vacEndStr2   = document.getElementById('kadaiVacationEnd').value;
+    const hasVacation = !!(vacStartStr2 && vacEndStr2);
+    const vacStart = hasVacation ? new Date(vacStartStr2 + 'T00:00:00') : null;
+    const vacEnd   = hasVacation ? new Date(vacEndStr2   + 'T00:00:00') : null;
+
     const firstMonday = getMonday(startDate);
     let scanMonday = new Date(firstMonday);
     while (scanMonday <= dueDate) {
@@ -6795,6 +6795,7 @@ async function runKadaiDistribute() {
 
 
 
+    // 終日外出日・長期休暇の変数
     // フォームで選択された講習日・時刻
     const hasLecture = kadaiLectureDays.size > 0;
     const lectureDatesSorted = Array.from(kadaiLectureDays).sort();
@@ -6861,7 +6862,7 @@ async function runKadaiDistribute() {
           '・【講習がない日】通常の曜日ルールに従うが、1回あたりのページ数を約2倍を目安に増やしてよい。\n';
       }
       if (hasVacation) {
-        summerNote += '・【長期休暇期間外の日（' + vacEndStr + '以降）】通常の学校がある曜日ルールに戻る。am(午前)は使えない。月は配置不可。水夜は配置不可。木午後は配置不可。\n';
+        summerNote += '・【長期休暇期間外の日（' + vacEndStr2 + '以降）】通常の学校がある曜日ルールに戻る。am(午前)は使えない。月は配置不可。水夜は配置不可。木午後は配置不可。\n';
       }
     }
 
