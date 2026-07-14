@@ -1018,6 +1018,23 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
           </div>
         </div>
         <div style="margin-top:8px;">
+          <button onclick="toggleKadaiVacationOption()" id="kadaiVacationToggle" style="background:none;border:none;color:#534AB7;font-size:13px;font-weight:700;cursor:pointer;padding:0;font-family:inherit;">▶ 長期休暇期間あり（任意）</button>
+          <div id="kadaiVacationOption" style="display:none;margin-top:10px;background:#EDEAF9;border-radius:8px;padding:12px;border:1.5px solid #AFA9EC;">
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">夏休み・冬休みなど学校がない期間を入力してください。<br>講習がない日はamスロット（午前）も課題分配に使えます。</div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <div style="flex:1;">
+                <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:3px;">休暇 開始日</label>
+                <input type="date" id="kadaiVacationStart" style="width:100%;border:1.5px solid #AFA9EC;border-radius:8px;padding:7px 10px;font-size:15px;font-family:inherit;background:white;">
+              </div>
+              <div style="padding-top:18px;color:#888;font-weight:700;">〜</div>
+              <div style="flex:1;">
+                <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:3px;">休暇 終了日</label>
+                <input type="date" id="kadaiVacationEnd" style="width:100%;border:1.5px solid #AFA9EC;border-radius:8px;padding:7px 10px;font-size:15px;font-family:inherit;background:white;">
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:8px;">
           <button onclick="toggleKadaiStep2Option()" id="kadaiStep2Toggle" style="background:none;border:none;color:#534AB7;font-size:13px;font-weight:700;cursor:pointer;padding:0;font-family:inherit;">▶ ページあたりの時間を入力（任意・再分配）</button>
           <div id="kadaiStep2Option" style="display:none;margin-top:10px;background:#EDEAF9;border-radius:8px;padding:12px;border:1.5px solid #AFA9EC;">
             <div style="font-size:12px;color:#888;margin-bottom:8px;">開始後、実際のペースがわかったら入力すると時間ベースで再分配できます。</div>
@@ -5729,6 +5746,10 @@ function openKadaiModal() {
   if (countEl) countEl.textContent = '0日';
   document.getElementById('kadaiLectureStart').value = '08:45';
   document.getElementById('kadaiLectureEnd').value   = '12:30';
+  document.getElementById('kadaiVacationOption').style.display = 'none';
+  document.getElementById('kadaiVacationToggle').textContent = '▶ 長期休暇期間あり（任意）';
+  document.getElementById('kadaiVacationStart').value = '';
+  document.getElementById('kadaiVacationEnd').value   = '';
   const panel = document.getElementById('kadaiPanel');
   panel.style.display = 'flex';
   setTimeout(() => panel.classList.add('open'), 10);
@@ -6607,6 +6628,14 @@ function updateKadaiLectureCount() {
   const el = document.getElementById('kadaiLectureCount');
   if (el) el.textContent = kadaiLectureDays.size + '日';
 }
+function toggleKadaiVacationOption() {
+  const el  = document.getElementById('kadaiVacationOption');
+  const btn = document.getElementById('kadaiVacationToggle');
+  const isOpen = el.style.display !== 'none';
+  el.style.display = isOpen ? 'none' : '';
+  btn.textContent = (isOpen ? '▶' : '▼') + ' 長期休暇期間あり（任意）';
+}
+
 function kadaiBack() {
   document.getElementById('kadaiStep1').style.display = '';
   document.getElementById('kadaiStep2').style.display = 'none';
@@ -6675,6 +6704,13 @@ async function runKadaiDistribute() {
       ? '・1ページ約' + minPerPg + '分。1回あたり上限' + maxMinVal + '分（上限ページ数=' + Math.floor(maxMinVal / minPerPg) + 'ページ）。\n'
       : '・1ページあたりの所要時間は不明のため、ページ数のみで分配する。\n';
 
+    // 長期休暇期間の取得
+    const vacStartStr = document.getElementById('kadaiVacationStart').value;
+    const vacEndStr   = document.getElementById('kadaiVacationEnd').value;
+    const hasVacation = !!(vacStartStr && vacEndStr);
+    const vacStart = hasVacation ? new Date(vacStartStr + 'T00:00:00') : null;
+    const vacEnd   = hasVacation ? new Date(vacEndStr   + 'T00:00:00') : null;
+
     // フォームで選択された講習日・時刻
     const hasLecture = kadaiLectureDays.size > 0;
     const lectureDatesSorted = Array.from(kadaiLectureDays).sort();
@@ -6700,26 +6736,48 @@ async function runKadaiDistribute() {
     }
     const { blocked: lectureBlocked, available: lectureAvailable } = getLectureBlockedSlots(lectureStartH, lectureEndH);
 
-    // 講習期間ノート（選択がある場合のみ追加）
+    // 講習・長期休暇ノートを生成
     let summerNote = '';
-    if (hasLecture) {
-      const kadaiStart = new Date(startStr + 'T00:00:00');
-      const kadaiEnd   = new Date(dueStr   + 'T00:00:00');
-      const nonLectureDays = [];
-      const scan = new Date(kadaiStart);
-      while (scan <= kadaiEnd) {
-        const key = scan.toISOString().slice(0,10);
-        if (!kadaiLectureDays.has(key)) nonLectureDays.push(key);
-        scan.setDate(scan.getDate() + 1);
+
+    // 分配期間内の日付を分類
+    const kadaiStartD = new Date(startStr + 'T00:00:00');
+    const kadaiEndD   = new Date(dueStr   + 'T00:00:00');
+    const lectureDaysInRange    = [];  // 講習あり
+    const vacNonLectureDays     = [];  // 長期休暇中・講習なし → am使える
+    const nonLectureDays        = [];  // 講習なし（休暇外も含む全体）
+
+    const scanD = new Date(kadaiStartD);
+    while (scanD <= kadaiEndD) {
+      const key = scanD.toISOString().slice(0,10);
+      const isLecture = kadaiLectureDays.has(key);
+      const isVac = hasVacation && scanD >= vacStart && scanD <= vacEnd;
+      if (isLecture) {
+        lectureDaysInRange.push(key);
+      } else {
+        nonLectureDays.push(key);
+        if (isVac) vacNonLectureDays.push(key);
       }
-      summerNote =
-        '\n【講習期間の特別ルール】\n' +
-        '・講習時間: ' + lectureStartTime + '〜' + lectureEndTime + '\n' +
-        '・【講習がある日】講習時間中は使えない。ブロックされるスロット: ' + (lectureBlocked.join(', ') || 'なし') + '。使えるスロット: ' + (lectureAvailable.join(', ') || 'なし') + '。\n' +
-        '・【講習がある日】課題は使えるスロットに配置する。夜は既存の講習後パターンで埋まっている可能性があるため、午後が使える場合は午後を最優先にする。\n' +
-        '・【講習がない日】通常の曜日ルールに従うが、1回あたりのページ数を約2倍を目安に増やしてよい。\n' +
-        '・講習日一覧: ' + lectureDatesSorted.join(', ') + '\n' +
-        (nonLectureDays.length ? '・非講習日一覧: ' + nonLectureDays.join(', ') + '\n' : '');
+      scanD.setDate(scanD.getDate() + 1);
+    }
+
+    if (hasLecture || hasVacation) {
+      summerNote = '\n【特別期間のスロットルール】\n';
+
+      if (hasLecture && lectureDaysInRange.length > 0) {
+        summerNote +=
+          '・講習時間: ' + lectureStartTime + '〜' + lectureEndTime + '\n' +
+          '・【講習がある日】ブロックされるスロット: ' + (lectureBlocked.join(', ') || 'なし') + '。使えるスロット: ' + (lectureAvailable.join(', ') || 'なし') + '。午後が使える場合は午後を最優先にする。\n' +
+          '・講習日一覧: ' + lectureDaysInRange.join(', ') + '\n';
+      }
+
+      if (hasVacation && vacNonLectureDays.length > 0) {
+        summerNote +=
+          '・【長期休暇中・講習がない日】学校がないためam(午前)スロットも使える。1回あたりのページ数を約2倍を目安に増やしてよい。\n' +
+          '・長期休暇中の非講習日一覧: ' + vacNonLectureDays.join(', ') + '\n';
+      } else if (hasLecture && nonLectureDays.length > 0) {
+        summerNote +=
+          '・【講習がない日】通常の曜日ルールに従うが、1回あたりのページ数を約2倍を目安に増やしてよい。\n';
+      }
     }
 
     const prompt =
