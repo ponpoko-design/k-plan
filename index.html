@@ -6766,11 +6766,13 @@ async function runKadaiDistribute() {
           scheduleTxt += dateLabel + ': 【終日外出・課題配置禁止】\n';
           continue;
         }
+        const isInVacation = hasVacation && dt >= vacStart && dt <= vacEnd;
+        const vacationLabel = hasVacation ? (isInVacation ? '【長期休暇中】' : '【通常学校あり・amは使えない】') : '';
         const dayTasks = wkTasks.filter(t => t._dayIdx === d);
         if (dayTasks.length > 0) {
-          scheduleTxt += dateLabel + ': ' + dayTasks.map(t => (SLOT_LABELS2[t.slot]||t.slot) + '/' + t.subject + ':' + t.unit_name + (t.study_time ? '(' + t.study_time + '分)' : '')).join(' | ') + '\n';
+          scheduleTxt += dateLabel + vacationLabel + ': ' + dayTasks.map(t => (SLOT_LABELS2[t.slot]||t.slot) + '/' + t.subject + ':' + t.unit_name + (t.study_time ? '(' + t.study_time + '分)' : '')).join(' | ') + '\n';
         } else {
-          scheduleTxt += dateLabel + ': （予定なし）\n';
+          scheduleTxt += dateLabel + vacationLabel + ': （予定なし）\n';
         }
       }
       scanMonday.setDate(scanMonday.getDate() + 7);
@@ -6849,7 +6851,7 @@ async function runKadaiDistribute() {
         summerNote +=
           '・講習時間: ' + lectureStartTime + '〜' + lectureEndTime + '\n' +
           '・【講習がある日】ブロックされるスロット: ' + (lectureBlocked.join(', ') || 'なし') + '。使えるスロット: ' + (lectureAvailable.join(', ') || 'なし') + '。午後が使える場合は午後を最優先にする。\n' +
-          '・【講習がある日】1回あたりのページ数は基本2ページ以下にすること。使えるスロットに少量を配置する。\n' +
+          '・【講習がある日・絶対厳守】1回あたりのページ数は最大2ページ。3ページ以上は絶対に配置しないこと。\n' +
           '・講習日一覧: ' + lectureDaysInRange.join(', ') + '\n';
       }
 
@@ -6860,6 +6862,9 @@ async function runKadaiDistribute() {
       } else if (hasLecture && nonLectureDays.length > 0) {
         summerNote +=
           '・【講習がない日】通常の曜日ルールに従うが、1回あたりのページ数を約2倍を目安に増やしてよい。\n';
+      }
+      if (hasVacation) {
+        summerNote += '・【長期休暇期間外の日（' + vacEndStr + '以降）】通常の学校がある曜日ルールに戻る。am(午前)は使えない。月は配置不可。水夜は配置不可。木午後は配置不可。\n';
       }
     }
 
@@ -6933,7 +6938,21 @@ async function runKadaiDistribute() {
     }
 
     // 終日外出日に配置されたカードをフィルタリング（安全ネット）
-    const filteredCards = parsed.cards.filter(c => !kadaiBlockedDays.has(c.date));
+    // 講習日に3ページ以上配置されていたら警告（カードは残すが注記）
+    const filteredCards = parsed.cards.filter(c => !kadaiBlockedDays.has(c.date)).map(c => {
+      if (kadaiLectureDays.has(c.date) && c.pages) {
+        const parts = c.pages.split('-');
+        if (parts.length === 2) {
+          const pg1 = parseInt(parts[0]), pg2 = parseInt(parts[1]);
+          if (!isNaN(pg1) && !isNaN(pg2) && (pg2 - pg1 + 1) > 2) {
+            // 講習日は2ページに強制カット
+            c.pages = pg1 + '-' + (pg1 + 1);
+            c._trimmed = true;
+          }
+        }
+      }
+      return c;
+    });
     kadaiPendingCards = filteredCards.map(c => ({
       date: c.date, slot: c.slot, pages: c.pages,
       subject, bookName, shortName, note: 'p.' + c.pages
