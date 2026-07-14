@@ -6984,7 +6984,9 @@ async function runKadaiDistribute() {
     document.getElementById('kadaiStep1').style.display = 'none';
     document.getElementById('kadaiStep2').style.display = '';
   } catch(e) {
-    errEl.textContent = '通信エラーが発生しました。';
+    console.error('[kadai] catch error:', e, e?.message, e?.stack);
+    const msg = e?.message ? '通信エラー: ' + e.message : '通信エラーが発生しました。';
+    errEl.textContent = msg;
   }
   btn.disabled = false; btn.textContent = 'AIで分配する ✨';
 }
