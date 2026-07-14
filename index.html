@@ -6257,6 +6257,15 @@ async function runJukuPropose() {
     // 期間中のスケジュール取得
     const SLOT_LABELS3 = {plan:'予定',morning:'朝',am:'午前',pm:'午後',night:'夜'};
     const DAY_JP3 = ['日','月','火','水','木','金','土'];
+    // 終日外出日・長期休暇の変数をループより前に宣言
+    const blockedDatesSorted = Array.from(kadaiBlockedDays).sort();
+    const hasBlocked = kadaiBlockedDays.size > 0;
+    const vacStartStr = document.getElementById('kadaiVacationStart').value;
+    const vacEndStr   = document.getElementById('kadaiVacationEnd').value;
+    const hasVacation = !!(vacStartStr && vacEndStr);
+    const vacStart = hasVacation ? new Date(vacStartStr + 'T00:00:00') : null;
+    const vacEnd   = hasVacation ? new Date(vacEndStr   + 'T00:00:00') : null;
+
     const savedMonday = new Date(currentMonday);
     let scheduleTxt = '';
     let holidayList = [];
@@ -6784,16 +6793,7 @@ async function runKadaiDistribute() {
       ? '・1ページ約' + minPerPg + '分。1回あたり上限' + maxMinVal + '分（上限ページ数=' + Math.floor(maxMinVal / minPerPg) + 'ページ）。\n'
       : '・1ページあたりの所要時間は不明のため、ページ数のみで分配する。\n';
 
-    // 終日外出日
-    const blockedDatesSorted = Array.from(kadaiBlockedDays).sort();
-    const hasBlocked = kadaiBlockedDays.size > 0;
 
-    // 長期休暇期間の取得
-    const vacStartStr = document.getElementById('kadaiVacationStart').value;
-    const vacEndStr   = document.getElementById('kadaiVacationEnd').value;
-    const hasVacation = !!(vacStartStr && vacEndStr);
-    const vacStart = hasVacation ? new Date(vacStartStr + 'T00:00:00') : null;
-    const vacEnd   = hasVacation ? new Date(vacEndStr   + 'T00:00:00') : null;
 
     // フォームで選択された講習日・時刻
     const hasLecture = kadaiLectureDays.size > 0;
