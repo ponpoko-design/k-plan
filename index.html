@@ -6743,8 +6743,9 @@ async function runKadaiDistribute() {
   const STAR_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="#ff991c" style="flex-shrink:0;vertical-align:middle;"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>';
 
   try {
+    console.log('[kadai] start');
     await loadFromFirestore();
-
+    console.log('[kadai] firestore loaded');
     btn.textContent = 'AI分配中…';
 
     const savedMonday = new Date(currentMonday);
@@ -6804,19 +6805,15 @@ async function runKadaiDistribute() {
 
     // 講習時間からブロックされるスロット・使えるスロットを判定
     // スロット時間帯: morning=〜8時台, am=9〜11時台, pm=12〜17時台, night=18時以降
-    function getLectureBlockedSlots(startH, endH) {
+    const getLectureBlockedSlots = (startH, endH) => {
       const blocked = [];
       const available = [];
-      // morning（〜9時）
       if (startH < 9) blocked.push('morning'); else available.push('morning(朝・漢字基礎力のみ)');
-      // am（9〜12時）
       if (startH < 12 && endH > 9) blocked.push('am'); else available.push('am(午前・土日のみ)');
-      // pm（12〜17時）
       if (startH < 17 && endH > 12) blocked.push('pm'); else available.push('pm(午後)');
-      // night（17時以降）
       if (endH > 17) blocked.push('night'); else available.push('night(夜)');
       return { blocked, available };
-    }
+    };
     const { blocked: lectureBlocked, available: lectureAvailable } = getLectureBlockedSlots(lectureStartH, lectureEndH);
 
     // 講習・長期休暇ノートを生成
