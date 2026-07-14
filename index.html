@@ -6625,7 +6625,7 @@ function renderKadaiLectureCal() {
 
   const scan = new Date(start);
   while (scan <= end) {
-    const key = scan.toISOString().slice(0,10);
+    const key = scan.getFullYear() + '-' + String(scan.getMonth()+1).padStart(2,'0') + '-' + String(scan.getDate()).padStart(2,'0');
     const d   = scan.getDay();
     const isSelected = kadaiLectureDays.has(key);
     const dayColor = d===0?'#e05555':d===6?'#2255cc':'#333';
@@ -6678,7 +6678,7 @@ function renderKadaiBlockedCal() {
 
   const scan = new Date(start);
   while (scan <= end) {
-    const key = scan.toISOString().slice(0,10);
+    const key = scan.getFullYear() + '-' + String(scan.getMonth()+1).padStart(2,'0') + '-' + String(scan.getDate()).padStart(2,'0');
     const d   = scan.getDay();
     const isSelected = kadaiBlockedDays.has(key);
     const dayColor = d===0?'#e05555':d===6?'#2255cc':'#333';
@@ -6761,7 +6761,7 @@ async function runKadaiDistribute() {
         const dt = new Date(scanMonday); dt.setDate(scanMonday.getDate() + d);
         if (dt < startDate || dt > dueDate) continue;
         const dateLabel = (dt.getMonth()+1) + '/' + dt.getDate() + '(' + DAY_JP[dt.getDay()] + ')';
-        const dtKey = dt.toISOString().slice(0,10);
+        const dtKey = dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0') + '-' + String(dt.getDate()).padStart(2,'0');
         if (kadaiBlockedDays.has(dtKey)) {
           scheduleTxt += dateLabel + ': 【終日外出・課題配置禁止】\n';
           continue;
@@ -6831,7 +6831,7 @@ async function runKadaiDistribute() {
 
     const scanD = new Date(kadaiStartD);
     while (scanD <= kadaiEndD) {
-      const key = scanD.toISOString().slice(0,10);
+      const key = scanD.getFullYear() + '-' + String(scanD.getMonth()+1).padStart(2,'0') + '-' + String(scanD.getDate()).padStart(2,'0');
       if (kadaiBlockedDays.has(key)) { scanD.setDate(scanD.getDate() + 1); continue; } // 終日外出日はスキップ
       const isLecture = kadaiLectureDays.has(key);
       const isVac = hasVacation && scanD >= vacStart && scanD <= vacEnd;
@@ -7595,7 +7595,7 @@ async function applyLessonDataToCalendar(parsed) {
 function openGnorevModal() {
   // デフォルト日付：今日から2週間後
   const d = new Date(); d.setDate(d.getDate()+14);
-  document.getElementById('gnorevDate').value = d.toISOString().slice(0,10);
+  document.getElementById('gnorevDate').value = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
   document.getElementById('gnorevRange').value = '';
   document.getElementById('gnorevPreview').style.display = 'none';
   document.getElementById('gnorevModal').classList.add('open');
@@ -8822,7 +8822,7 @@ function buildScheduleSummary(targetMonday, weeksCount) {
           const day = d2.getDay();
           const diff = day === 0 ? 6 : day - 1;
           d2.setDate(d2.getDate() - diff);
-          return d2.toISOString().slice(0,10);
+          return d2.getFullYear() + '-' + String(d2.getMonth()+1).padStart(2,'0') + '-' + String(d2.getDate()).padStart(2,'0');
         })();
         if (eWk !== wk) return;
         const dayIdx = [0,1,2,3,4,5,6].findIndex(i => {
