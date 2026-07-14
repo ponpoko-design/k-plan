@@ -6767,6 +6767,7 @@ async function runKadaiDistribute() {
         summerNote +=
           '・講習時間: ' + lectureStartTime + '〜' + lectureEndTime + '\n' +
           '・【講習がある日】ブロックされるスロット: ' + (lectureBlocked.join(', ') || 'なし') + '。使えるスロット: ' + (lectureAvailable.join(', ') || 'なし') + '。午後が使える場合は午後を最優先にする。\n' +
+          '・【講習がある日】使えるスロットがない場合でも、最低1〜2ページは夜など空き時間に配置してよい。\n' +
           '・講習日一覧: ' + lectureDaysInRange.join(', ') + '\n';
       }
 
