@@ -5045,7 +5045,7 @@ async function runBalanceCheck() {
       }
       prompt += '◆ルール: 4教科復習が最優先/理科基礎力テスト週1回OK（週2不要）/グノチェック不要/算数基礎力・漢字毎朝必須\n\n';
       if (gnorevDow === 3) {
-        prompt += '◆水曜グノレブ前週ベストパターン(7/1実績):\n【朝は全日通常どおり（漢字+基礎力テスト）のみ。漢字間違い復習なし】\n火午後=理科:確認問題+理科:基本のまとめ / 火夜=国語:単元音読+国語:意味調べ+社会:単元音読 / 水午後=理科:復習1+学校の宿題 / 木夜=算数:復習1+理科:復習2 / 金午後=社会:復習前半+理科:復習3 / 金夜=算数:復習2+算数:基礎力復習 / 土午前か午後=サッカー+算数:計算マスタ+国語:言葉復習前半+国語:漢字復習1 / 土夜=学校の宿題+算数:復習3 / 日午前か午後=社会:基礎問題(30分)+算数:復習4(30分)+理科:復習4(30分) / 日夜=学校の宿題+算数:計算マスタ+理科:基礎力テスト / 翌週月=塾のみ / 翌週火朝=国語:漢字復習2 / 翌週火午後=算数:基礎力復習(20分)+国語:言葉後半(15分) / 翌週火夜=社会:後半(30分) / 当日朝=国語:漢字復習3+算数:基礎力テスト\n\n';
+        prompt += '◆水曜グノレブ前週ベストパターン(7/1実績・260714更新):\n【朝は全日通常どおり（漢字+基礎力テスト）のみ。漢字間違い復習なし】\n火午後=理科:基本のまとめ+理科:確認問題・練習問 / 火夜=国語:単元音読+国語:意味調べ+社会:単元音読 / 水午後=理科:復習1+学校の宿題 / 木夜=算数:復習1+理科:復習2 / 金午後=社会:復習前半+理科:復習3 / 金夜=算数:復習2+算数:基礎力復習 / 土午前=算数:計算マスタ+社会:用語/基礎力確認 / 土午後=国語:言葉復習前半+国語:漢字復習1 / 土夜=算数:復習3 / 日午前=算数:基礎問題(30分)+理科:復習4(30分) / 日夜=算数:計算マスタ+理科:基礎力テスト / 翌週月=塾のみ / 翌週火朝=国語:漢字復習2 / 翌週火午後=算数:基礎力復習(20分)+国語:言葉後半(15分) / 翌週火夜=社会:復習後半(20分) / 当日朝=国語:漢字復習3+算数:基礎力テスト\n\n';
         prompt += '◆水曜グノレブ前週の追加確認:\n・火曜午後に理科:確認問題・理科:基本のまとめが入っているか（水曜塾確認テスト対策）\n・火曜夜に国語:単元音読・意味調べ・社会:単元音読が入っているか\n・「漢字復習1」「漢字復習2」「漢字復習3」の3枚が前週水曜〜当日水曜の間に1枚ずつ入っているか（朝スロット以外・平日午前は不可）\n・【絶対厳守】朝スロットは一切チェックしない。何があっても朝について指摘しないこと\n\n';
       } else {
         prompt += '◆月曜グノレブ前週ベストパターン(6/1実績):\n【朝スロット】月〜火=通常どおり(国語:漢字+算数:基礎力テスト) / 水〜日=国語:漢字間違い復習(15分)を通常の漢字と置き換え / 当日朝=国語:漢字+算数:基礎力テストのみ(軽め)\n【それ以外】火夜=社会:復習前半(30分)+国語:言葉復習(30分) / 金午後=社会:復習後半(30分) / 金夜=算数:復習(40分)+理科:復習(30分) / 土夜=算数:復習(40分)+算数:基礎力復習(20分) / 日午前=算数:復習(30分)+理科:復習(30分) / 日夜=算数:計算ルール(15分)+算数:復習(30分) / 当日午後=社会:のみ(軽め・平日の場合は別日に移動)\n\n';
@@ -5062,7 +5062,7 @@ async function runBalanceCheck() {
       prompt += '【今週のモード: グノレブ当日週】この週の' + dowLabel2 + 'がグノレブ。\n';
       prompt += '◆ルール: 当日朝=漢字と基礎力テストのみ/テスト前=詰め込み不要/テスト後(' + afterLabel + ')=振り返りを分散して入れる/算数基礎力・漢字毎朝必須\n【重要】グノレブ当日の夜は20:20頃に帰宅するため学校の宿題を入れてよい。水曜夜の「水曜夜は学校の宿題も不可」ルールはグノレブ当日には適用しない。\n\n';
       if (gnorevThisDow === 3) {
-        prompt += '◆水曜グノレブ当日週ベストパターン(7/1実績):\n当日朝=国語:漢字復習3+算数:基礎力テスト / 当日夜=学校の宿題 / 翌木夜=算数:振り返り(30分)+算数:Nテキスト+理科:基礎力テスト+学校の宿題 / 翌金午後=社会:単元音読+社会:用語/基礎力確認+理科:グノチェック / 翌金夜=算数:Nテキスト+算数:N家庭学習 / 翌土=理科:グノレブ振り返り+社会:グノレブ振り返り+国語:グノレブ振り返り(理科・社会・国語合計60分) / 振り返り合計=算数30+理科30+国語15+社会15=90分\n\n';
+        prompt += '◆水曜グノレブ当日週ベストパターン(7/1実績・260714更新):\n当日朝=国語:漢字復習3+算数:基礎力テスト / 当日夜=学校の宿題 / 翌木午後=国語:言葉復習前半 / 翌木夜=算数:グノレブ振り返り(30分) / 翌金午後=社会:用語/基礎力確認+理科:グノラー / 翌金夜=算数:Nテキスト+算数:N家庭学習 / 翌土午前=算数:計算マスタ+理科:グノレブ振り返り / 翌土午後=社会:グノレブ振り返り×2 / 翌日午前=算数:N問違った所+社会:基礎問題 / 翌日夜=算数:基礎カテスト+算数:計算マスタ\n\n';
       } else {
         prompt += '◆月曜グノレブ当日週ベストパターン(6/1実績):\n当日朝=国語:漢字+算数:基礎力テストのみ(軽め) / 翌火夜=国語:単元音読+国語:意味調べ+社会:単元音読 / 翌火〜日で振り返りを分散: 算数:振り返り(30分)+理科:振り返り(30分)+国語:振り返り(15分)+社会:振り返り(15分)=合計90分\n\n';
       }
@@ -7523,7 +7523,7 @@ async function confirmGnorevWithAI(dateStr, range, testDate, dow) {
 【グノレブ後の解き直し配分（テスト翌日以降）】
 合計90分: 算数30分 / 理科30分 / 国語15分 / 社会15分
 振り返りタイミング目安:
-  水曜グノレブ → 当日夜=学校の宿題 / 翌木夜=算数:振り返り(30分)+Nテキスト+理科:基礎力テスト+学校の宿題 / 翌金午後=社会:単元音読+社会:用語/基礎力確認+理科:グノチェック / 翌金夜=算数:Nテキスト+算数:N家庭学習 / 翌土=理科:グノレブ振り返り+社会:グノレブ振り返り+国語:グノレブ振り返り（合計60分）
+  水曜グノレブ → 当日夜=学校の宿題 / 翌木午後=国語:言葉復習前半 / 翌木夜=算数:グノレブ振り返り(30分) / 翌金午後=社会:用語/基礎力確認+理科:グノラー / 翌金夜=算数:Nテキスト+算数:N家庭学習 / 翌土午前=算数:計算マスタ+理科:グノレブ振り返り / 翌土午後=社会:グノレブ振り返り×2 / 翌日午前=算数:N問違った所+社会:基礎問題 / 翌日夜=算数:基礎カテスト+算数:計算マスタ
   月曜グノレブ → 翌火夜=国語:単元音読+国語:意味調べ+社会:単元音読 / 翌火〜日で分散: 算数:振り返り(30分)+理科:振り返り(30分)+国語:振り返り(15分)+社会:振り返り(15分)=合計90分
 
 【水曜グノレブ前週の追加確認事項】
@@ -7620,28 +7620,41 @@ function applyFallbackGnorevPlan(testDate, dow, addTask) {
   let plan = [];
 
   if (dow === 3) {
-    // ===== 水曜グノレブ ベストパターン（7/1水実績） =====
+    // ===== 水曜グノレブ ベストパターン（7/1水実績・260714更新） =====
     plan = [
-      {offset:1,  slot:'pm',     subject:'理科', unit:'復習1',          time:40},
-      {offset:3,  slot:'night',  subject:'算数', unit:'復習1',          time:30},
-      {offset:3,  slot:'night',  subject:'理科', unit:'復習2',          time:30},
-      {offset:4,  slot:'pm',     subject:'社会', unit:'復習 前半',      time:30},
-      {offset:4,  slot:'pm',     subject:'理科', unit:'復習3',          time:30},
-      {offset:4,  slot:'night',  subject:'算数', unit:'復習2',          time:40},
-      {offset:4,  slot:'night',  subject:'算数', unit:'基礎力復習',     time:20},
-      {offset:5,  slot:'am',     subject:'算数', unit:'計算マスタ',     time:20},
-      {offset:5,  slot:'pm',     subject:'国語', unit:'言葉 復習前半',  time:15},
-      {offset:5,  slot:'pm',     subject:'国語', unit:'漢字復習1',      time:15},
-      {offset:5,  slot:'night',  subject:'算数', unit:'復習3',          time:40},
-      {offset:6,  slot:'am',     subject:'算数', unit:'復習4',          time:30},
-      {offset:6,  slot:'am',     subject:'理科', unit:'復習4',          time:30},
-      {offset:6,  slot:'night',  subject:'算数', unit:'計算マスタ',     time:20},
-      {offset:6,  slot:'night',  subject:'理科', unit:'基礎力テスト',   time:15},
-      {offset:8,  slot:'morning',subject:'国語', unit:'漢字復習2',      time:15},
-      {offset:8,  slot:'pm',     subject:'算数', unit:'基礎力復習',     time:20},
-      {offset:8,  slot:'pm',     subject:'国語', unit:'言葉 復習後半',  time:15},
-      {offset:8,  slot:'night',  subject:'社会', unit:'復習 後半',      time:20},
-      {offset:9,  slot:'morning',subject:'国語', unit:'漢字復習3',      time:15},
+      // 前週火曜（offset:1 = prevMonday+1）
+      {offset:1,  slot:'pm',     subject:'理科', unit:'基本のまとめ',        time:30},
+      {offset:1,  slot:'pm',     subject:'理科', unit:'確認問題・練習問',    time:30},
+      {offset:1,  slot:'night',  subject:'国語', unit:'単元音読',            time:15},
+      {offset:1,  slot:'night',  subject:'国語', unit:'意味調べ',            time:20},
+      {offset:1,  slot:'night',  subject:'社会', unit:'単元音読',            time:10},
+      // 前週水曜（offset:2）は塾のみ → カードなし
+      // 前週木曜（offset:3）
+      {offset:3,  slot:'night',  subject:'算数', unit:'復習1',               time:30},
+      {offset:3,  slot:'night',  subject:'理科', unit:'復習2',               time:30},
+      // 前週金曜（offset:4）
+      {offset:4,  slot:'pm',     subject:'社会', unit:'復習 前半',           time:30},
+      {offset:4,  slot:'pm',     subject:'理科', unit:'復習3',               time:30},
+      {offset:4,  slot:'night',  subject:'算数', unit:'復習2',               time:40},
+      {offset:4,  slot:'night',  subject:'算数', unit:'基礎力復習',          time:20},
+      // 前週土曜（offset:5）
+      {offset:5,  slot:'am',     subject:'算数', unit:'計算マスタ',          time:20},
+      {offset:5,  slot:'am',     subject:'社会', unit:'用語/基礎力確認',     time:20},
+      {offset:5,  slot:'pm',     subject:'国語', unit:'言葉 復習前半',       time:15},
+      {offset:5,  slot:'pm',     subject:'国語', unit:'漢字復習1',           time:15},
+      {offset:5,  slot:'night',  subject:'算数', unit:'復習3',               time:40},
+      // 前週日曜（offset:6）
+      {offset:6,  slot:'am',     subject:'算数', unit:'基礎問題',            time:30},
+      {offset:6,  slot:'am',     subject:'理科', unit:'復習4',               time:30},
+      {offset:6,  slot:'night',  subject:'算数', unit:'計算マスタ',          time:20},
+      {offset:6,  slot:'night',  subject:'理科', unit:'基礎力テスト',        time:15},
+      // テスト週火曜（offset:8）
+      {offset:8,  slot:'morning',subject:'国語', unit:'漢字復習2',           time:15},
+      {offset:8,  slot:'pm',     subject:'算数', unit:'基礎力復習',          time:20},
+      {offset:8,  slot:'pm',     subject:'国語', unit:'言葉 復習後半',       time:15},
+      {offset:8,  slot:'night',  subject:'社会', unit:'復習 後半',           time:20},
+      // テスト当日（offset:9 = 水曜）
+      {offset:9,  slot:'morning',subject:'国語', unit:'漢字復習3',           time:15},
     ];
   } else if (dow === 1) {
     // ===== 月曜グノレブ ベストパターン（6/1月実績） =====
@@ -7676,15 +7689,26 @@ function applyFallbackGnorevPlan(testDate, dow, addTask) {
   let afterPlan = [];
 
   if (dow === 3) {
-    // 水曜グノレブ後：翌木から即新単元＋振り返り
+    // 水曜グノレブ後：翌木から振り返り（7/1実績・260714更新）
     afterPlan = [
-      {dOff:1, slot:'pm',    subject:'国語', unit:'単元音読',       time:15},
-      {dOff:1, slot:'pm',    subject:'国語', unit:'意味調べ',       time:20},
-      {dOff:1, slot:'pm',    subject:'社会', unit:'単元音読',       time:10},
+      // 翌木（dOff:1）
+      {dOff:1, slot:'pm',    subject:'国語', unit:'言葉 復習前半',    time:20},
       {dOff:1, slot:'night', subject:'算数', unit:'グノレブ振り返り', time:30},
-      {dOff:3, slot:'am',    subject:'理科', unit:'グノレブ振り返り', time:30},
-      {dOff:3, slot:'night', subject:'社会', unit:'グノレブ振り返り', time:15},
-      {dOff:3, slot:'night', subject:'国語', unit:'グノレブ振り返り', time:15},
+      // 翌金（dOff:2）
+      {dOff:2, slot:'pm',    subject:'社会', unit:'用語/基礎力確認', time:20},
+      {dOff:2, slot:'pm',    subject:'理科', unit:'グノラー',         time:20},
+      {dOff:2, slot:'night', subject:'算数', unit:'Nテキスト',        time:20},
+      {dOff:2, slot:'night', subject:'算数', unit:'N家庭学習',        time:20},
+      // 翌土（dOff:3）
+      {dOff:3, slot:'am',    subject:'算数', unit:'計算マスタ',       time:20},
+      {dOff:3, slot:'am',    subject:'理科', unit:'グノレブ振り返り', time:20},
+      {dOff:3, slot:'pm',    subject:'社会', unit:'グノレブ振り返り', time:20},
+      {dOff:3, slot:'pm',    subject:'社会', unit:'グノレブ振り返り', time:20},
+      // 翌日（dOff:4）：漢字復習ランダム・実力テストのみ無視、それ以外は実績を取り込む
+      {dOff:4, slot:'am',    subject:'算数', unit:'N問違った所',      time:20},
+      {dOff:4, slot:'am',    subject:'社会', unit:'基礎問題',          time:20},
+      {dOff:4, slot:'night', subject:'算数', unit:'基礎カテスト',      time:20},
+      {dOff:4, slot:'night', subject:'算数', unit:'計算マスタ',        time:20},
     ];
   } else if (dow === 1) {
     // 月曜グノレブ後：翌火から通常週（穏やか）
