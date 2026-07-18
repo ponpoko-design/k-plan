@@ -1897,11 +1897,16 @@ function render() {
         cell.style.display = '';
         const colDate = spDates[d];
         const colDateStr = dateKey(colDate);
+        // バグ修正：列番号(d=0,1,2＝昨日/今日/明日)ではなく、その日の実際の日付が
+        // currentMondayから何日目かを計算してdayIdxとして使う（曜日ズレ防止）
+        const realDayIdx = Math.round((colDate - currentMonday) / 86400000);
+        cell.dataset.targetDayIdx = realDayIdx;
         cell.ondragover = ev => { ev.preventDefault(); cell.classList.add('drag-over'); };
         cell.ondragleave = () => cell.classList.remove('drag-over');
-        cell.ondrop = ev => { ev.preventDefault(); cell.classList.remove('drag-over'); dropTask(d, s); };
+        cell.ondrop = ev => { ev.preventDefault(); cell.classList.remove('drag-over'); dropTask(realDayIdx, s); };
       } else {
         cell.style.display = 'none';
+        delete cell.dataset.targetDayIdx;
       }
     }
 
@@ -1969,6 +1974,7 @@ function render() {
     cell.innerHTML = '';
     cell.onclick = null;
     cell.style.display = '';
+    cell.dataset.targetDayIdx = d;
     cell.ondragover = ev => { ev.preventDefault(); cell.classList.add('drag-over'); };
     cell.ondragleave = () => cell.classList.remove('drag-over');
     cell.ondrop = ev => { ev.preventDefault(); cell.classList.remove('drag-over'); dropTask(d, s); };
@@ -2115,7 +2121,12 @@ function _renderCard(tDisplay, cell, tOrig) {
           if (cell) {
             const m = cell.id.match(/^c(\d+)-(\d+)$/);
             if (m) {
-              openMoveModal({key:t._dayIdx+'-'+t._slotIdx, uid:t.uid, id:t.id}, parseInt(m[1]), parseInt(m[2]));
+              // バグ修正：SP縦向きではセルid内の数字が実際の曜日と一致しないため、
+              // dataset.targetDayIdx（currentMonday基準の正しいオフセット）を優先使用
+              const toDay = cell.dataset.targetDayIdx !== undefined
+                ? parseInt(cell.dataset.targetDayIdx)
+                : parseInt(m[1]);
+              openMoveModal({key:t._dayIdx+'-'+t._slotIdx, uid:t.uid, id:t.id}, toDay, parseInt(m[2]));
             }
           }
         }
@@ -8345,7 +8356,14 @@ function _tEnd(e) {
     }
   } else if (_tActive && _tTask && _tDropCell) {
     const m = _tDropCell.id.match(/^c(\d+)-(\d+)$/);
-    if (m) openMoveModal(_tTask, parseInt(m[1]), parseInt(m[2]));
+    if (m) {
+      // バグ修正：SP縦向きではセルid内の数字(0,1,2＝昨日/今日/明日の列)は
+      // 実際の曜日と一致しないため、dataset.targetDayIdx（currentMonday基準の正しいオフセット）を優先use
+      const toDay = _tDropCell.dataset.targetDayIdx !== undefined
+        ? parseInt(_tDropCell.dataset.targetDayIdx)
+        : parseInt(m[1]);
+      openMoveModal(_tTask, toDay, parseInt(m[2]));
+    }
   }
   _tTask = null; _tCard = null; _tDropCell = null; _tActive = false;
 }
