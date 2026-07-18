@@ -1644,6 +1644,12 @@ function getMonday(d) {
   const m = new Date(d); m.setDate(diff); m.setHours(0,0,0,0); return m;
 }
 function dateKey(d) { return d.toISOString().slice(0,10); }
+// ローカル（ブラウザのタイムゾーン＝JST想定）の暦日文字列。
+// dateKey()はUTC基準でtoISOString()するため、JST 0:00〜8:59の日付はUTCで前日にずれる。
+// new Date(str+'T00:00:00')で再度Dateへ復元する必要がある値には、必ずこちらを使うこと（dateKeyの再変換は禁止）。
+function localYMD(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
 // JST基準の日付文字列（タイムゾーンズレなし）
 function dateKeyJST(d) {
   const jst = new Date(d.getTime() + 9*60*60*1000);
@@ -1927,7 +1933,7 @@ function render() {
         const remapped = Object.assign({}, t, { _dayIdx: colIdx });
         const cell = document.getElementById('c'+colIdx+'-'+t._slotIdx);
         if (!cell) return;
-        _renderCard(remapped, cell, t, dateKey(colMonday));
+        _renderCard(remapped, cell, t, localYMD(colMonday));
       });
       // 空セルタップで追加
       for (let s = 0; s < SLOTS; s++) {
@@ -1988,7 +1994,7 @@ function render() {
   tasks.forEach(t => {
     const cell = document.getElementById('c'+t._dayIdx+'-'+t._slotIdx);
     if (!cell) return;
-    _renderCard(t, cell, t, dateKey(currentMonday));
+    _renderCard(t, cell, t, localYMD(currentMonday));
   });
 }
 
@@ -8395,7 +8401,8 @@ function openMoveModal(taskRef, toDay, toSlot) {
     // uidで完全一致（同スロット複数カードでもuidは異なる）
     task = allTasks.find(t => t.uid === taskRef.uid) || taskRef;
   }
-  const srcWk = dateKey(currentMonday); // タスクが実際に格納されている週
+  const srcWk = dateKey(currentMonday); // タスクが実際に格納されている週（バケットキー）
+  const srcMondayYMD = taskRef.srcMonday || localYMD(currentMonday); // Dateへ再変換する場合は必ずこちら（dateKeyの再変換は不可）
   currentMonday = savedMonday; // 表示中の週（センター週）に戻す
 
   // 移動先の絶対日付・週・曜日インデックスを正しく解決
@@ -8448,7 +8455,7 @@ function openMoveModal(taskRef, toDay, toSlot) {
     saveLocal(); render();
     return;
   }
-  _pendingMove = {task: taskRef, toDay, toSlot, srcWk};
+  _pendingMove = {task: taskRef, toDay, toSlot, srcWk, srcMondayYMD};
   const slotNames = {0:'予定',1:'朝',2:'午前',3:'午後',4:'夜'};
   document.getElementById('moveModalTitle').textContent =
     DAYS_JP2[destDayIdx] + '曜日の' + (slotNames[toSlot]||'') + 'に移動しますか？';
@@ -8466,13 +8473,14 @@ function closeMoveModal() {
 function confirmMove() {
   if (!_pendingMove) return;
   takeSnapshot();
-  const {task, toDay, toSlot, srcWk} = _pendingMove;
+  const {task, toDay, toSlot, srcWk, srcMondayYMD} = _pendingMove;
   const type = document.querySelector('input[name="moveType"]:checked').value;
   const SLOTS2 = ['plan','morning','am','pm','night'];
 
-  // 移動元タスクを、実際に属する週(srcWk)から正しく取得（週またぎD&D対応）
+  // 移動元タスクを、実際に属する週(srcMondayYMD)から正しく取得（週またぎD&D対応）
+  // ※srcWkはdateKey()形式（UTCベース）のバケットキーなのでDateへの再変換には使わない
   const savedMonday = currentMonday;
-  if (srcWk) currentMonday = new Date(srcWk + 'T00:00:00');
+  if (srcMondayYMD) currentMonday = new Date(srcMondayYMD + 'T00:00:00');
   const allTasks = getTasksForWeek();
   // uidで完全一致
   const orig = allTasks.find(t => t.uid === task.uid)
