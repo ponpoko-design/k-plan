@@ -322,19 +322,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
           </button>
         </div>
 
-        <!-- 壊れたカードのクリーンアップ -->
-        <div style="display:flex;gap:8px;margin-top:8px;">
-          <button onclick="cleanupBrokenCards()" style="flex:1;border:none;border-radius:12px;background:#FEF2F2;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:10px;padding:10px 14px;text-align:left;transition:opacity .15s;box-sizing:border-box;" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
-            <div style="width:34px;height:34px;border-radius:9px;background:#FECACA;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7F1D1D" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
-            </div>
-            <div style="flex:1;min-width:0;">
-              <div style="font-size:14px;font-weight:700;color:#7F1D1D;">空っぽカードを削除</div>
-              <div style="font-size:11px;color:#888;margin-top:1px;">中身のない壊れたカードを掃除</div>
-            </div>
-          </button>
-        </div>
-
       </div>
     </div>
   </div>
@@ -717,6 +704,96 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1D9E75" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
 
+        <!-- 学習期間の設定（講習・長期休暇・終日外出をまとめて登録） -->
+        <button onclick="closeProposeModal();openPeriodSettingsModal();" style="flex:1;width:100%;border:none;border-radius:12px;background:#FFF3E0;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:14px;padding:0 18px;text-align:left;transition:opacity .15s;box-sizing:border-box;" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
+          <div style="width:40px;height:40px;border-radius:11px;background:#FFE0B2;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8A4B00" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:17px;font-weight:500;color:#5C3200;">学習期間の設定</div>
+            <div style="font-size:13px;color:#8A4B00;margin-top:3px;opacity:.8;">講習・休み・外出日をまとめて登録（全AI機能に共通反映）</div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B87A2E" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- 学習期間の設定モーダル（共通：講習期間・長期休暇期間・終日外出日） -->
+  <div class="modal-bg" id="periodSettingsModal" style="z-index:205;">
+    <div class="modal" style="width:min(420px,96vw);max-height:min(680px,88dvh);display:flex;flex-direction:column;">
+      <div class="modal-hdr" style="background:#B87A2E;padding:16px 20px;flex-shrink:0;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span style="font-size:17px;font-weight:700;">学習期間の設定</span>
+        </div>
+        <button class="modal-close" onclick="closePeriodSettingsModal()">×</button>
+      </div>
+      <div style="padding:16px;flex:1;overflow-y:auto;">
+        <div style="font-size:12px;color:#888;margin-bottom:12px;line-height:1.5;">ここで登録した期間は、その期間が終わるまで、課題学習・全体バランスチェックなど全てのAI機能で自動的に考慮されます。毎回入力し直す必要はありません。</div>
+
+        <div class="field">
+          <label>講習日・終日外出日を選ぶカレンダーの対象期間</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="date" id="periodRangeStart" onchange="renderPeriodCalendars()" style="flex:1;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:15px;font-family:inherit;">
+            <div style="color:#888;font-weight:700;">〜</div>
+            <input type="date" id="periodRangeEnd" onchange="renderPeriodCalendars()" style="flex:1;border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:15px;font-family:inherit;">
+          </div>
+        </div>
+
+        <div style="margin-top:10px;">
+          <button onclick="togglePeriodLectureOption()" id="periodLectureToggle" style="background:none;border:none;color:#B87A2E;font-size:13px;font-weight:700;cursor:pointer;padding:0;font-family:inherit;">▶ 講習期間あり</button>
+          <div id="periodLectureOption" style="display:none;margin-top:10px;background:#FFF3E0;border-radius:8px;padding:12px;border:1.5px solid #FFCC80;">
+            <div style="font-size:12px;color:#666;margin-bottom:10px;">講習がある日をタップして選択してください。</div>
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+              <div style="flex:1;">
+                <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:3px;">講習 開始時刻</label>
+                <input type="time" id="periodLectureStart" value="08:45" style="width:100%;border:1.5px solid #FFCC80;border-radius:8px;padding:7px 10px;font-size:15px;font-family:inherit;background:white;">
+              </div>
+              <div style="padding-top:18px;color:#888;font-weight:700;">〜</div>
+              <div style="flex:1;">
+                <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:3px;">講習 終了時刻</label>
+                <input type="time" id="periodLectureEnd" value="12:30" style="width:100%;border:1.5px solid #FFCC80;border-radius:8px;padding:7px 10px;font-size:15px;font-family:inherit;background:white;">
+              </div>
+            </div>
+            <div id="periodLectureCal" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;"></div>
+            <div style="font-size:11px;color:#888;margin-top:8px;">選択した日：<span id="periodLectureCount" style="font-weight:700;color:#B87A2E;">0日</span></div>
+          </div>
+        </div>
+
+        <div style="margin-top:8px;">
+          <button onclick="togglePeriodVacationOption()" id="periodVacationToggle" style="background:none;border:none;color:#B87A2E;font-size:13px;font-weight:700;cursor:pointer;padding:0;font-family:inherit;">▶ 長期休暇期間あり</button>
+          <div id="periodVacationOption" style="display:none;margin-top:10px;background:#FFF3E0;border-radius:8px;padding:12px;border:1.5px solid #FFCC80;">
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">夏休み・冬休みなど学校がない期間を入力してください。<br>講習がない日はamスロット（午前）も使える扱いになります。</div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <div style="flex:1;">
+                <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:3px;">休暇 開始日</label>
+                <input type="date" id="periodVacationStart" style="width:100%;border:1.5px solid #FFCC80;border-radius:8px;padding:7px 10px;font-size:15px;font-family:inherit;background:white;">
+              </div>
+              <div style="padding-top:18px;color:#888;font-weight:700;">〜</div>
+              <div style="flex:1;">
+                <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:3px;">休暇 終了日</label>
+                <input type="date" id="periodVacationEnd" style="width:100%;border:1.5px solid #FFCC80;border-radius:8px;padding:7px 10px;font-size:15px;font-family:inherit;background:white;">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:8px;">
+          <button onclick="togglePeriodBlockedOption()" id="periodBlockedToggle" style="background:none;border:none;color:#B87A2E;font-size:13px;font-weight:700;cursor:pointer;padding:0;font-family:inherit;">▶ 終日外出日あり</button>
+          <div id="periodBlockedOption" style="display:none;margin-top:10px;background:#FFF3E0;border-radius:8px;padding:12px;border:1.5px solid #FFCC80;">
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">旅行・試合など1日勉強できない日をタップして選択してください。</div>
+            <div id="periodBlockedCal" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;"></div>
+            <div style="font-size:11px;color:#888;margin-top:8px;">選択した日：<span id="periodBlockedCount" style="font-weight:700;color:#B87A2E;">0日</span></div>
+          </div>
+        </div>
+
+        <div id="periodSettingsError" style="color:#e24b4a;font-size:12px;margin-top:8px;min-height:18px;"></div>
+        <div class="modal-actions" style="margin-top:14px;">
+          <button onclick="clearPeriodSettings()" style="flex:1;background:white;border:2px solid #ccc;color:#888;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">全部クリア</button>
+          <button onclick="savePeriodSettings()" style="flex:2;background:#B87A2E;border:none;color:white;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">保存する</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1670,6 +1747,39 @@ function dateKeyJST(d) {
 }
 function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate()+n); return r; }
 function parseDate(s) { return s ? new Date(s) : null; }
+
+// ===== 共通期間設定（講習期間・長期休暇期間・終日外出日） =====
+// 課題学習・全体バランスチェックなど、アプリ全体のAI機能が共通して参照する
+// 「今どの期間か」の唯一の情報源。localOverrides.periodSettingsに保存し、
+// saveLocal()経由でFirestoreにも同期される（他デバイスにも反映）。
+function getPeriodSettings() {
+  const ps = localOverrides.periodSettings;
+  return {
+    lectureDays: (ps && ps.lectureDays) || [],
+    lectureStart: (ps && ps.lectureStart) || '08:45',
+    lectureEnd: (ps && ps.lectureEnd) || '12:30',
+    vacationStart: (ps && ps.vacationStart) || '',
+    vacationEnd: (ps && ps.vacationEnd) || '',
+    blockedDays: (ps && ps.blockedDays) || [],
+    label: (ps && ps.label) || ''
+  };
+}
+// 指定日(Dateオブジェクト)が現在の共通設定で「長期休暇期間」中か
+function isDateInVacationPeriod(dt) {
+  const ps = getPeriodSettings();
+  if (!ps.vacationStart || !ps.vacationEnd) return false;
+  const s = new Date(ps.vacationStart + 'T00:00:00');
+  const e = new Date(ps.vacationEnd + 'T00:00:00');
+  return dt >= s && dt <= e;
+}
+// 指定日が「講習期間の講習実施日」か
+function isDateLectureDay(dt) {
+  return getPeriodSettings().lectureDays.includes(localYMD(dt));
+}
+// 指定日が「終日外出日」か
+function isDateBlockedDay(dt) {
+  return getPeriodSettings().blockedDays.includes(localYMD(dt));
+}
 function sameDateStr(a, b) {
   if (!a || !b) return false;
   const da = new Date(a), db = new Date(b);
@@ -5099,24 +5209,33 @@ async function runBalanceCheck() {
     const slotRule = '【スロットルール（共通）】\n朝(morning)=漢字・基礎力のみ/平日午前(am)不可/月=朝のみ(夜に学校の宿題のみOK・塾居残りなし)/火=朝午後夜/水=朝午後(〜16:00)/木=朝夜(プロタゴ午後OK)/金=朝午後夜/土=朝+午前(am)+午後+夜/日=朝+午前(am)+午後+夜\n【重要】スケジュール中の「午前」はamスロットのこと。土日のamスロットは勉強可能。amスロットに計算マスタ等が記載されている場合は配置済みとして扱うこと。\n計算マスタは土・日それぞれ1回ずつ必要。am・pm・night・morningどのスロットに入っていても配置済みとカウントすること。土曜・日曜それぞれ1回ずつ確認し、どちらか一方に入っていない場合のみ指摘すること。\n塾カード(月夜・水夜)とグノレブカードはルール違反対象外。月夜の学校の宿題はOK。水曜夜は学校の宿題も入れない。夜90分以内。\nグノレブの日の夜は20:20頃に帰宅するため曜日にかかわらず学校の宿題を入れてよい（水曜夜でも可）。グノレブが祝日の場合は朝〜午後まで土日と同じルールを適用。\n土日にサッカーが入っているスロットはサッカー優先。同スロットに勉強カードがある場合は時間競合を指摘。サッカーが入っていない日は勉強の分散を提案する。\n【問題がある場合のみ指摘すること。問題なければそのカテゴリは出力しない。基本のスケジュール通りで特別な予定もない週は、過不足がない限りスケジュール移動を促さない。】\n\n';
     prompt += slotRule;
 
-    // 夏休み・夏期講習期間の判定と追加ルール
-    const monDate = mon;
-    const summerStart = new Date(2026, 6, 18); // 7/18
-    const summerEnd = new Date(2026, 7, 31);   // 8/31
-    const isSummer = monDate >= summerStart && monDate <= summerEnd;
-    if (isSummer) {
-      const jukuDays = [
-        '2026-07-26','2026-07-27','2026-07-29','2026-07-30','2026-07-31',
-        '2026-08-01','2026-08-03','2026-08-04','2026-08-05','2026-08-06',
-        '2026-08-17','2026-08-18','2026-08-19','2026-08-20',
-        '2026-08-22','2026-08-23'
-      ];
-      prompt += '【夏休み期間】この週は夏休み中（7/18〜8/31）。\n';
-      prompt += '・通常の月曜・水曜の夜塾はなし。月曜・水曜夜も勉強可能。\n';
-      prompt += '・夏期講習日（7/26〜27、7/29〜8/1、8/3〜6、8/17〜20、8/22〜23）は夏期講習カードが入る想定。\n';
-      prompt += '・夏期講習（午前8:45〜12:30）の日：8:20出発。朝スロット後は出発準備。午後・夜が使える。\n';
-      prompt += '・夏期講習なし日：ほぼ一日使える。\n';
-      prompt += '・8/29（土）グノレブあり。\n\n';
+    // 共通の学習期間設定（学習期間の設定モーダルで登録した内容）に基づく判定
+    // ※課題学習の分配時と同じ判断基準（長期休暇期間・講習期間・終日外出日）を使う
+    const fmtMD = d => (d.getMonth()+1) + '/' + d.getDate();
+    const DAY_JP3 = ['月','火','水','木','金','土','日'];
+    const weekDates3 = Array.from({length:7}, (_,i) => addDays(mon, i));
+    const ps = getPeriodSettings();
+    const vacDaysInWeek = (ps.vacationStart && ps.vacationEnd) ? weekDates3.filter(d => isDateInVacationPeriod(d)) : [];
+    if (vacDaysInWeek.length > 0) {
+      const lectureDaysInWeek = vacDaysInWeek.filter(d => isDateLectureDay(d));
+      const nonLectureVacDaysInWeek = vacDaysInWeek.filter(d => !isDateLectureDay(d));
+      prompt += '【長期休暇期間】' + fmtMD(new Date(ps.vacationStart + 'T00:00:00')) + '〜' + fmtMD(new Date(ps.vacationEnd + 'T00:00:00')) + 'は長期休暇期間（学校なし）。\n';
+      prompt += '・通常の月曜・水曜の夜塾ルールは、この休暇期間中は適用しない（月曜・水曜夜も勉強可能）。\n';
+      if (lectureDaysInWeek.length > 0) {
+        prompt += '・講習日（' + ps.lectureStart + '〜' + ps.lectureEnd + '）: ' + lectureDaysInWeek.map(d => fmtMD(d) + '(' + DAY_JP3[(d.getDay()+6)%7] + ')').join('、') + '。この日は講習後の時間（午後・夜）が使える想定。\n';
+      }
+      if (nonLectureVacDaysInWeek.length > 0) {
+        prompt += '・講習がない休暇中の日: ' + nonLectureVacDaysInWeek.map(d => fmtMD(d) + '(' + DAY_JP3[(d.getDay()+6)%7] + ')').join('、') + '。学校がないためam(午前)スロットも使える。\n';
+      }
+      prompt += '\n';
+    }
+    const blockedDaysInWeek3 = weekDates3.filter(d => isDateBlockedDay(d));
+    if (blockedDaysInWeek3.length > 0) {
+      prompt += '【終日外出日（設定済み）】\n';
+      blockedDaysInWeek3.forEach(d => {
+        prompt += '・' + fmtMD(d) + '(' + DAY_JP3[(d.getDay()+6)%7] + ')は終日外出のため、この日は勉強できないものとして扱うこと。この日に勉強カードが入っていれば他の日への移動を提案すること。\n';
+      });
+      prompt += '\n';
     }
 
     if (isPreGnorev) {
@@ -5772,6 +5891,169 @@ function closeProposeModal() {
   openAIModal();
 }
 
+// ===== 学習期間の設定モーダル（共通：講習期間・長期休暇期間・終日外出日） =====
+let periodLectureDays = new Set();
+let periodBlockedDays = new Set();
+
+function openPeriodSettingsModal() {
+  const ps = getPeriodSettings();
+  const today = getTodayJST();
+  const fmt = d => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+
+  // 対象期間（カレンダー表示範囲）：既存データがあればそれを覆う範囲、なければ今日〜90日後
+  const allDays = [...(ps.lectureDays||[]), ...(ps.blockedDays||[])];
+  let rangeStart = today, rangeEnd = addDays(today, 90);
+  if (allDays.length > 0) {
+    const sorted = allDays.slice().sort();
+    const first = new Date(sorted[0] + 'T00:00:00');
+    const last  = new Date(sorted[sorted.length-1] + 'T00:00:00');
+    if (first < rangeStart) rangeStart = first;
+    if (last > rangeEnd) rangeEnd = last;
+  }
+  document.getElementById('periodRangeStart').value = fmt(rangeStart);
+  document.getElementById('periodRangeEnd').value = fmt(rangeEnd);
+
+  periodLectureDays = new Set(ps.lectureDays);
+  periodBlockedDays = new Set(ps.blockedDays);
+  document.getElementById('periodLectureStart').value = ps.lectureStart;
+  document.getElementById('periodLectureEnd').value = ps.lectureEnd;
+  document.getElementById('periodVacationStart').value = ps.vacationStart;
+  document.getElementById('periodVacationEnd').value = ps.vacationEnd;
+
+  const hasLecture = periodLectureDays.size > 0;
+  const hasVacation = !!(ps.vacationStart && ps.vacationEnd);
+  const hasBlocked = periodBlockedDays.size > 0;
+  document.getElementById('periodLectureOption').style.display = hasLecture ? '' : 'none';
+  document.getElementById('periodLectureToggle').textContent = (hasLecture ? '▼' : '▶') + ' 講習期間あり';
+  document.getElementById('periodVacationOption').style.display = hasVacation ? '' : 'none';
+  document.getElementById('periodVacationToggle').textContent = (hasVacation ? '▼' : '▶') + ' 長期休暇期間あり';
+  document.getElementById('periodBlockedOption').style.display = hasBlocked ? '' : 'none';
+  document.getElementById('periodBlockedToggle').textContent = (hasBlocked ? '▼' : '▶') + ' 終日外出日あり';
+  document.getElementById('periodSettingsError').textContent = '';
+
+  renderPeriodCalendars();
+  document.getElementById('periodSettingsModal').classList.add('open');
+}
+
+function closePeriodSettingsModal() {
+  document.getElementById('periodSettingsModal').classList.remove('open');
+}
+
+function togglePeriodLectureOption() {
+  const el = document.getElementById('periodLectureOption');
+  const btn = document.getElementById('periodLectureToggle');
+  const isOpen = el.style.display !== 'none';
+  el.style.display = isOpen ? 'none' : '';
+  btn.textContent = (isOpen ? '▶' : '▼') + ' 講習期間あり';
+  if (!isOpen) renderPeriodCalendars();
+}
+function togglePeriodVacationOption() {
+  const el = document.getElementById('periodVacationOption');
+  const btn = document.getElementById('periodVacationToggle');
+  const isOpen = el.style.display !== 'none';
+  el.style.display = isOpen ? 'none' : '';
+  btn.textContent = (isOpen ? '▶' : '▼') + ' 長期休暇期間あり';
+}
+function togglePeriodBlockedOption() {
+  const el = document.getElementById('periodBlockedOption');
+  const btn = document.getElementById('periodBlockedToggle');
+  const isOpen = el.style.display !== 'none';
+  el.style.display = isOpen ? 'none' : '';
+  btn.textContent = (isOpen ? '▶' : '▼') + ' 終日外出日あり';
+  if (!isOpen) renderPeriodCalendars();
+}
+
+function _renderPeriodCal(containerId, selectedSet, onClickFnName, selColor) {
+  const startStr = document.getElementById('periodRangeStart').value;
+  const endStr = document.getElementById('periodRangeEnd').value;
+  const cal = document.getElementById(containerId);
+  if (!startStr || !endStr) { cal.innerHTML = '<div style="font-size:12px;color:#e24b4a;">先に対象期間を入力してください</div>'; return; }
+  const start = new Date(startStr + 'T00:00:00');
+  const end = new Date(endStr + 'T00:00:00');
+  if (start > end) { cal.innerHTML = '<div style="font-size:12px;color:#e24b4a;">日付が不正です</div>'; return; }
+
+  let html = '';
+  ['月','火','水','木','金','土','日'].forEach(d => {
+    const c = d==='日'?'#e05555':d==='土'?'#2255cc':'#555';
+    html += `<div style="text-align:center;font-size:10px;font-weight:700;color:${c};padding:2px 0;">${d}</div>`;
+  });
+  const firstDow = start.getDay();
+  const blanksBefore = firstDow === 0 ? 6 : firstDow - 1;
+  for (let i = 0; i < blanksBefore; i++) html += '<div></div>';
+
+  const scan = new Date(start);
+  while (scan <= end) {
+    const key = localYMD(scan);
+    const d = scan.getDay();
+    const isSelected = selectedSet.has(key);
+    const dayColor = d===0?'#e05555':d===6?'#2255cc':'#333';
+    const bg = isSelected ? selColor : '#fff';
+    const color = isSelected ? '#fff' : dayColor;
+    const border = isSelected ? '1.5px solid ' + selColor : '1.5px solid #ddd';
+    html += `<div onclick="${onClickFnName}('${key}')" style="text-align:center;padding:4px 2px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;background:${bg};color:${color};border:${border};">${scan.getMonth()+1}/${scan.getDate()}</div>`;
+    scan.setDate(scan.getDate() + 1);
+  }
+  cal.innerHTML = html;
+}
+
+function renderPeriodCalendars() {
+  _renderPeriodCal('periodLectureCal', periodLectureDays, 'togglePeriodDay', '#B87A2E');
+  _renderPeriodCal('periodBlockedCal', periodBlockedDays, 'togglePeriodBlockedDay', '#e05555');
+  const lc = document.getElementById('periodLectureCount'); if (lc) lc.textContent = periodLectureDays.size + '日';
+  const bc = document.getElementById('periodBlockedCount'); if (bc) bc.textContent = periodBlockedDays.size + '日';
+}
+
+function togglePeriodDay(key) {
+  if (periodLectureDays.has(key)) periodLectureDays.delete(key);
+  else periodLectureDays.add(key);
+  renderPeriodCalendars();
+}
+function togglePeriodBlockedDay(key) {
+  if (periodBlockedDays.has(key)) periodBlockedDays.delete(key);
+  else periodBlockedDays.add(key);
+  renderPeriodCalendars();
+}
+
+function savePeriodSettings() {
+  const vacStart = document.getElementById('periodVacationStart').value;
+  const vacEnd = document.getElementById('periodVacationEnd').value;
+  if ((vacStart && !vacEnd) || (!vacStart && vacEnd)) {
+    document.getElementById('periodSettingsError').textContent = '長期休暇期間は開始日・終了日の両方を入力してください。';
+    return;
+  }
+  takeSnapshot();
+  localOverrides.periodSettings = {
+    lectureDays: Array.from(periodLectureDays).sort(),
+    lectureStart: document.getElementById('periodLectureStart').value || '08:45',
+    lectureEnd: document.getElementById('periodLectureEnd').value || '12:30',
+    vacationStart: vacStart,
+    vacationEnd: vacEnd,
+    blockedDays: Array.from(periodBlockedDays).sort()
+  };
+  saveLocal();
+  closePeriodSettingsModal();
+  showToast('📅 学習期間の設定を保存しました', 2200);
+}
+
+function clearPeriodSettings() {
+  if (!confirm('登録済みの講習期間・長期休暇期間・終日外出日をすべてクリアします。よろしいですか？')) return;
+  takeSnapshot();
+  localOverrides.periodSettings = { lectureDays:[], lectureStart:'08:45', lectureEnd:'12:30', vacationStart:'', vacationEnd:'', blockedDays:[] };
+  saveLocal();
+  periodLectureDays = new Set();
+  periodBlockedDays = new Set();
+  document.getElementById('periodVacationStart').value = '';
+  document.getElementById('periodVacationEnd').value = '';
+  document.getElementById('periodLectureOption').style.display = 'none';
+  document.getElementById('periodLectureToggle').textContent = '▶ 講習期間あり';
+  document.getElementById('periodVacationOption').style.display = 'none';
+  document.getElementById('periodVacationToggle').textContent = '▶ 長期休暇期間あり';
+  document.getElementById('periodBlockedOption').style.display = 'none';
+  document.getElementById('periodBlockedToggle').textContent = '▶ 終日外出日あり';
+  renderPeriodCalendars();
+  showToast('🧹 学習期間の設定をクリアしました', 2000);
+}
+
 // ===== 課題学習モーダル =====
 let kadaiPendingCards = []; // 確定前の分配結果
 
@@ -5786,27 +6068,37 @@ function openKadaiModal() {
   document.getElementById('kadaiStep1').style.display = '';
   document.getElementById('kadaiStep2').style.display = 'none';
   document.getElementById('kadaiError').textContent = '';
-  kadaiLectureDays = new Set();
-  document.getElementById('kadaiLectureOption').style.display = 'none';
-  document.getElementById('kadaiLectureToggle').textContent = '▶ 講習期間あり（任意）';
+
+  // 共通の学習期間設定（学習期間の設定モーダルで登録済みのもの）から自動で事前入力
+  const ps = getPeriodSettings();
+  kadaiLectureDays = new Set((ps.lectureDays||[]).filter(k => k >= fmt(today) && k <= fmt(due)));
+  document.getElementById('kadaiLectureOption').style.display = kadaiLectureDays.size > 0 ? '' : 'none';
+  document.getElementById('kadaiLectureToggle').textContent = (kadaiLectureDays.size > 0 ? '▼' : '▶') + ' 講習期間あり（任意）';
   const countEl = document.getElementById('kadaiLectureCount');
-  if (countEl) countEl.textContent = '0日';
-  document.getElementById('kadaiLectureStart').value = '08:45';
-  document.getElementById('kadaiLectureEnd').value   = '12:30';
-  document.getElementById('kadaiVacationOption').style.display = 'none';
-  document.getElementById('kadaiVacationToggle').textContent = '▶ 長期休暇期間あり（任意）';
-  document.getElementById('kadaiVacationStart').value = '';
-  document.getElementById('kadaiVacationEnd').value   = '';
-  kadaiBlockedDays = new Set();
-  document.getElementById('kadaiBlockedOption').style.display = 'none';
-  document.getElementById('kadaiBlockedToggle').textContent = '▶ 終日外出日あり（任意）';
+  if (countEl) countEl.textContent = kadaiLectureDays.size + '日';
+  document.getElementById('kadaiLectureStart').value = ps.lectureStart || '08:45';
+  document.getElementById('kadaiLectureEnd').value   = ps.lectureEnd || '12:30';
+
+  const hasVac = !!(ps.vacationStart && ps.vacationEnd);
+  document.getElementById('kadaiVacationOption').style.display = hasVac ? '' : 'none';
+  document.getElementById('kadaiVacationToggle').textContent = (hasVac ? '▼' : '▶') + ' 長期休暇期間あり（任意）';
+  document.getElementById('kadaiVacationStart').value = ps.vacationStart || '';
+  document.getElementById('kadaiVacationEnd').value   = ps.vacationEnd || '';
+
+  kadaiBlockedDays = new Set((ps.blockedDays||[]).filter(k => k >= fmt(today) && k <= fmt(due)));
+  document.getElementById('kadaiBlockedOption').style.display = kadaiBlockedDays.size > 0 ? '' : 'none';
+  document.getElementById('kadaiBlockedToggle').textContent = (kadaiBlockedDays.size > 0 ? '▼' : '▶') + ' 終日外出日あり（任意）';
   const blockedCountEl = document.getElementById('kadaiBlockedCount');
-  if (blockedCountEl) blockedCountEl.textContent = '0日';
+  if (blockedCountEl) blockedCountEl.textContent = kadaiBlockedDays.size + '日';
+
   const panel = document.getElementById('kadaiPanel');
   panel.style.display = 'flex';
   setTimeout(() => panel.classList.add('open'), 10);
   initKadaiPanelDrag();
   initKadaiResize();
+  // 事前選択済みの日がある場合、カレンダーをすぐ正しい選択状態で描画
+  if (kadaiLectureDays.size > 0) renderKadaiLectureCal();
+  if (kadaiBlockedDays.size > 0) renderKadaiBlockedCal();
 }
 function closeKadaiModal() {
   const panel = document.getElementById('kadaiPanel');
@@ -6793,6 +7085,25 @@ async function runKadaiDistribute() {
     const hasVacation = !!(vacStartStr2 && vacEndStr2);
     const vacStart = hasVacation ? new Date(vacStartStr2 + 'T00:00:00') : null;
     const vacEnd   = hasVacation ? new Date(vacEndStr2   + 'T00:00:00') : null;
+
+    // ここで入力・選択された講習日/休暇期間/終日外出日を、共通の学習期間設定にも反映する
+    // （次回以降、課題学習・全体バランスチェック等で自動的に使われるようにするため）
+    {
+      const ps = getPeriodSettings();
+      const mergedLecture = new Set(ps.lectureDays);
+      kadaiLectureDays.forEach(k => mergedLecture.add(k));
+      const mergedBlocked = new Set(ps.blockedDays);
+      kadaiBlockedDays.forEach(k => mergedBlocked.add(k));
+      localOverrides.periodSettings = {
+        lectureDays: Array.from(mergedLecture).sort(),
+        lectureStart: document.getElementById('kadaiLectureStart').value || ps.lectureStart,
+        lectureEnd: document.getElementById('kadaiLectureEnd').value || ps.lectureEnd,
+        vacationStart: hasVacation ? vacStartStr2 : ps.vacationStart,
+        vacationEnd: hasVacation ? vacEndStr2 : ps.vacationEnd,
+        blockedDays: Array.from(mergedBlocked).sort()
+      };
+      saveLocal();
+    }
 
     const firstMonday = getMonday(startDate);
     let scanMonday = new Date(firstMonday);
@@ -9257,33 +9568,6 @@ function patchCopyCalendar() {
 document.addEventListener('DOMContentLoaded', () => { patchCopyCalendar(); });
 
 // ===== バックアップ機能 =====
-// ===== 壊れた（空っぽの）カードのクリーンアップ =====
-// D&Dのバグ等で subject も unit_name も空のまま作られてしまった "moved_..." カードを検出・削除する
-function cleanupBrokenCards() {
-  if (!confirm('中身が空っぽの壊れたカードを削除します。よろしいですか？\n（この操作も「元に戻す」で取り消せます）')) return;
-  takeSnapshot();
-  let removed = 0;
-  Object.keys(localOverrides).forEach(key => {
-    // 週バケットのキー（YYYY-MM-DD形式）のみ対象。weeklyMoves等の特殊キーは除外
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) return;
-    const lo = localOverrides[key];
-    if (!lo || !Array.isArray(lo.added)) return;
-    const before = lo.added.length;
-    lo.added = lo.added.filter(t => {
-      const isBroken = t && t.uid && String(t.uid).indexOf('moved_') === 0 && !t.subject && !t.unit_name;
-      return !isBroken;
-    });
-    removed += before - lo.added.length;
-  });
-  if (removed > 0) {
-    saveLocal();
-    render();
-    showToast('🧹 壊れたカードを' + removed + '件削除しました', 2500);
-  } else {
-    showToast('壊れたカードは見つかりませんでした', 2000);
-  }
-  document.getElementById('aiModal').classList.remove('open');
-}
 
 function manualBackup() {
   const now = new Date();
