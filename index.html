@@ -5231,6 +5231,15 @@ async function runBalanceCheck() {
       }
       prompt += '\n';
     }
+    // 「計算マスタ」は通常の塾（月夜・水夜の塾カード）がある週だけ必要というルール。
+    // 講習期間中でも通常の塾がある週は計算マスタが必要、逆に塾がなければ講習日の有無に関わらず不要。
+    const hasNormalJukuThisWeek = /塾/.test(scheduleSummary);
+    if (!hasNormalJukuThisWeek) {
+      prompt += '【計算マスタの扱い】この週のスケジュールには通常の塾（月夜・水夜の塾カード）が見当たらない。\n';
+      prompt += '・「計算マスタ」は通常の塾がある週だけ必要なルール。この週は塾がないため、計算マスタが未配置でもルール違反・入れ忘れとして指摘しないこと。\n';
+      prompt += '・理科の基礎力テスト（週2回・木土目安）は塾の有無に関係なく通常通り必要なので、こちらは今まで通りチェックすること。\n';
+      prompt += '\n';
+    }
     const blockedDaysInWeek3 = weekDates3.filter(d => isDateBlockedDay(d));
     if (blockedDaysInWeek3.length > 0) {
       prompt += '【終日外出日（設定済み）】\n';
