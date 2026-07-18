@@ -5220,12 +5220,14 @@ async function runBalanceCheck() {
       const lectureDaysInWeek = vacDaysInWeek.filter(d => isDateLectureDay(d));
       const nonLectureVacDaysInWeek = vacDaysInWeek.filter(d => !isDateLectureDay(d));
       prompt += '【長期休暇期間】' + fmtMD(new Date(ps.vacationStart + 'T00:00:00')) + '〜' + fmtMD(new Date(ps.vacationEnd + 'T00:00:00')) + 'は長期休暇期間（学校なし）。\n';
-      prompt += '・通常の月曜・水曜の夜塾ルールは、この休暇期間中は適用しない（月曜・水曜夜も勉強可能）。\n';
+      prompt += '・この期間中は、上記【スロットルール（共通）】にある曜日ごとの時間帯制限（月=朝のみ/水=〜16:00/木=午後不可 等）は一切適用しない。学校がある通常週専用のルールなので、休暇期間中の日には当てはめないこと。\n';
+      prompt += '・休暇期間中は、講習の時間帯を除き、朝・午前(am)・午後・夜のどのスロットにカードがあっても問題なし。理由の説明や「祝日だから」「グノレブ扱いだから」等の推測でルール違反として扱わないこと。\n';
+      prompt += '・「グノレブが祝日の場合は土日と同じルールを適用」は、実際にグノレブ（模試）がその祝日にある場合のみの特例。海の日など通常の祝日には無関係なので混同しないこと。\n';
       if (lectureDaysInWeek.length > 0) {
-        prompt += '・講習日（' + ps.lectureStart + '〜' + ps.lectureEnd + '）: ' + lectureDaysInWeek.map(d => fmtMD(d) + '(' + DAY_JP3[(d.getDay()+6)%7] + ')').join('、') + '。この日は講習後の時間（午後・夜）が使える想定。\n';
+        prompt += '・講習日（' + ps.lectureStart + '〜' + ps.lectureEnd + '）: ' + lectureDaysInWeek.map(d => fmtMD(d) + '(' + DAY_JP3[(d.getDay()+6)%7] + ')').join('、') + '。この日は講習時間帯のみ勉強不可、講習後の時間（午後・夜）は使える想定。\n';
       }
       if (nonLectureVacDaysInWeek.length > 0) {
-        prompt += '・講習がない休暇中の日: ' + nonLectureVacDaysInWeek.map(d => fmtMD(d) + '(' + DAY_JP3[(d.getDay()+6)%7] + ')').join('、') + '。学校がないためam(午前)スロットも使える。\n';
+        prompt += '・講習がない休暇中の日: ' + nonLectureVacDaysInWeek.map(d => fmtMD(d) + '(' + DAY_JP3[(d.getDay()+6)%7] + ')').join('、') + '。1日ほぼ全スロットが使える。\n';
       }
       prompt += '\n';
     }
