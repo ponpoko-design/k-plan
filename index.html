@@ -322,6 +322,19 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
           </button>
         </div>
 
+        <!-- 壊れたカードのクリーンアップ -->
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button onclick="cleanupBrokenCards()" style="flex:1;border:none;border-radius:12px;background:#FEF2F2;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:10px;padding:10px 14px;text-align:left;transition:opacity .15s;box-sizing:border-box;" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
+            <div style="width:34px;height:34px;border-radius:9px;background:#FECACA;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7F1D1D" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:14px;font-weight:700;color:#7F1D1D;">空っぽカードを削除</div>
+              <div style="font-size:11px;color:#888;margin-top:1px;">中身のない壊れたカードを掃除</div>
+            </div>
+          </button>
+        </div>
+
       </div>
     </div>
   </div>
@@ -9244,6 +9257,34 @@ function patchCopyCalendar() {
 document.addEventListener('DOMContentLoaded', () => { patchCopyCalendar(); });
 
 // ===== バックアップ機能 =====
+// ===== 壊れた（空っぽの）カードのクリーンアップ =====
+// D&Dのバグ等で subject も unit_name も空のまま作られてしまった "moved_..." カードを検出・削除する
+function cleanupBrokenCards() {
+  if (!confirm('中身が空っぽの壊れたカードを削除します。よろしいですか？\n（この操作も「元に戻す」で取り消せます）')) return;
+  takeSnapshot();
+  let removed = 0;
+  Object.keys(localOverrides).forEach(key => {
+    // 週バケットのキー（YYYY-MM-DD形式）のみ対象。weeklyMoves等の特殊キーは除外
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) return;
+    const lo = localOverrides[key];
+    if (!lo || !Array.isArray(lo.added)) return;
+    const before = lo.added.length;
+    lo.added = lo.added.filter(t => {
+      const isBroken = t && t.uid && String(t.uid).indexOf('moved_') === 0 && !t.subject && !t.unit_name;
+      return !isBroken;
+    });
+    removed += before - lo.added.length;
+  });
+  if (removed > 0) {
+    saveLocal();
+    render();
+    showToast('🧹 壊れたカードを' + removed + '件削除しました', 2500);
+  } else {
+    showToast('壊れたカードは見つかりませんでした', 2000);
+  }
+  document.getElementById('aiModal').classList.remove('open');
+}
+
 function manualBackup() {
   const now = new Date();
   const jst = new Date(now.getTime() + 9*60*60*1000);
