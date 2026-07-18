@@ -5416,14 +5416,14 @@ async function runBalanceCheck() {
         resultDiv.appendChild(header);
 
         const table = document.createElement('table');
-        table.style.cssText = 'width:100%;border-collapse:collapse;font-size:12px;';
+        table.style.cssText = 'width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;';
 
         if (!simpleMode) {
           const thead = document.createElement('tr');
           thead.style.cssText = 'background:' + st.bg + ';';
-          [['日付','20%'],['スロット','15%'],['内容','65%']].forEach(([h,w]) => {
+          [['日付','22%'],['スロット','16%'],['内容','62%']].forEach(([h,w]) => {
             const th = document.createElement('th');
-            th.style.cssText = 'padding:5px 6px;text-align:left;color:#888;font-weight:600;border-bottom:1px solid ' + st.border + ';width:' + w + ';';
+            th.style.cssText = 'padding:5px 6px;text-align:left;color:#888;font-weight:600;border-bottom:1px solid ' + st.border + ';width:' + w + ';word-break:break-word;';
             th.textContent = h;
             thead.appendChild(th);
           });
@@ -5457,9 +5457,9 @@ async function runBalanceCheck() {
             };
             const cardColorMap = null; // 後でitem.dateごとに動的に引く
             [
-              {val: item.date||'-',    style:'padding:5px 4px;color:#555;white-space:nowrap;'},
-              {val: item.slot||'-',    style:'padding:5px 4px;color:#555;white-space:nowrap;'},
-              {val: item.detail||'-',  style:'padding:5px 4px;color:#333;line-height:1.5;', isDetail: true},
+              {val: item.date||'-',    style:'padding:5px 4px;color:#555;word-break:break-word;width:22%;'},
+              {val: item.slot||'-',    style:'padding:5px 4px;color:#555;word-break:break-word;width:16%;'},
+              {val: item.detail||'-',  style:'padding:5px 4px;color:#333;line-height:1.5;word-break:break-word;width:62%;', isDetail: true},
             ].forEach(c => {
               const td = document.createElement('td');
               td.style.cssText = c.style + 'border-bottom:1px solid #f0f0f0;';
