@@ -1927,7 +1927,7 @@ function render() {
         const remapped = Object.assign({}, t, { _dayIdx: colIdx });
         const cell = document.getElementById('c'+colIdx+'-'+t._slotIdx);
         if (!cell) return;
-        _renderCard(remapped, cell, t);
+        _renderCard(remapped, cell, t, dateKey(colMonday));
       });
       // 空セルタップで追加
       for (let s = 0; s < SLOTS; s++) {
@@ -1988,13 +1988,14 @@ function render() {
   tasks.forEach(t => {
     const cell = document.getElementById('c'+t._dayIdx+'-'+t._slotIdx);
     if (!cell) return;
-    _renderCard(t, cell, t);
+    _renderCard(t, cell, t, dateKey(currentMonday));
   });
 }
 
 // カード描画ヘルパー（SP縦向き・通常共用）
 // tDisplay: 表示用（_dayIdxがリマップ済み）、tOrig: 元のタスクオブジェクト（イベント処理用）
-function _renderCard(tDisplay, cell, tOrig) {
+// srcMonday: このカードが実際に属する週のMonday（YYYY-MM-DD文字列）。週またぎD&Dの移動元バケット特定に使用
+function _renderCard(tDisplay, cell, tOrig, srcMonday) {
   const t = tOrig; // イベント・D&D処理は元のtを使う
     const card = document.createElement('div');
     const cls = SUBJ_CLASS[t.subject] || 'plan';
@@ -2054,6 +2055,7 @@ function _renderCard(tDisplay, cell, tOrig) {
     card.setAttribute('data-id', t.id || t.uid || '');
     card.setAttribute('data-uid', t.uid || '');
     card.setAttribute('tabindex', '-1');
+    if (srcMonday) card.setAttribute('data-src-monday', srcMonday);
     // PCブラウザ（タッチなし）はclickで詳細、長押しでD&D
     if (!isTouch) {
       let pcTimer = null, pcDragging = false, pcClone = null;
@@ -2126,7 +2128,7 @@ function _renderCard(tDisplay, cell, tOrig) {
               const toDay = cell.dataset.targetDayIdx !== undefined
                 ? parseInt(cell.dataset.targetDayIdx)
                 : parseInt(m[1]);
-              openMoveModal({key:t._dayIdx+'-'+t._slotIdx, uid:t.uid, id:t.id}, toDay, parseInt(m[2]));
+              openMoveModal({key:t._dayIdx+'-'+t._slotIdx, uid:t.uid, id:t.id, srcMonday:card.getAttribute('data-src-monday')}, toDay, parseInt(m[2]));
             }
           }
         }
@@ -8287,7 +8289,7 @@ function _tStart(e) {
   e.stopPropagation();
   _tActive = false; _tDropCell = null;
   _tCard = e.currentTarget;
-  _tTask = {key:_tCard.getAttribute('data-key'), id:parseInt(_tCard.getAttribute('data-id')), uid:_tCard.getAttribute('data-uid')};
+  _tTask = {key:_tCard.getAttribute('data-key'), id:parseInt(_tCard.getAttribute('data-id')), uid:_tCard.getAttribute('data-uid'), srcMonday:_tCard.getAttribute('data-src-monday')};
   _tCard._touchMoved = false;
 
   _tTimer = setTimeout(() => {
@@ -8379,7 +8381,12 @@ function _tCancel() {
 }
 
 function openMoveModal(taskRef, toDay, toSlot) {
-  // taskRefはuidだけの場合があるので、実際のタスクオブジェクトをkey+uidで正確に取得
+  // バグ修正（週またぎD&D）：SP縦向きで表示中の3日間が週境界をまたぐ場合、
+  // ドラッグしたカードの「本当の所属週」(srcMonday)から実体を取得し、
+  // 移動先も currentMonday+toDay から実際の日付→その週のMondayを算出して
+  // 正しいlocalOverridesバケットに保存する。
+  const savedMonday = currentMonday;
+  if (taskRef.srcMonday) currentMonday = new Date(taskRef.srcMonday + 'T00:00:00');
   const allTasks = getTasksForWeek();
   let task;
   if (taskRef._fromDateExact !== undefined || taskRef.display_type !== undefined) {
@@ -8388,50 +8395,65 @@ function openMoveModal(taskRef, toDay, toSlot) {
     // uidで完全一致（同スロット複数カードでもuidは異なる）
     task = allTasks.find(t => t.uid === taskRef.uid) || taskRef;
   }
+  const srcWk = dateKey(currentMonday); // タスクが実際に格納されている週
+  currentMonday = savedMonday; // 表示中の週（センター週）に戻す
+
+  // 移動先の絶対日付・週・曜日インデックスを正しく解決
+  const newDate = addDays(currentMonday, toDay);
+  const destMonday = getMonday(newDate);
+  const destWk = dateKey(destMonday);
+  const destDayIdx = Math.round((newDate - destMonday) / 86400000);
+  const newDateStr = newDate.getFullYear() + '-' +
+    String(newDate.getMonth()+1).padStart(2,'0') + '-' +
+    String(newDate.getDate()).padStart(2,'0');
 
   // weeklyカード（繰り返し）のみポップアップ表示、それ以外は直接移動
   if (task.display_type !== 'weekly') {
     takeSnapshot();
     const SLOTS2 = ['plan','morning','am','pm','night'];
-    const wk = getWeekKey();
-    if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
-    const lo = localOverrides[wk];
-    if (!lo.added) lo.added = [];
-    const addIdx = lo.added.findIndex(a => a.uid === task.uid);
+    if (!localOverrides[srcWk]) localOverrides[srcWk] = {added:[], hidden:{}};
+    const srcLo = localOverrides[srcWk];
+    if (!srcLo.added) srcLo.added = [];
+    const addIdx = srcLo.added.findIndex(a => a.uid === task.uid);
+
+    if (!localOverrides[destWk]) localOverrides[destWk] = {added:[], hidden:{}};
+    const destLo = localOverrides[destWk];
+    if (!destLo.added) destLo.added = [];
+
     if (addIdx >= 0) {
-      lo.added[addIdx]._dayIdx = toDay;
-      lo.added[addIdx].slot = SLOTS2[toSlot] || 'night';
-      const newDate = addDays(currentMonday, toDay);
-      const newDateStr = newDate.getFullYear() + '-' +
-        String(newDate.getMonth()+1).padStart(2,'0') + '-' +
-        String(newDate.getDate()).padStart(2,'0');
-      lo.added[addIdx]._fromDateExact = newDateStr;
-      lo.added[addIdx].date = newDateStr;
+      // 既存のローカル追加エントリを更新（移動元週と移動先週が違う場合はバケットも移動）
+      const entry = srcLo.added[addIdx];
+      entry._dayIdx = destDayIdx;
+      entry.slot = SLOTS2[toSlot] || 'night';
+      entry._slotIdx = toSlot;
+      entry._fromDateExact = newDateStr;
+      entry.date = newDateStr;
+      if (srcWk !== destWk) {
+        srcLo.added.splice(addIdx, 1);
+        destLo.added.push(entry);
+      }
     } else {
-      if (!lo.hidden) lo.hidden = {};
+      // 元は週テンプレート/one_time由来の実体：移動元週で非表示化し、移動先週に新規追加
+      if (!srcLo.hidden) srcLo.hidden = {};
       const hkey = (task.display_type === 'weekly') ? task.uid + '_' + task._dayIdx : task.uid;
-      lo.hidden[hkey] = true;
-      const newDate = addDays(currentMonday, toDay);
-      const newDateStr = newDate.getFullYear() + '-' +
-        String(newDate.getMonth()+1).padStart(2,'0') + '-' +
-        String(newDate.getDate()).padStart(2,'0');
+      srcLo.hidden[hkey] = true;
       const movedCard = {
         ...task, uid: 'moved_'+Date.now(), display_type:'one_time',
-        _dayIdx: toDay, slot: SLOTS2[toSlot]||'night', _slotIdx: toSlot,
-        weekday_index: toDay, order: 99, repeat_key: null,
+        _dayIdx: destDayIdx, slot: SLOTS2[toSlot]||'night', _slotIdx: toSlot,
+        weekday_index: destDayIdx, order: 99, repeat_key: null,
         _fromDateExact: newDateStr, date: newDateStr
       };
-      lo.added.push(movedCard);
+      destLo.added.push(movedCard);
     }
     saveLocal(); render();
     return;
   }
-  _pendingMove = {task: taskRef, toDay, toSlot};
+  _pendingMove = {task: taskRef, toDay, toSlot, srcWk};
   const slotNames = {0:'予定',1:'朝',2:'午前',3:'午後',4:'夜'};
   document.getElementById('moveModalTitle').textContent =
-    DAYS_JP2[toDay] + '曜日の' + (slotNames[toSlot]||'') + 'に移動しますか？';
+    DAYS_JP2[destDayIdx] + '曜日の' + (slotNames[toSlot]||'') + 'に移動しますか？';
   const slotNames2 = {0:'予定',1:'朝',2:'午前',3:'午後',4:'夜'};
-  document.getElementById('moveWeeklyLabel').textContent = DAYS_JP2[toDay] + '曜日の' + (slotNames2[toSlot]||'');
+  document.getElementById('moveWeeklyLabel').textContent = DAYS_JP2[destDayIdx] + '曜日の' + (slotNames2[toSlot]||'');
   document.querySelector('input[name="moveType"][value="once"]').checked = true;
   document.getElementById('moveModal').classList.add('open');
 }
@@ -8444,15 +8466,29 @@ function closeMoveModal() {
 function confirmMove() {
   if (!_pendingMove) return;
   takeSnapshot();
-  const {task, toDay, toSlot} = _pendingMove;
+  const {task, toDay, toSlot, srcWk} = _pendingMove;
   const type = document.querySelector('input[name="moveType"]:checked').value;
   const SLOTS2 = ['plan','morning','am','pm','night'];
 
+  // 移動元タスクを、実際に属する週(srcWk)から正しく取得（週またぎD&D対応）
+  const savedMonday = currentMonday;
+  if (srcWk) currentMonday = new Date(srcWk + 'T00:00:00');
   const allTasks = getTasksForWeek();
   // uidで完全一致
   const orig = allTasks.find(t => t.uid === task.uid)
     || allTasks.find(t => t.id === task.id);
+  currentMonday = savedMonday;
   if (!orig) { closeMoveModal(); return; }
+
+  // 移動先の絶対日付・週・曜日インデックスを正しく解決
+  const newDate = addDays(currentMonday, toDay);
+  const destMonday = getMonday(newDate);
+  const destWk = dateKey(destMonday);
+  const destDayIdx = Math.round((newDate - destMonday) / 86400000);
+  const newDateStr = newDate.getFullYear() + '-' +
+    String(newDate.getMonth()+1).padStart(2,'0') + '-' +
+    String(newDate.getDate()).padStart(2,'0');
+  const wkSrc = srcWk || dateKey(currentMonday);
 
   if (type === 'weekly') {
     // 毎週移動：weeklyMovesに保存（fromDate以降の週に適用）
@@ -8462,7 +8498,7 @@ function confirmMove() {
     const origDayIdx = orig._origDayIdx !== undefined ? orig._origDayIdx : orig._dayIdx;
     const existIdx = localOverrides.weeklyMoves.findIndex(mv => mv.origUid === origUid && mv.origDayIdx === origDayIdx);
     const moveUid = 'wm_' + Date.now();
-    const moveEntry = {origUid, origDayIdx, toDay, toSlot: SLOTS2[toSlot]||'night', moveUid, fromDate: dateKey(currentMonday)};
+    const moveEntry = {origUid, origDayIdx, toDay: destDayIdx, toSlot: SLOTS2[toSlot]||'night', moveUid, fromDate: wkSrc};
     if (existIdx >= 0) localOverrides.weeklyMoves[existIdx] = moveEntry;
     else localOverrides.weeklyMoves.push(moveEntry);
     const taskCopy = {...orig, uid: origUid};
@@ -8470,37 +8506,35 @@ function confirmMove() {
     const taskIdx = localOverrides.weeklyMovesTasks.findIndex(t => t.uid === origUid);
     if (taskIdx >= 0) localOverrides.weeklyMovesTasks[taskIdx] = taskCopy;
     else localOverrides.weeklyMovesTasks.push(taskCopy);
-    // 今週の週overridesをクリア
-    const wk = getWeekKey();
-    if (localOverrides[wk]) {
-      if (localOverrides[wk].added) localOverrides[wk].added = localOverrides[wk].added.filter(a => a.uid !== orig.uid);
-      if (localOverrides[wk].hidden) delete localOverrides[wk].hidden[origUid + '_' + origDayIdx];
+    // 移動元週のoverridesをクリア
+    if (localOverrides[wkSrc]) {
+      if (localOverrides[wkSrc].added) localOverrides[wkSrc].added = localOverrides[wkSrc].added.filter(a => a.uid !== orig.uid);
+      if (localOverrides[wkSrc].hidden) delete localOverrides[wkSrc].hidden[origUid + '_' + origDayIdx];
     }
   } else {
-    // 今週だけ移動
-    const wk = getWeekKey();
-    if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
-    const lo = localOverrides[wk];
-    if (!lo.hidden) lo.hidden = {};
-    if (!lo.added) lo.added = [];
+    // 今回だけ移動：移動元週で非表示化し、移動先週に追加
+    if (!localOverrides[wkSrc]) localOverrides[wkSrc] = {added:[], hidden:{}};
+    const loSrc = localOverrides[wkSrc];
+    if (!loSrc.hidden) loSrc.hidden = {};
+    if (!loSrc.added) loSrc.added = [];
     if (orig.display_type === 'weekly' || orig._isWeeklyMoved) {
-      lo.hidden[orig.uid + '_' + orig._dayIdx] = true;
+      loSrc.hidden[orig.uid + '_' + orig._dayIdx] = true;
     } else {
-      lo.hidden[orig.uid] = true;
+      loSrc.hidden[orig.uid] = true;
     }
-    const addIdx = lo.added.findIndex(a => a.uid === orig.uid);
-    if (addIdx >= 0) lo.added.splice(addIdx, 1);
-    const newDate = addDays(currentMonday, toDay);
-    const newDateStr = newDate.getFullYear() + '-' +
-      String(newDate.getMonth()+1).padStart(2,'0') + '-' +
-      String(newDate.getDate()).padStart(2,'0');
+    const addIdx = loSrc.added.findIndex(a => a.uid === orig.uid);
+    if (addIdx >= 0) loSrc.added.splice(addIdx, 1);
+
+    if (!localOverrides[destWk]) localOverrides[destWk] = {added:[], hidden:{}};
+    const loDest = localOverrides[destWk];
+    if (!loDest.added) loDest.added = [];
     const movedCard = {
       ...orig, uid:'moved_'+Date.now(), display_type:'one_time',
-      _dayIdx:toDay, slot:SLOTS2[toSlot]||'night', _slotIdx:toSlot,
-      weekday_index:toDay, order:99, repeat_key:null,
+      _dayIdx:destDayIdx, slot:SLOTS2[toSlot]||'night', _slotIdx:toSlot,
+      weekday_index:destDayIdx, order:99, repeat_key:null,
       _fromDateExact: newDateStr, date: newDateStr
     };
-    lo.added.push(movedCard);
+    loDest.added.push(movedCard);
   }
   saveLocal(); closeMoveModal(); render();
 }
