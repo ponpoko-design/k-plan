@@ -2955,6 +2955,29 @@ function confirmSaveRange(range) {
   showToast('変更を保存しました ✓');
 }
 
+// 週をまたぐ一括編集用：currentMondayを介さず、正しい週キー(wk)を直接指定して保存する。
+// dateKey()文字列からnew Date()で逆変換するとJSTで1日ズレるため、
+// 検索結果が保持している「保存時そのままのwkキー文字列」を直接使うこと。
+function _doSaveTaskAtWk(t, newSubject, newUnit, newHash, newMemo, newTime, wk) {
+  const newColors = SUBJ_COLOR[newSubject] || ['#eee','#333'];
+  if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
+  const lo = localOverrides[wk];
+  lo.hidden = lo.hidden || {};
+  lo.added = lo.added || [];
+  const idx = lo.added.findIndex(a => a.uid === t.uid);
+  if (idx >= 0) {
+    Object.assign(lo.added[idx], {subject:newSubject, unit_name:newUnit, hash:newHash, note:newMemo, study_time:newTime, color:newColors[0]});
+  } else {
+    if (t.display_type === 'weekly') lo.hidden[t.uid + '_' + t._dayIdx] = true;
+    else lo.hidden[t.uid] = true;
+    lo.added.push(Object.assign({}, t, {
+      subject:newSubject, unit_name:newUnit, hash:newHash,
+      note:newMemo, study_time:newTime, color:newColors[0],
+      uid: t.uid+'_edit_'+Date.now(), display_type:'one_time', repeat_key:null
+    }));
+  }
+}
+
 function _doSaveTask(t, newSubject, newUnit, newHash, newMemo, newTime, range) {
   const newColors = SUBJ_COLOR[newSubject] || ['#eee','#333'];
 
@@ -4898,17 +4921,14 @@ function bsDeleteSelected() {
   const tasks = Array.from(_bsSelected).map(i => _bsResults[i]);
   if (tasks.length === 0) return;
   takeSnapshot();
-  const savedMonday = currentMonday;
   tasks.forEach(t => {
-    currentMonday = new Date(t._srcMonday + 'T00:00:00');
-    const wk = getWeekKey();
+    const wk = t._srcMonday;
     if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
     const lo = localOverrides[wk];
     lo.hidden = lo.hidden || {};
     lo.hidden[t.uid] = true;
     if (lo.added) lo.added = lo.added.filter(a => a.uid !== t.uid);
   });
-  currentMonday = savedMonday;
   saveLocal();
   closeBulkSearchModal();
   render();
@@ -5052,14 +5072,15 @@ function saveBulkEdit() {
 
     takeSnapshot();
     const count = _bulkFieldTasks.length;
-    const savedMonday = currentMonday;
     _bulkFieldTasks.forEach((t, i) => {
       const newUnit = unitVals ? unitVals[i] : t.unit_name;
       const newNote = noteVals ? noteVals[i] : t.note;
       const newTime = timeVals ? (parseInt(timeVals[i]) || 0) : t.study_time;
-      if (t._srcMonday) currentMonday = new Date(t._srcMonday + 'T00:00:00');
-      _doSaveTask(t, t.subject, newUnit, t.hash || '', newNote, newTime, 'once');
-      if (t._srcMonday) currentMonday = savedMonday;
+      if (t._srcMonday) {
+        _doSaveTaskAtWk(t, t.subject, newUnit, t.hash || '', newNote, newTime, t._srcMonday);
+      } else {
+        _doSaveTask(t, t.subject, newUnit, t.hash || '', newNote, newTime, 'once');
+      }
     });
     saveLocal();
     closeBulkEditModal();
