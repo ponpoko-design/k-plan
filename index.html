@@ -169,6 +169,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
   outline-offset:1px;
   filter:brightness(0.85);
 }
+body.dim-unselected .card{
+  opacity:0.3;
+  transition:opacity .15s;
+}
+body.dim-unselected .card.selected{
+  opacity:1;
+}
 
 
 </style>
@@ -4640,6 +4647,7 @@ function _addToSelection(t, cardEl) {
     }
   }
   if (editBtn) editBtn.style.display = count > 0 ? 'inline-block' : 'none';
+  document.body.classList.toggle('dim-unselected', count > 0);
 }
 
 function cancelMultiSelect() {
@@ -4652,6 +4660,7 @@ function cancelMultiSelect() {
   if (btn) { btn.textContent='複数選択'; btn.style.background='white'; btn.style.color='#888'; btn.style.borderColor='#ccc'; }
   const editBtn = document.getElementById('bulkEditToggle');
   if (editBtn) editBtn.style.display = 'none';
+  document.body.classList.remove('dim-unselected');
   render();
 }
 
@@ -8858,6 +8867,13 @@ render();
   outline:2px solid #1a2744 !important;
   outline-offset:1px;
   filter:brightness(0.85);
+}
+body.dim-unselected .card{
+  opacity:0.3;
+  transition:opacity .15s;
+}
+body.dim-unselected .card.selected{
+  opacity:1;
 }
 
 
