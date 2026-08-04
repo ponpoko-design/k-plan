@@ -1323,20 +1323,26 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 
   <!-- 複数選択まとめて変更モーダル -->
   <div class="modal-bg" id="bulkEditModal">
-    <div class="modal" style="width:360px;">
+    <div class="modal" style="width:380px;">
       <div class="modal-hdr">
         <span id="bulkEditCount">まとめて変更</span>
         <button class="modal-close" onclick="closeBulkEditModal()">×</button>
       </div>
       <div class="modal-body">
-        <div style="font-size:12px;color:#888;margin-bottom:14px;line-height:1.6;">チェックを入れた項目だけ、選択した予定すべてに一括で反映されます。チェックのない項目はそれぞれ元の内容のまま変わりません。</div>
+        <div style="font-size:12px;color:#888;margin-bottom:14px;line-height:1.6;">チェックを入れた項目だけ保存されます。チェックのない項目はそれぞれ元の内容のまま変わりません。</div>
 
         <div style="border:1.5px solid #eee;border-radius:10px;padding:12px;margin-bottom:10px;">
           <label style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;color:#1a2744;cursor:pointer;">
             <input type="checkbox" id="bulkUnitChk" onchange="toggleBulkField('Unit')" style="width:16px;height:16px;">
             単元名を変更する
           </label>
-          <input id="bulkUnitInput" type="text" disabled style="width:100%;margin-top:8px;border:1.5px solid #ddd;border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit;background:#f7f7f7;">
+          <div id="bulkUnitSimple" style="margin-top:8px;">
+            <input id="bulkUnitInput" type="text" disabled style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit;background:#f7f7f7;">
+          </div>
+          <div id="bulkUnitMulti" style="display:none;margin-top:8px;">
+            <input id="bulkUnitBulkInput" type="text" disabled placeholder="全部同じ値にする場合はここに入力" oninput="applyBulkValueToRows('Unit', this.value)" style="width:100%;border:1.5px solid #B87A2E;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;background:#f7f7f7;margin-bottom:8px;">
+            <div id="bulkUnitRows" style="max-height:170px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding-right:2px;"></div>
+          </div>
         </div>
 
         <div style="border:1.5px solid #eee;border-radius:10px;padding:12px;margin-bottom:10px;">
@@ -1344,7 +1350,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
             <input type="checkbox" id="bulkNoteChk" onchange="toggleBulkField('Note')" style="width:16px;height:16px;">
             メモを変更する
           </label>
-          <textarea id="bulkNoteInput" disabled style="width:100%;margin-top:8px;border:1.5px solid #ddd;border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit;background:#f7f7f7;min-height:50px;"></textarea>
+          <div id="bulkNoteSimple" style="margin-top:8px;">
+            <textarea id="bulkNoteInput" disabled style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit;background:#f7f7f7;min-height:50px;"></textarea>
+          </div>
+          <div id="bulkNoteMulti" style="display:none;margin-top:8px;">
+            <textarea id="bulkNoteBulkInput" disabled placeholder="全部同じ値にする場合はここに入力" oninput="applyBulkValueToRows('Note', this.value)" style="width:100%;border:1.5px solid #B87A2E;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;background:#f7f7f7;margin-bottom:8px;min-height:36px;"></textarea>
+            <div id="bulkNoteRows" style="max-height:170px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding-right:2px;"></div>
+          </div>
         </div>
 
         <div style="border:1.5px solid #eee;border-radius:10px;padding:12px;margin-bottom:14px;">
@@ -1352,10 +1364,14 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
             <input type="checkbox" id="bulkTimeChk" onchange="toggleBulkField('Time')" style="width:16px;height:16px;">
             学習時間（分）を変更する
           </label>
-          <input id="bulkTimeInput" type="text" inputmode="numeric" disabled oninput="this.value=this.value.replace(/[０-９]/g,s=>String.fromCharCode(s.charCodeAt(0)-65248)).replace(/[^0-9]/g,'')" style="width:100%;margin-top:8px;border:1.5px solid #ddd;border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit;background:#f7f7f7;">
+          <div id="bulkTimeSimple" style="margin-top:8px;">
+            <input id="bulkTimeInput" type="text" inputmode="numeric" disabled oninput="this.value=this.value.replace(/[０-９]/g,s=>String.fromCharCode(s.charCodeAt(0)-65248)).replace(/[^0-9]/g,'')" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit;background:#f7f7f7;">
+          </div>
+          <div id="bulkTimeMulti" style="display:none;margin-top:8px;">
+            <input id="bulkTimeBulkInput" type="text" inputmode="numeric" disabled placeholder="全部同じ値にする場合はここに入力" oninput="this.value=this.value.replace(/[０-９]/g,s=>String.fromCharCode(s.charCodeAt(0)-65248)).replace(/[^0-9]/g,'');applyBulkValueToRows('Time', this.value)" style="width:100%;border:1.5px solid #B87A2E;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;background:#f7f7f7;margin-bottom:8px;">
+            <div id="bulkTimeRows" style="max-height:170px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding-right:2px;"></div>
+          </div>
         </div>
-
-        <div style="font-size:11px;color:#B87A2E;margin-bottom:14px;line-height:1.5;">※選択した予定の内容が元々ばらばらの項目は空欄（プレースホルダー「値が異なります」）で表示されます。まとめて同じ内容に上書きしたい場合のみチェックを入れて入力してください。</div>
 
         <div class="modal-actions">
           <button onclick="closeBulkEditModal()" style="flex:1;background:white;border:2px solid #ccc;color:#888;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">やめる</button>
@@ -4663,43 +4679,110 @@ function confirmMultiDelete() {
 }
 
 // ===== 複数選択まとめて変更 =====
+let _bulkFieldTasks = [];
+
+function _bulkRowLabel(t) {
+  return (t.subject || '') + '：' + (t.unit_name || '(単元名なし)');
+}
+
+function _bulkInputStyle(type) {
+  return type === 'textarea'
+    ? 'width:100%;border:1.5px solid #ddd;border-radius:8px;padding:6px 8px;font-size:13px;font-family:inherit;min-height:36px;background:#f7f7f7;'
+    : 'width:100%;border:1.5px solid #ddd;border-radius:8px;padding:6px 8px;font-size:13px;font-family:inherit;background:#f7f7f7;';
+}
+
+function setupBulkField(field, tasks, getter, type) {
+  document.getElementById('bulk' + field + 'Chk').checked = false;
+  const values = tasks.map(getter);
+  const allSame = values.every(v => v === values[0]);
+  const simpleWrap = document.getElementById('bulk' + field + 'Simple');
+  const multiWrap = document.getElementById('bulk' + field + 'Multi');
+
+  if (allSame) {
+    simpleWrap.style.display = 'block';
+    multiWrap.style.display = 'none';
+    const simpleInput = document.getElementById('bulk' + field + 'Input');
+    simpleInput.value = values[0] || '';
+    simpleInput.disabled = true;
+    simpleInput.style.background = '#f7f7f7';
+  } else {
+    simpleWrap.style.display = 'none';
+    multiWrap.style.display = 'block';
+    const bulkInput = document.getElementById('bulk' + field + 'BulkInput');
+    bulkInput.value = '';
+    bulkInput.disabled = true;
+    bulkInput.style.background = '#f7f7f7';
+    const rowsWrap = document.getElementById('bulk' + field + 'Rows');
+    rowsWrap.innerHTML = '';
+    tasks.forEach((t, i) => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;flex-direction:column;gap:3px;';
+      const labelEl = document.createElement('div');
+      labelEl.style.cssText = 'font-size:11px;color:#888;font-weight:700;';
+      labelEl.textContent = _bulkRowLabel(t);
+      row.appendChild(labelEl);
+      const inputEl = document.createElement(type === 'textarea' ? 'textarea' : 'input');
+      if (type !== 'textarea') inputEl.type = 'text';
+      if (type === 'number') inputEl.inputMode = 'numeric';
+      inputEl.id = 'bulk' + field + 'Row_' + i;
+      inputEl.value = values[i];
+      inputEl.disabled = true;
+      inputEl.style.cssText = _bulkInputStyle(type);
+      if (type === 'number') {
+        inputEl.addEventListener('input', function () {
+          this.value = this.value.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 65248)).replace(/[^0-9]/g, '');
+        });
+      }
+      row.appendChild(inputEl);
+      rowsWrap.appendChild(row);
+    });
+  }
+}
+
 function openBulkEditModal() {
   if (_selectedCards.size === 0) return;
-  const tasks = Array.from(_selectedCards.values()).map(v => v.t);
-  const allSame = arr => arr.every(v => v === arr[0]);
+  _bulkFieldTasks = Array.from(_selectedCards.values()).map(v => v.t);
+  document.getElementById('bulkEditCount').textContent = _bulkFieldTasks.length + '件をまとめて変更';
 
-  document.getElementById('bulkEditCount').textContent = tasks.length + '件をまとめて変更';
-
-  const setupField = (chkId, inputId, values) => {
-    const chk = document.getElementById(chkId);
-    const input = document.getElementById(inputId);
-    chk.checked = false;
-    input.disabled = true;
-    if (allSame(values)) {
-      input.value = values[0] || '';
-      input.placeholder = '';
-    } else {
-      input.value = '';
-      input.placeholder = '（値が異なります）';
-    }
-  };
-
-  setupField('bulkUnitChk', 'bulkUnitInput', tasks.map(t => t.unit_name || ''));
-  setupField('bulkNoteChk', 'bulkNoteInput', tasks.map(t => t.note || ''));
-  setupField('bulkTimeChk', 'bulkTimeInput', tasks.map(t => t.study_time != null ? String(t.study_time) : ''));
+  setupBulkField('Unit', _bulkFieldTasks, t => t.unit_name || '', 'text');
+  setupBulkField('Note', _bulkFieldTasks, t => t.note || '', 'textarea');
+  setupBulkField('Time', _bulkFieldTasks, t => (t.study_time != null ? String(t.study_time) : ''), 'number');
 
   document.getElementById('bulkEditModal').classList.add('open');
 }
 
 function toggleBulkField(field) {
-  const chk = document.getElementById('bulk' + field + 'Chk');
-  const input = document.getElementById('bulk' + field + 'Input');
-  input.disabled = !chk.checked;
-  input.style.background = chk.checked ? 'white' : '#f7f7f7';
+  const on = document.getElementById('bulk' + field + 'Chk').checked;
+  const simpleInput = document.getElementById('bulk' + field + 'Input');
+  if (simpleInput) { simpleInput.disabled = !on; simpleInput.style.background = on ? 'white' : '#f7f7f7'; }
+  const bulkInput = document.getElementById('bulk' + field + 'BulkInput');
+  if (bulkInput) { bulkInput.disabled = !on; bulkInput.style.background = on ? 'white' : '#f7f7f7'; }
+  const rowsWrap = document.getElementById('bulk' + field + 'Rows');
+  if (rowsWrap) {
+    rowsWrap.querySelectorAll('input,textarea').forEach(el => {
+      el.disabled = !on;
+      el.style.background = on ? 'white' : '#f7f7f7';
+    });
+  }
+}
+
+function applyBulkValueToRows(field, val) {
+  const rowsWrap = document.getElementById('bulk' + field + 'Rows');
+  if (!rowsWrap) return;
+  rowsWrap.querySelectorAll('input,textarea').forEach(el => { el.value = val; });
 }
 
 function closeBulkEditModal() {
   document.getElementById('bulkEditModal').classList.remove('open');
+}
+
+function _getBulkFieldValues(field) {
+  const simpleWrap = document.getElementById('bulk' + field + 'Simple');
+  if (simpleWrap.style.display !== 'none') {
+    const v = document.getElementById('bulk' + field + 'Input').value;
+    return _bulkFieldTasks.map(() => v);
+  }
+  return _bulkFieldTasks.map((_, i) => document.getElementById('bulk' + field + 'Row_' + i).value);
 }
 
 function saveBulkEdit() {
@@ -4710,16 +4793,16 @@ function saveBulkEdit() {
     showToast('変更する項目にチェックを入れてください');
     return;
   }
-  const unitVal = document.getElementById('bulkUnitInput').value;
-  const noteVal = document.getElementById('bulkNoteInput').value;
-  const timeVal = parseInt(document.getElementById('bulkTimeInput').value) || 0;
+  const unitVals = applyUnit ? _getBulkFieldValues('Unit') : null;
+  const noteVals = applyNote ? _getBulkFieldValues('Note') : null;
+  const timeVals = applyTime ? _getBulkFieldValues('Time') : null;
 
   takeSnapshot();
-  const count = _selectedCards.size;
-  _selectedCards.forEach(({t}) => {
-    const newUnit = applyUnit ? unitVal : t.unit_name;
-    const newNote = applyNote ? noteVal : t.note;
-    const newTime = applyTime ? timeVal : t.study_time;
+  const count = _bulkFieldTasks.length;
+  _bulkFieldTasks.forEach((t, i) => {
+    const newUnit = unitVals ? unitVals[i] : t.unit_name;
+    const newNote = noteVals ? noteVals[i] : t.note;
+    const newTime = timeVals ? (parseInt(timeVals[i]) || 0) : t.study_time;
     _doSaveTask(t, t.subject, newUnit, t.hash, newNote, newTime, 'once');
   });
   saveLocal();
