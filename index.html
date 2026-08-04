@@ -209,8 +209,6 @@ body.multi-select-mode .undo-btn{
       <button id="bulkDeleteBtn" onclick="confirmMultiDelete()" style="display:none;background:#e24b4a;border:1.5px solid #e24b4a;color:white;border-radius:14px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">削除</button>
       <button id="bulkEditToggle" onclick="openBulkEditModal()" style="display:none;background:#B87A2E;border:1.5px solid #B87A2E;color:white;border-radius:14px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">変更</button>
       <button id="multiSelectCancelBtn" onclick="cancelMultiSelect()" style="display:none;background:#888;border:1.5px solid #888;color:white;border-radius:14px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">元に戻す</button>
-      <button class="undo-btn" onclick="undoLast()"
-        style="background:white;border:1.5px solid #ccc;color:#888;border-radius:14px;padding:3px 18px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">↩</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px;">
       <button class="month-btn" id="btnNextMonth" onclick="navNextMonth()">翌月 <svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor"><polygon points="0,0 0,12 10,6"/></svg></button>
@@ -9186,6 +9184,7 @@ window.addEventListener('resize', fitModals);
 initPhoneViewStart();
 updateNavLabels();
 updateUndoBtn();
+updateFloatingClose();
 // 画面向き変更時に再レンダリング
 window.addEventListener('orientationchange', () => {
   setTimeout(() => { initPhoneViewStart(); render(); updateNavLabels(); }, 100);
@@ -9226,12 +9225,6 @@ render();
 @media (max-width: 1024px) {
   /* スマホ・iPadでは上下のXを非表示 */
   .detail-close-btn, .add-close-btn { display: none !important; }
-  /* ヘッダーのundoボタンを非表示（スマホは浮きボタン） */
-  #multiSelectToggle + .undo-btn { display: none !important; }
-}
-@media (min-width: 1025px) {
-  /* PCは浮きundoボタン非表示 */
-  #floatingUndoBtn { display: none !important; }
 }
 @media (max-width: 1024px) {
   /* スマホ・iPadでは上下のXを非表示 */
