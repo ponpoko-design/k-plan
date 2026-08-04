@@ -9241,7 +9241,9 @@ render();
 </style>
 
 <button id="floatingUndoBtn" class="undo-btn" onclick="undoLast()" ontouchend="event.preventDefault();undoLast();"
-  style="display:none;position:fixed;bottom:112px;right:16px;width:48px;height:48px;border-radius:50%;background:rgba(26,39,68,0.92);color:white;font-size:20px;font-weight:700;border:none;cursor:pointer;z-index:500;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,0.3);opacity:0.35;pointer-events:none;">↩</button>
+  style="display:none;position:fixed;bottom:112px;right:16px;width:48px;height:48px;border-radius:50%;background:rgba(26,39,68,0.92);color:white;border:none;cursor:pointer;z-index:500;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,0.3);opacity:0.35;pointer-events:none;">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
+</button>
 <button id="floatingCloseBtn" onclick="closeAnyModal()" ontouchend="event.preventDefault();closeAnyModal();">×</button>
 
 </div><!-- #app -->
