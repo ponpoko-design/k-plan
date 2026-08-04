@@ -4594,7 +4594,7 @@ function toggleMultiSelect() {
     }
   } else {
     _multiSelectMode = true;
-    document.getElementById('multiSelectToggle').textContent = '複数選択中';
+    document.getElementById('multiSelectToggle').textContent = '選択解除';
     document.getElementById('multiSelectToggle').style.background = '#888';
     document.getElementById('multiSelectToggle').style.color = 'white';
     document.getElementById('multiSelectToggle').style.borderColor = '#888';
@@ -4633,7 +4633,7 @@ function _addToSelection(t, cardEl) {
       btn.style.color = 'white';
       btn.style.borderColor = '#1a2744';
     } else {
-      btn.textContent = '複数選択中';
+      btn.textContent = '選択解除';
       btn.style.background = '#888';
       btn.style.color = 'white';
       btn.style.borderColor = '#888';
@@ -4742,7 +4742,7 @@ function setupBulkField(field, tasks, getter, type) {
 function openBulkEditModal() {
   if (_selectedCards.size === 0) return;
   _bulkFieldTasks = Array.from(_selectedCards.values()).map(v => v.t);
-  document.getElementById('bulkEditCount').textContent = _bulkFieldTasks.length + '件をまとめて変更';
+  document.getElementById('bulkEditCount').textContent = 'まとめて変更';
 
   setupBulkField('Unit', _bulkFieldTasks, t => t.unit_name || '', 'text');
   setupBulkField('Note', _bulkFieldTasks, t => t.note || '', 'textarea');
@@ -4786,30 +4786,39 @@ function _getBulkFieldValues(field) {
 }
 
 function saveBulkEdit() {
-  const applyUnit = document.getElementById('bulkUnitChk').checked;
-  const applyNote = document.getElementById('bulkNoteChk').checked;
-  const applyTime = document.getElementById('bulkTimeChk').checked;
-  if (!applyUnit && !applyNote && !applyTime) {
-    showToast('変更する項目にチェックを入れてください');
-    return;
-  }
-  const unitVals = applyUnit ? _getBulkFieldValues('Unit') : null;
-  const noteVals = applyNote ? _getBulkFieldValues('Note') : null;
-  const timeVals = applyTime ? _getBulkFieldValues('Time') : null;
+  try {
+    if (!_bulkFieldTasks || _bulkFieldTasks.length === 0) {
+      showToast('選択された予定が見つかりません。もう一度選択し直してください');
+      return;
+    }
+    const applyUnit = document.getElementById('bulkUnitChk').checked;
+    const applyNote = document.getElementById('bulkNoteChk').checked;
+    const applyTime = document.getElementById('bulkTimeChk').checked;
+    if (!applyUnit && !applyNote && !applyTime) {
+      showToast('変更する項目にチェックを入れてください');
+      return;
+    }
+    const unitVals = applyUnit ? _getBulkFieldValues('Unit') : null;
+    const noteVals = applyNote ? _getBulkFieldValues('Note') : null;
+    const timeVals = applyTime ? _getBulkFieldValues('Time') : null;
 
-  takeSnapshot();
-  const count = _bulkFieldTasks.length;
-  _bulkFieldTasks.forEach((t, i) => {
-    const newUnit = unitVals ? unitVals[i] : t.unit_name;
-    const newNote = noteVals ? noteVals[i] : t.note;
-    const newTime = timeVals ? (parseInt(timeVals[i]) || 0) : t.study_time;
-    _doSaveTask(t, t.subject, newUnit, t.hash, newNote, newTime, 'once');
-  });
-  saveLocal();
-  closeBulkEditModal();
-  cancelMultiSelect();
-  render();
-  showToast(`${count}件をまとめて変更しました ✓`, 2500);
+    takeSnapshot();
+    const count = _bulkFieldTasks.length;
+    _bulkFieldTasks.forEach((t, i) => {
+      const newUnit = unitVals ? unitVals[i] : t.unit_name;
+      const newNote = noteVals ? noteVals[i] : t.note;
+      const newTime = timeVals ? (parseInt(timeVals[i]) || 0) : t.study_time;
+      _doSaveTask(t, t.subject, newUnit, t.hash, newNote, newTime, 'once');
+    });
+    saveLocal();
+    closeBulkEditModal();
+    cancelMultiSelect();
+    render();
+    showToast(`${count}件をまとめて変更しました ✓`, 2500);
+  } catch (err) {
+    console.error('saveBulkEdit error:', err);
+    showToast('変更の保存に失敗しました：' + (err && err.message ? err.message : err), 4000);
+  }
 }
 
 // ===== Undo機能 =====
