@@ -237,8 +237,8 @@ body.multi-select-mode .undo-btn{
     <button class="bnav-btn active" onclick="goHome()">
       <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
     </button>
-    <button class="bnav-btn" onclick="openRangeStats()">
-      <svg viewBox="0 0 24 24"><path d="M1 12S5 5 12 5s11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+    <button class="bnav-btn" onclick="openBulkSearchModal()">
+      <svg viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="M15 5l4 4"/></svg>
     </button>
     <button class="bnav-btn" onclick="openAIModal()">
       <svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M12 2v4M8 2h8"/><circle cx="9" cy="13" r="1.5" fill="currentColor" stroke="none"/><circle cx="15" cy="13" r="1.5" fill="currentColor" stroke="none"/><line x1="9" y1="17" x2="15" y2="17"/><line x1="7" y1="8" x2="7" y2="6"/><line x1="17" y1="8" x2="17" y2="6"/></svg>
@@ -1331,6 +1331,69 @@ body.multi-select-mode .undo-btn{
     </div>
   </div>
 
+  <!-- カード一括編集（検索） -->
+  <div class="modal-bg" id="bulkSearchModal">
+    <div class="modal" style="width:min(480px,96vw);max-height:88vh;display:flex;flex-direction:column;">
+      <div class="modal-hdr" style="background:#1a2744;flex-shrink:0;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="M15 5l4 4"/></svg>
+          <span style="font-size:16px;font-weight:700;">カード一括編集</span>
+        </div>
+        <button class="modal-close" ontouchend="event.preventDefault();closeBulkSearchModal();" onclick="closeBulkSearchModal()">×</button>
+      </div>
+      <div style="padding:14px 16px;overflow-y:auto;flex:1;">
+        <div style="font-size:12px;color:#888;margin-bottom:12px;line-height:1.6;">繰り返さない予定（単発カード）だけが検索対象です。条件を絞って探し、複数まとめて削除・変更できます。</div>
+
+        <div class="field">
+          <label>期間（空欄なら今週のみ）</label>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <input type="date" id="bsFrom" style="width:auto;border:1.5px solid #ccc;border-radius:9999px;padding:6px 12px;font-size:13px;font-family:inherit;color:#1a2744;">
+            <span style="color:#888;font-size:13px;">〜</span>
+            <input type="date" id="bsTo" style="width:auto;border:1.5px solid #ccc;border-radius:9999px;padding:6px 12px;font-size:13px;font-family:inherit;color:#1a2744;">
+          </div>
+        </div>
+
+        <div class="field">
+          <label>教科</label>
+          <select id="bsSubject" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit;">
+            <option value="">すべて</option>
+            <option value="算数">算数</option>
+            <option value="国語">国語</option>
+            <option value="理科">理科</option>
+            <option value="社会">社会</option>
+            <option value="学校の宿題">学校の宿題</option>
+            <option value="習い事">習い事</option>
+            <option value="予定">予定</option>
+          </select>
+        </div>
+
+        <div class="field" style="position:relative;">
+          <label>単元名（1文字入力で候補が出ます）</label>
+          <input type="text" id="bsUnitInput" oninput="updateBsUnitSuggestions()" autocomplete="off" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit;">
+          <div id="bsUnitSuggestions" style="display:none;position:absolute;left:0;right:0;top:100%;background:white;border:1.5px solid #ddd;border-radius:8px;margin-top:2px;max-height:160px;overflow-y:auto;z-index:20;box-shadow:0 4px 12px rgba(0,0,0,0.12);"></div>
+        </div>
+
+        <div class="field">
+          <label>季節講習マーク（☀️）</label>
+          <select id="bsSeason" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit;">
+            <option value="all">すべて</option>
+            <option value="yes">ありのみ</option>
+            <option value="no">なしのみ</option>
+          </select>
+        </div>
+
+        <button onclick="runBulkSearch()" style="width:100%;background:#1a2744;color:white;border:none;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px;">検索</button>
+
+        <div id="bsResultCount" style="font-size:12px;color:#888;margin-top:14px;"></div>
+        <div id="bsResultList" style="margin-top:6px;"></div>
+      </div>
+      <div id="bsActions" style="display:none;gap:8px;padding:12px 16px;border-top:1px solid #eee;flex-shrink:0;">
+        <button onclick="bsDeleteSelected()" style="flex:1;background:#e24b4a;border:none;color:white;border-radius:9999px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">削除</button>
+        <button onclick="bsEditSelected()" style="flex:1;background:#B87A2E;border:none;color:white;border-radius:9999px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">変更</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 複数選択まとめて変更モーダル -->
   <div class="modal-bg" id="bulkEditModal">
     <div class="modal" style="width:380px;">
@@ -1674,50 +1737,44 @@ body.multi-select-mode .undo-btn{
   </div>
 
   <!-- 期間集計モーダル -->
-  <div class="modal-bg" id="rangeStatsModal">
-    <div class="modal" style="width:min(520px,96vw);max-height:88vh;display:flex;flex-direction:column;">
-      <div class="modal-hdr" style="background:#1a2744;padding:14px 18px;flex-shrink:0;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><path d="M1 12S5 5 12 5s11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
-          <span style="font-size:16px;font-weight:700;">期間を指定して集計</span>
-        </div>
-        <button class="modal-close" ontouchend="event.preventDefault();closeRangeStats();" onclick="closeRangeStats()">×</button>
-      </div>
-      <!-- 期間A -->
-      <div style="padding:12px 16px;flex-shrink:0;border-bottom:1px solid #eee;background:#fafafa;">
-        <div style="font-size:11px;font-weight:700;color:#888;margin-bottom:6px;">期間 A</div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <input type="date" id="rangeStatsFrom" style="border:1.5px solid #ccc;border-radius:9999px;padding:6px 12px;font-size:13px;font-family:inherit;color:#1a2744;">
-          <span style="color:#888;font-size:13px;">〜</span>
-          <input type="date" id="rangeStatsTo" style="border:1.5px solid #ccc;border-radius:9999px;padding:6px 12px;font-size:13px;font-family:inherit;color:#1a2744;">
-          <button onclick="runRangeStats()" style="background:#1a2744;color:white;border:none;border-radius:9999px;padding:6px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">集計</button>
-        </div>
-      </div>
-      <!-- 期間B（比較用） -->
-      <div style="padding:12px 16px;flex-shrink:0;border-bottom:2px solid #eee;">
-        <div style="font-size:11px;font-weight:700;color:#888;margin-bottom:6px;">期間 B <span style="font-weight:400;color:#bbb;">（比較したいときだけ入力）</span></div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <input type="date" id="rangeStatsFromB" style="border:1.5px solid #ccc;border-radius:9999px;padding:6px 12px;font-size:13px;font-family:inherit;color:#1a2744;">
-          <span style="color:#888;font-size:13px;">〜</span>
-          <input type="date" id="rangeStatsToB" style="border:1.5px solid #ccc;border-radius:9999px;padding:6px 12px;font-size:13px;font-family:inherit;color:#1a2744;">
-          <button onclick="runRangeStats()" style="background:#534AB7;color:white;border:none;border-radius:9999px;padding:6px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">集計</button>
-        </div>
-      </div>
-      <div id="rangeStatsResult" style="overflow-y:auto;padding:16px 18px;flex:1;">
-        <div style="color:#aaa;font-size:13px;text-align:center;padding:20px 0;">期間を選んで「集計」を押してください</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 集計モーダル -->
+  <!-- 集計モーダル（今週・今月／期間指定 タブ統合） -->
   <div class="modal-bg" id="statsModal">
-    <div class="modal" style="width:min(960px,96vw);max-height:88vh;overflow-y:auto;">
-      <div class="modal-hdr">
+    <div class="modal" style="width:min(960px,96vw);max-height:88vh;display:flex;flex-direction:column;">
+      <div class="modal-hdr" style="flex-shrink:0;">
         <span>家庭学習時間の合計</span>
         <button class="modal-close detail-close-btn" ontouchend="event.preventDefault();closeStats();" onclick="closeStats()">×</button>
       </div>
-      <div class="modal-body" style="padding:0;">
+      <div style="display:flex;border-bottom:1px solid #eee;flex-shrink:0;">
+        <button id="statsMainTabSummary" onclick="switchStatsMainTab('summary')" style="flex:1;padding:10px;border:none;border-bottom:3px solid #1a2744;background:white;font-size:13px;font-weight:700;color:#1a2744;cursor:pointer;font-family:inherit;">今週・今月の集計</button>
+        <button id="statsMainTabRange" onclick="switchStatsMainTab('range')" style="flex:1;padding:10px;border:none;border-bottom:3px solid transparent;background:white;font-size:13px;font-weight:700;color:#888;cursor:pointer;font-family:inherit;">期間を指定して集計</button>
+      </div>
+      <div class="modal-body" style="padding:0;overflow-y:auto;flex:1;">
         <div id="statsInner"></div>
+        <div id="statsRangeInner" style="display:none;flex-direction:column;">
+          <!-- 期間A -->
+          <div style="padding:12px 16px;flex-shrink:0;border-bottom:1px solid #eee;background:#fafafa;">
+            <div style="font-size:11px;font-weight:700;color:#888;margin-bottom:6px;">期間 A</div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <input type="date" id="rangeStatsFrom" style="border:1.5px solid #ccc;border-radius:9999px;padding:6px 12px;font-size:13px;font-family:inherit;color:#1a2744;">
+              <span style="color:#888;font-size:13px;">〜</span>
+              <input type="date" id="rangeStatsTo" style="border:1.5px solid #ccc;border-radius:9999px;padding:6px 12px;font-size:13px;font-family:inherit;color:#1a2744;">
+              <button onclick="runRangeStats()" style="background:#1a2744;color:white;border:none;border-radius:9999px;padding:6px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">集計</button>
+            </div>
+          </div>
+          <!-- 期間B（比較用） -->
+          <div style="padding:12px 16px;flex-shrink:0;border-bottom:2px solid #eee;">
+            <div style="font-size:11px;font-weight:700;color:#888;margin-bottom:6px;">期間 B <span style="font-weight:400;color:#bbb;">（比較したいときだけ入力）</span></div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <input type="date" id="rangeStatsFromB" style="border:1.5px solid #ccc;border-radius:9999px;padding:6px 12px;font-size:13px;font-family:inherit;color:#1a2744;">
+              <span style="color:#888;font-size:13px;">〜</span>
+              <input type="date" id="rangeStatsToB" style="border:1.5px solid #ccc;border-radius:9999px;padding:6px 12px;font-size:13px;font-family:inherit;color:#1a2744;">
+              <button onclick="runRangeStats()" style="background:#534AB7;color:white;border:none;border-radius:9999px;padding:6px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">集計</button>
+            </div>
+          </div>
+          <div id="rangeStatsResult" style="overflow-y:auto;padding:16px 18px;">
+            <div style="color:#aaa;font-size:13px;text-align:center;padding:20px 0;">期間を選んで「集計」を押してください</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -4358,7 +4415,27 @@ function showStats() {
   renderPieChart('pieChartMonthMain', null, thisMonthMain);
 
   document.getElementById('statsModal').classList.add('open');
+  switchStatsMainTab('summary');
+  _resetRangeStatsTab();
   updateFloatingClose();
+}
+
+function switchStatsMainTab(tab) {
+  const summaryBtn = document.getElementById('statsMainTabSummary');
+  const rangeBtn = document.getElementById('statsMainTabRange');
+  const summaryDiv = document.getElementById('statsInner');
+  const rangeDiv = document.getElementById('statsRangeInner');
+  if (tab === 'range') {
+    summaryDiv.style.display = 'none';
+    rangeDiv.style.display = 'flex';
+    rangeBtn.style.color = '#1a2744'; rangeBtn.style.borderBottomColor = '#1a2744';
+    summaryBtn.style.color = '#888'; summaryBtn.style.borderBottomColor = 'transparent';
+  } else {
+    summaryDiv.style.display = 'block';
+    rangeDiv.style.display = 'none';
+    summaryBtn.style.color = '#1a2744'; summaryBtn.style.borderBottomColor = '#1a2744';
+    rangeBtn.style.color = '#888'; rangeBtn.style.borderBottomColor = 'transparent';
+  }
 }
 
 function switchStatsTab(tab) {
@@ -4371,8 +4448,8 @@ function switchStatsTab(tab) {
 }
 function closeStats() { document.getElementById('statsModal').classList.remove('open'); updateFloatingClose(); }
 
-// ===== 期間指定集計 =====
-function openRangeStats() {
+// ===== 期間指定集計（統合タブ） =====
+function _resetRangeStatsTab() {
   const today = getTodayJST();
   const y = today.getFullYear(), m = today.getMonth()+1, d = today.getDate();
   const fromDefault = y+'-'+String(m).padStart(2,'0')+'-01';
@@ -4382,10 +4459,7 @@ function openRangeStats() {
   document.getElementById('rangeStatsFromB').value = '';
   document.getElementById('rangeStatsToB').value = '';
   document.getElementById('rangeStatsResult').innerHTML = '<div style="color:#aaa;font-size:13px;text-align:center;padding:20px 0;">期間を選んで「集計」を押してください</div>';
-  document.getElementById('rangeStatsModal').classList.add('open');
-  updateFloatingClose();
 }
-function closeRangeStats() { document.getElementById('rangeStatsModal').classList.remove('open'); updateFloatingClose(); }
 
 function calcRangeTotal(fromDate, toDate) {
   const bySubj = {};
@@ -4677,6 +4751,181 @@ function confirmMultiDelete() {
   showToast(`${count}件を今週だけ削除しました`, 2500);
 }
 
+// ===== カード一括編集（検索） =====
+let _bsResults = [];
+let _bsSelected = new Set();
+let _bulkEditFromSearch = false;
+
+function openBulkSearchModal() {
+  document.getElementById('bsFrom').value = '';
+  document.getElementById('bsTo').value = '';
+  document.getElementById('bsSubject').value = '';
+  document.getElementById('bsUnitInput').value = '';
+  document.getElementById('bsSeason').value = 'all';
+  document.getElementById('bsUnitSuggestions').style.display = 'none';
+  document.getElementById('bsResultList').innerHTML = '';
+  document.getElementById('bsResultCount').textContent = '';
+  document.getElementById('bsActions').style.display = 'none';
+  _bsResults = [];
+  _bsSelected.clear();
+  document.getElementById('bulkSearchModal').classList.add('open');
+  updateFloatingClose();
+}
+function closeBulkSearchModal() {
+  document.getElementById('bulkSearchModal').classList.remove('open');
+  updateFloatingClose();
+}
+
+function _bsGetRange() {
+  const fromStr = document.getElementById('bsFrom').value;
+  const toStr = document.getElementById('bsTo').value;
+  if (fromStr && toStr) {
+    const f = new Date(fromStr+'T00:00:00'); f.setHours(0,0,0,0);
+    const t = new Date(toStr+'T00:00:00'); t.setHours(0,0,0,0);
+    return { fromDate: f, toDate: t };
+  }
+  // 期間未指定の場合は今週だけ
+  const mon = getMonday(getTodayJST());
+  return { fromDate: mon, toDate: addDays(mon, 6) };
+}
+
+// 指定期間内の「繰り返さない予定（one_time）」だけを週をまたいで収集
+function _bsCollectCandidates(fromDate, toDate, subject) {
+  const results = [];
+  const savedMonday = currentMonday;
+  let wkStart = getMonday(fromDate);
+  const wkEndMonday = getMonday(toDate);
+  let guard = 0;
+  while (wkStart <= wkEndMonday && guard < 520) { // 上限10年分で無限ループ防止
+    guard++;
+    currentMonday = new Date(wkStart);
+    const tasks = getTasksForWeek();
+    tasks.forEach(t => {
+      if (t.display_type !== 'one_time') return;
+      const taskDate = addDays(currentMonday, t._dayIdx);
+      taskDate.setHours(0,0,0,0);
+      if (taskDate < fromDate || taskDate > toDate) return;
+      if (subject && t.subject !== subject) return;
+      results.push(Object.assign({}, t, { _srcMonday: dateKey(currentMonday), _taskDateObj: taskDate }));
+    });
+    wkStart = addDays(wkStart, 7);
+  }
+  currentMonday = savedMonday;
+  return results;
+}
+
+function updateBsUnitSuggestions() {
+  const val = document.getElementById('bsUnitInput').value.trim();
+  const box = document.getElementById('bsUnitSuggestions');
+  if (!val) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  const { fromDate, toDate } = _bsGetRange();
+  const subject = document.getElementById('bsSubject').value;
+  const candidates = _bsCollectCandidates(fromDate, toDate, subject);
+  const names = [...new Set(candidates.map(t => t.unit_name).filter(Boolean))]
+    .filter(n => n.includes(val))
+    .slice(0, 8);
+  if (names.length === 0) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  box.innerHTML = names.map(n =>
+    `<div onclick="selectBsUnitSuggestion(this.dataset.name)" data-name="${n.replace(/"/g,'&quot;')}" style="padding:8px 10px;cursor:pointer;font-size:13px;border-bottom:1px solid #f2f2f2;">${n}</div>`
+  ).join('');
+  box.style.display = 'block';
+}
+function selectBsUnitSuggestion(name) {
+  document.getElementById('bsUnitInput').value = name;
+  document.getElementById('bsUnitSuggestions').style.display = 'none';
+}
+
+function runBulkSearch() {
+  document.getElementById('bsUnitSuggestions').style.display = 'none';
+  const { fromDate, toDate } = _bsGetRange();
+  const subject = document.getElementById('bsSubject').value;
+  const unitVal = document.getElementById('bsUnitInput').value.trim();
+  const season = document.getElementById('bsSeason').value;
+
+  let results = _bsCollectCandidates(fromDate, toDate, subject);
+  if (unitVal) results = results.filter(t => (t.unit_name||'').includes(unitVal));
+  if (season === 'yes') results = results.filter(t => t._lectureCard);
+  if (season === 'no') results = results.filter(t => !t._lectureCard);
+
+  results.sort((a,b) => a._taskDateObj - b._taskDateObj);
+  _bsResults = results;
+  _bsSelected.clear();
+  renderBsResults();
+}
+
+function renderBsResults() {
+  const list = document.getElementById('bsResultList');
+  const countEl = document.getElementById('bsResultCount');
+  countEl.textContent = _bsResults.length + '件見つかりました';
+  if (_bsResults.length === 0) {
+    list.innerHTML = '<div style="color:#aaa;font-size:13px;text-align:center;padding:16px 0;">該当する予定が見つかりませんでした</div>';
+    document.getElementById('bsActions').style.display = 'none';
+    return;
+  }
+  list.innerHTML = `<div style="display:flex;justify-content:flex-end;margin-bottom:6px;">
+      <button onclick="bsToggleSelectAll()" style="background:none;border:none;color:#1a2744;font-size:12px;font-weight:700;text-decoration:underline;cursor:pointer;font-family:inherit;">全て選択/解除</button>
+    </div>` +
+    _bsResults.map((t, i) => {
+      const colors = SUBJ_COLOR[t.subject] || ['#eee','#333'];
+      const d = t._taskDateObj;
+      const label = (d.getMonth()+1)+'/'+d.getDate()+'('+DAYS_JP[(d.getDay()+6)%7]+')';
+      const checked = _bsSelected.has(i) ? 'checked' : '';
+      return `<label style="display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid #f0f0f0;cursor:pointer;">
+        <input type="checkbox" onchange="toggleBsSelect(${i})" ${checked} style="width:16px;height:16px;flex-shrink:0;">
+        <span style="font-size:11px;color:#888;min-width:56px;flex-shrink:0;">${label}</span>
+        <span style="font-size:11px;font-weight:700;padding:2px 6px;border-radius:4px;background:${colors[0]};color:${colors[1]};flex-shrink:0;">${t.subject}</span>
+        <span style="font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t.unit_name || ''}</span>
+        ${t._lectureCard ? '<span style="font-size:14px;flex-shrink:0;">☀️</span>' : ''}
+      </label>`;
+    }).join('');
+  updateBsActionBar();
+}
+
+function toggleBsSelect(i) {
+  if (_bsSelected.has(i)) _bsSelected.delete(i); else _bsSelected.add(i);
+  updateBsActionBar();
+}
+function bsToggleSelectAll() {
+  if (_bsSelected.size === _bsResults.length) _bsSelected.clear();
+  else _bsResults.forEach((_, i) => _bsSelected.add(i));
+  renderBsResults();
+}
+function updateBsActionBar() {
+  document.getElementById('bsActions').style.display = _bsSelected.size > 0 ? 'flex' : 'none';
+}
+
+function bsDeleteSelected() {
+  const tasks = Array.from(_bsSelected).map(i => _bsResults[i]);
+  if (tasks.length === 0) return;
+  takeSnapshot();
+  const savedMonday = currentMonday;
+  tasks.forEach(t => {
+    currentMonday = new Date(t._srcMonday + 'T00:00:00');
+    const wk = getWeekKey();
+    if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
+    const lo = localOverrides[wk];
+    lo.hidden = lo.hidden || {};
+    lo.hidden[t.uid] = true;
+    if (lo.added) lo.added = lo.added.filter(a => a.uid !== t.uid);
+  });
+  currentMonday = savedMonday;
+  saveLocal();
+  closeBulkSearchModal();
+  render();
+  showToast(`${tasks.length}件を削除しました`, 2500);
+}
+
+function bsEditSelected() {
+  const tasks = Array.from(_bsSelected).map(i => _bsResults[i]);
+  if (tasks.length === 0) return;
+  _bulkFieldTasks = tasks;
+  _bulkEditFromSearch = true;
+  setupBulkField('Unit', tasks, t => t.unit_name || '', 'text');
+  setupBulkField('Note', tasks, t => t.note || '', 'textarea');
+  setupBulkField('Time', tasks, t => (t.study_time != null ? String(t.study_time) : ''), 'number');
+  document.getElementById('bulkEditModal').classList.add('open');
+}
+
 // ===== 複数選択まとめて変更 =====
 let _bulkFieldTasks = [];
 
@@ -4803,15 +5052,19 @@ function saveBulkEdit() {
 
     takeSnapshot();
     const count = _bulkFieldTasks.length;
+    const savedMonday = currentMonday;
     _bulkFieldTasks.forEach((t, i) => {
       const newUnit = unitVals ? unitVals[i] : t.unit_name;
       const newNote = noteVals ? noteVals[i] : t.note;
       const newTime = timeVals ? (parseInt(timeVals[i]) || 0) : t.study_time;
+      if (t._srcMonday) currentMonday = new Date(t._srcMonday + 'T00:00:00');
       _doSaveTask(t, t.subject, newUnit, t.hash || '', newNote, newTime, 'once');
+      if (t._srcMonday) currentMonday = savedMonday;
     });
     saveLocal();
     closeBulkEditModal();
     cancelMultiSelect();
+    if (_bulkEditFromSearch) { closeBulkSearchModal(); _bulkEditFromSearch = false; }
     render();
     showToast(`${count}件をまとめて変更しました ✓`, 2500);
   } catch (err) {
@@ -4875,7 +5128,6 @@ function closeAnyModal() {
   else if (id === 'deleteConfirmModal') closeDeleteConfirm();
   else if (id === 'copyModal') closeCopyModal();
   else if (id === 'statsModal') closeStats();
-  else if (id === 'rangeStatsModal') closeRangeStats();
   else if (id === 'saveRangeModal') closeSaveRangeModal();
   else if (id === 'repeatRangeModal') closeRepeatRangeModal();
   else openModal.classList.remove('open');
@@ -9794,7 +10046,7 @@ function resetAndInitModalDrag(bgId) {
 
 // 既存のopen関数をラップしてドラッグ初期化を注入
 ['aiModal','proposeModal','gnorevModal','detailModal','addModal','copyModal',
- 'statsModal','ruleChatModal','saveRangeModal','repeatRangeModal','rangeStatsModal'].forEach(id => {
+ 'statsModal','ruleChatModal','saveRangeModal','repeatRangeModal','bulkSearchModal','bulkEditModal'].forEach(id => {
   const bg = document.getElementById(id);
   if (!bg) return;
   const observer = new MutationObserver(() => {
