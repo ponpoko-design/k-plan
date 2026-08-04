@@ -196,6 +196,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
       <div class="hdr-title">航大 家庭学習スケジュール</div>
       <button id="multiSelectToggle" onclick="toggleMultiSelect()"
         style="background:white;border:1.5px solid #ccc;color:#888;border-radius:14px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">複数選択</button>
+      <button id="bulkEditToggle" onclick="openBulkEditModal()" style="display:none;background:#B87A2E;border:1.5px solid #B87A2E;color:white;border-radius:14px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">変更</button>
       <button class="undo-btn" onclick="undoLast()"
         style="background:white;border:1.5px solid #ccc;color:#888;border-radius:14px;padding:3px 18px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">↩</button>
     </div>
@@ -826,6 +827,14 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
     <div id="lectureScrollBody">
       <div style="font-size:13px;color:#888;margin-bottom:14px;">講習日を選択して配置すると、朝以外のスロットを講習パターンで自動置き換えします。</div>
       <div class="field">
+        <label>講習の種類</label>
+        <div style="display:flex;gap:8px;margin-top:4px;">
+          <button id="lectureSeasonSummer" onclick="setLectureSeason('夏期講習')" style="flex:1;border:2px solid #0F6E56;border-radius:9999px;background:#0F6E56;color:white;padding:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">夏期講習</button>
+          <button id="lectureSeasonWinter" onclick="setLectureSeason('冬期講習')" style="flex:1;border:2px solid #0F6E56;border-radius:9999px;background:white;color:#0F6E56;padding:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">冬期講習</button>
+          <button id="lectureSeasonSpring" onclick="setLectureSeason('春期講習')" style="flex:1;border:2px solid #0F6E56;border-radius:9999px;background:white;color:#0F6E56;padding:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">春期講習</button>
+        </div>
+      </div>
+      <div class="field">
         <label>講習日を選択（複数可）</label>
         <div style="font-size:12px;color:#888;margin-bottom:6px;">タップで選択・解除。</div>
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
@@ -1232,6 +1241,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
             <div id="lectureStarIcon" style="display:none;width:28px;height:28px;border-radius:6px;align-items:center;justify-content:center;flex-shrink:0;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><circle cx="12" cy="12" r="3.5"/><line x1="12" y1="1.5" x2="12" y2="5" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="19" x2="12" y2="22.5" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="1.5" y1="12" x2="5" y2="12" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="19" y1="12" x2="22.5" y2="12" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="4.2" y1="4.2" x2="6.5" y2="6.5" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="17.5" y1="17.5" x2="19.8" y2="19.8" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="19.8" y1="4.2" x2="17.5" y2="6.5" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="6.5" y1="17.5" x2="4.2" y2="19.8" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
             </div>
+            <span id="lectureSeasonLabel" style="display:none;font-size:13px;font-weight:700;color:#1a2744;white-space:nowrap;"></span>
           </div>
           <div style="display:flex;align-items:center;gap:6px;">
             <button id="confirmTempBtn" onclick="confirmTempCard()" style="display:none;border-radius:9999px;background:white;font-size:12px;font-weight:700;padding:4px 12px;cursor:pointer;font-family:inherit;white-space:nowrap;">仮→決定</button>
@@ -1306,6 +1316,50 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
         <div style="display:flex;align-items:center;justify-content:center;margin-top:14px;position:relative;">
           <div class="modal-repeat" id="detailRepeatBtn" onclick="toggleRepeat()" style="margin:0;text-decoration:underline;"></div>
           <button class="detail-close-btn" onclick="closeDetail()" ontouchend="event.preventDefault();closeDetail();" style="position:absolute;right:0;width:40px;height:40px;background:white;border:2px solid #ddd;color:#888;border-radius:50%;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 複数選択まとめて変更モーダル -->
+  <div class="modal-bg" id="bulkEditModal">
+    <div class="modal" style="width:360px;">
+      <div class="modal-hdr">
+        <span id="bulkEditCount">まとめて変更</span>
+        <button class="modal-close" onclick="closeBulkEditModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size:12px;color:#888;margin-bottom:14px;line-height:1.6;">チェックを入れた項目だけ、選択した予定すべてに一括で反映されます。チェックのない項目はそれぞれ元の内容のまま変わりません。</div>
+
+        <div style="border:1.5px solid #eee;border-radius:10px;padding:12px;margin-bottom:10px;">
+          <label style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;color:#1a2744;cursor:pointer;">
+            <input type="checkbox" id="bulkUnitChk" onchange="toggleBulkField('Unit')" style="width:16px;height:16px;">
+            単元名を変更する
+          </label>
+          <input id="bulkUnitInput" type="text" disabled style="width:100%;margin-top:8px;border:1.5px solid #ddd;border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit;background:#f7f7f7;">
+        </div>
+
+        <div style="border:1.5px solid #eee;border-radius:10px;padding:12px;margin-bottom:10px;">
+          <label style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;color:#1a2744;cursor:pointer;">
+            <input type="checkbox" id="bulkNoteChk" onchange="toggleBulkField('Note')" style="width:16px;height:16px;">
+            メモを変更する
+          </label>
+          <textarea id="bulkNoteInput" disabled style="width:100%;margin-top:8px;border:1.5px solid #ddd;border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit;background:#f7f7f7;min-height:50px;"></textarea>
+        </div>
+
+        <div style="border:1.5px solid #eee;border-radius:10px;padding:12px;margin-bottom:14px;">
+          <label style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;color:#1a2744;cursor:pointer;">
+            <input type="checkbox" id="bulkTimeChk" onchange="toggleBulkField('Time')" style="width:16px;height:16px;">
+            学習時間（分）を変更する
+          </label>
+          <input id="bulkTimeInput" type="text" inputmode="numeric" disabled oninput="this.value=this.value.replace(/[０-９]/g,s=>String.fromCharCode(s.charCodeAt(0)-65248)).replace(/[^0-9]/g,'')" style="width:100%;margin-top:8px;border:1.5px solid #ddd;border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit;background:#f7f7f7;">
+        </div>
+
+        <div style="font-size:11px;color:#B87A2E;margin-bottom:14px;line-height:1.5;">※選択した予定の内容が元々ばらばらの項目は空欄（プレースホルダー「値が異なります」）で表示されます。まとめて同じ内容に上書きしたい場合のみチェックを入れて入力してください。</div>
+
+        <div class="modal-actions">
+          <button onclick="closeBulkEditModal()" style="flex:1;background:white;border:2px solid #ccc;color:#888;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">やめる</button>
+          <button onclick="saveBulkEdit()" style="flex:2;background:#B87A2E;border:none;color:white;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">まとめて変更を保存（今週だけ）</button>
         </div>
       </div>
     </div>
@@ -1721,6 +1775,31 @@ function getTodayJST() {
 let currentMonday = getMonday(getTodayJST());
 let localOverrides = JSON.parse(localStorage.getItem('schedule_overrides') || '{}');
 // {weekKey: {added:[...], hidden:{uid:true}}}
+
+// 既存の講習カード（_lectureCard:true）に _lectureSeason が未設定なら「夏期講習」を一括付与
+// （季節選択機能を追加する前に配置されたカードを救済するための一回限りの移行処理）
+function migrateLectureSeasonLabels(overrides) {
+  let changed = false;
+  const fixArr = (arr) => {
+    if (!Array.isArray(arr)) return;
+    arr.forEach(t => {
+      if (t && t._lectureCard && !t._lectureSeason) {
+        t._lectureSeason = '夏期講習';
+        changed = true;
+      }
+    });
+  };
+  Object.keys(overrides).forEach(key => {
+    if (key === 'weeklyAdded') { fixArr(overrides.weeklyAdded); return; }
+    const wk = overrides[key];
+    if (wk && wk.added) fixArr(wk.added);
+  });
+  return changed;
+}
+if (migrateLectureSeasonLabels(localOverrides)) {
+  localStorage.setItem('schedule_overrides', JSON.stringify(localOverrides));
+}
+
 let dragInfo = null;
 let _undoSnapshot = null; // 直前のlocalOverridesのスナップショット
 let _pendingParsed = null; // 画像インポート確認モーダル用
@@ -2469,11 +2548,19 @@ function openDetail(t) {
 
   // 講習太陽アイコン
   const lectureIcon = document.getElementById('lectureStarIcon');
+  const lectureLabel = document.getElementById('lectureSeasonLabel');
   if (t._lectureCard) {
     lectureIcon.style.display = 'flex';
     lectureIcon.style.background = t._lectureMark || '#378add';
+    if (t._lectureSeason) {
+      lectureLabel.textContent = t._lectureSeason;
+      lectureLabel.style.display = 'inline';
+    } else {
+      lectureLabel.style.display = 'none';
+    }
   } else {
     lectureIcon.style.display = 'none';
+    lectureLabel.style.display = 'none';
   }
 
   // 仮→決定 / 決定→仮 ボタン
@@ -4522,9 +4609,10 @@ function _addToSelection(t, cardEl) {
   }
   const count = _selectedCards.size;
   const btn = document.getElementById('multiSelectToggle');
+  const editBtn = document.getElementById('bulkEditToggle');
   if (btn) {
     if (count > 0) {
-      btn.textContent = count + '件を削除する';
+      btn.textContent = count + '件を削除';
       btn.style.background = '#1a2744';
       btn.style.color = 'white';
       btn.style.borderColor = '#1a2744';
@@ -4535,6 +4623,7 @@ function _addToSelection(t, cardEl) {
       btn.style.borderColor = '#888';
     }
   }
+  if (editBtn) editBtn.style.display = count > 0 ? 'inline-block' : 'none';
 }
 
 function cancelMultiSelect() {
@@ -4545,6 +4634,8 @@ function cancelMultiSelect() {
   
   const btn = document.getElementById('multiSelectToggle');
   if (btn) { btn.textContent='複数選択'; btn.style.background='white'; btn.style.color='#888'; btn.style.borderColor='#ccc'; }
+  const editBtn = document.getElementById('bulkEditToggle');
+  if (editBtn) editBtn.style.display = 'none';
   render();
 }
 
@@ -4569,6 +4660,73 @@ function confirmMultiDelete() {
   cancelMultiSelect();
   render();
   showToast(`${count}件を今週だけ削除しました`, 2500);
+}
+
+// ===== 複数選択まとめて変更 =====
+function openBulkEditModal() {
+  if (_selectedCards.size === 0) return;
+  const tasks = Array.from(_selectedCards.values()).map(v => v.t);
+  const allSame = arr => arr.every(v => v === arr[0]);
+
+  document.getElementById('bulkEditCount').textContent = tasks.length + '件をまとめて変更';
+
+  const setupField = (chkId, inputId, values) => {
+    const chk = document.getElementById(chkId);
+    const input = document.getElementById(inputId);
+    chk.checked = false;
+    input.disabled = true;
+    if (allSame(values)) {
+      input.value = values[0] || '';
+      input.placeholder = '';
+    } else {
+      input.value = '';
+      input.placeholder = '（値が異なります）';
+    }
+  };
+
+  setupField('bulkUnitChk', 'bulkUnitInput', tasks.map(t => t.unit_name || ''));
+  setupField('bulkNoteChk', 'bulkNoteInput', tasks.map(t => t.note || ''));
+  setupField('bulkTimeChk', 'bulkTimeInput', tasks.map(t => t.study_time != null ? String(t.study_time) : ''));
+
+  document.getElementById('bulkEditModal').classList.add('open');
+}
+
+function toggleBulkField(field) {
+  const chk = document.getElementById('bulk' + field + 'Chk');
+  const input = document.getElementById('bulk' + field + 'Input');
+  input.disabled = !chk.checked;
+  input.style.background = chk.checked ? 'white' : '#f7f7f7';
+}
+
+function closeBulkEditModal() {
+  document.getElementById('bulkEditModal').classList.remove('open');
+}
+
+function saveBulkEdit() {
+  const applyUnit = document.getElementById('bulkUnitChk').checked;
+  const applyNote = document.getElementById('bulkNoteChk').checked;
+  const applyTime = document.getElementById('bulkTimeChk').checked;
+  if (!applyUnit && !applyNote && !applyTime) {
+    showToast('変更する項目にチェックを入れてください');
+    return;
+  }
+  const unitVal = document.getElementById('bulkUnitInput').value;
+  const noteVal = document.getElementById('bulkNoteInput').value;
+  const timeVal = parseInt(document.getElementById('bulkTimeInput').value) || 0;
+
+  takeSnapshot();
+  const count = _selectedCards.size;
+  _selectedCards.forEach(({t}) => {
+    const newUnit = applyUnit ? unitVal : t.unit_name;
+    const newNote = applyNote ? noteVal : t.note;
+    const newTime = applyTime ? timeVal : t.study_time;
+    _doSaveTask(t, t.subject, newUnit, t.hash, newNote, newTime, 'once');
+  });
+  saveLocal();
+  closeBulkEditModal();
+  cancelMultiSelect();
+  render();
+  showToast(`${count}件をまとめて変更しました ✓`, 2500);
 }
 
 // ===== Undo機能 =====
@@ -6205,6 +6363,18 @@ function initKadaiResize() {
 let _lectureSelectedDates = new Set();
 let _lectureCalYear = 0, _lectureCalMonth = 0;
 let _lectureDay1 = 'sci'; // 'sci' or 'soc'
+let _lectureSeason = '夏期講習'; // '夏期講習' / '冬期講習' / '春期講習'
+
+function setLectureSeason(season) {
+  _lectureSeason = season;
+  const map = { '夏期講習':'lectureSeasonSummer', '冬期講習':'lectureSeasonWinter', '春期講習':'lectureSeasonSpring' };
+  Object.entries(map).forEach(([s, id]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (s === season) { el.style.background = '#0F6E56'; el.style.color = 'white'; }
+    else { el.style.background = 'white'; el.style.color = '#0F6E56'; }
+  });
+}
 
 function openLecturePanel() {
   const today = getTodayJST();
@@ -6213,6 +6383,7 @@ function openLecturePanel() {
   _lectureSelectedDates = new Set();
   renderLectureCal();
   updateLectureSelectedLabel();
+  setLectureSeason(_lectureSeason);
   const panel = document.getElementById('lecturePanel');
   panel.style.display = 'flex';
   setTimeout(() => panel.classList.add('open'), 10);
@@ -6352,6 +6523,7 @@ function runLecture() {
         color: SUBJ_BG_MAP[subjClass] || '#C1E8FB',
         _lectureCard: true,
         _lectureMark: MARK_COLOR[subjClass] || '#378add',
+        _lectureSeason: _lectureSeason,
         display_type: 'one_time', repeat_key: null, is_hidden: 'no', order: 99
       };
     };
@@ -6401,6 +6573,7 @@ function runLecture() {
       subject: '国語', unit_name: '音読・意味調べ', note: '',
       study_time: 20, color: '#F2B9E4', _tempCard: true, _lectureCard: true,
       _lectureMark: '#c966a8',
+      _lectureSeason: _lectureSeason,
       display_type: 'one_time', repeat_key: null, is_hidden: 'no', order: 99
     });
   });
@@ -9022,7 +9195,10 @@ async function loadFromFirestore() {
           localOverrides.weeklyMovesTasks = localOverrides._weeklyMoves_tasks;
           delete localOverrides._weeklyMoves_tasks;
         }
+        // 講習カードの季節ラベル移行（季節選択機能追加前のカード救済）
+        const _lectureMigrated = migrateLectureSeasonLabels(localOverrides);
         localStorage.setItem('schedule_overrides', JSON.stringify(localOverrides));
+        if (_lectureMigrated && typeof saveLocal === 'function') saveLocal();
       }
     }
   } catch(e) {
@@ -9060,6 +9236,7 @@ try {
       if (data.updatedBy === DEVICE_ID) return;
       if (data.overrides) {
         localOverrides = data.overrides;
+        migrateLectureSeasonLabels(localOverrides);
         localStorage.setItem('schedule_overrides', JSON.stringify(localOverrides));
         if (localStorage.getItem('auth') === '1') render();
       }
