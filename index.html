@@ -1901,6 +1901,7 @@ function saveLocal() {
 function takeSnapshot() {
   _undoSnapshot = JSON.parse(JSON.stringify(localOverrides));
   updateUndoBtn();
+  if (typeof updateFloatingClose === 'function') updateFloatingClose();
 }
 function getWeekKey() { return dateKey(currentMonday); }
 // localOverrides[wkKey]取得（後方互換）
@@ -2385,6 +2386,7 @@ function _renderCard(tDisplay, cell, tOrig, srcMonday) {
 // ===== D&D =====
 function dropTask(toDay, toSlot) {
   if (!dragInfo) return;
+  takeSnapshot();
   const {t} = dragInfo;
   const wk = getWeekKey();
   if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
