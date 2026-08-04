@@ -1375,7 +1375,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#dde0ea;}
 
         <div class="modal-actions">
           <button onclick="closeBulkEditModal()" style="flex:1;background:white;border:2px solid #ccc;color:#888;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">やめる</button>
-          <button onclick="saveBulkEdit()" style="flex:2;background:#B87A2E;border:none;color:white;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">まとめて変更を保存（今週だけ）</button>
+          <button onclick="saveBulkEdit()" style="flex:2;background:#B87A2E;border:none;color:white;border-radius:9999px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">まとめて変更</button>
         </div>
       </div>
     </div>
@@ -4808,7 +4808,7 @@ function saveBulkEdit() {
       const newUnit = unitVals ? unitVals[i] : t.unit_name;
       const newNote = noteVals ? noteVals[i] : t.note;
       const newTime = timeVals ? (parseInt(timeVals[i]) || 0) : t.study_time;
-      _doSaveTask(t, t.subject, newUnit, t.hash, newNote, newTime, 'once');
+      _doSaveTask(t, t.subject, newUnit, t.hash || '', newNote, newTime, 'once');
     });
     saveLocal();
     closeBulkEditModal();
@@ -9305,9 +9305,10 @@ window.saveLocal = function() {
   _origSaveLocal();
   if (!db) return;
   _savingToFirestore = true;
-  // Firestoreにも保存
+  // Firestoreにも保存（undefinedはFirestoreが拒否するため、JSON往復で自動的に取り除く）
+  const cleanOverrides = JSON.parse(JSON.stringify(localOverrides));
   db.collection('schedules').doc('main').set({
-    overrides: localOverrides,
+    overrides: cleanOverrides,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
     updatedBy: DEVICE_ID
   }).then(() => {
