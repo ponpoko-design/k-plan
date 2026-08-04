@@ -176,6 +176,9 @@ body.dim-unselected .card{
 body.dim-unselected .card.selected{
   opacity:1;
 }
+body.multi-select-mode .undo-btn{
+  display:none !important;
+}
 
 
 </style>
@@ -203,7 +206,9 @@ body.dim-unselected .card.selected{
       <div class="hdr-title">航大 家庭学習スケジュール</div>
       <button id="multiSelectToggle" onclick="toggleMultiSelect()"
         style="background:white;border:1.5px solid #ccc;color:#888;border-radius:14px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">複数選択</button>
+      <button id="bulkDeleteBtn" onclick="confirmMultiDelete()" style="display:none;background:#e24b4a;border:1.5px solid #e24b4a;color:white;border-radius:14px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">削除</button>
       <button id="bulkEditToggle" onclick="openBulkEditModal()" style="display:none;background:#B87A2E;border:1.5px solid #B87A2E;color:white;border-radius:14px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">変更</button>
+      <button id="multiSelectCancelBtn" onclick="cancelMultiSelect()" style="display:none;background:#888;border:1.5px solid #888;color:white;border-radius:14px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">0件選択解除</button>
       <button class="undo-btn" onclick="undoLast()"
         style="background:white;border:1.5px solid #ccc;color:#888;border-radius:14px;padding:3px 18px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">↩</button>
     </div>
@@ -4592,29 +4597,28 @@ let _multiSelectMode = false;
 let _selectedCards = new Map(); // uid+key → task
 
 function toggleMultiSelect() {
-  if (_multiSelectMode) {
-    // 「削除する」状態でクリック → 削除実行
-    if (_selectedCards.size > 0) {
-      confirmMultiDelete();
-    } else {
-      cancelMultiSelect();
-    }
-  } else {
-    _multiSelectMode = true;
-    document.getElementById('multiSelectToggle').textContent = '選択解除';
-    document.getElementById('multiSelectToggle').style.background = '#888';
-    document.getElementById('multiSelectToggle').style.color = 'white';
-    document.getElementById('multiSelectToggle').style.borderColor = '#888';
-    render();
-  }
+  _multiSelectMode = true;
+  document.getElementById('multiSelectToggle').style.display = 'none';
+  document.getElementById('bulkDeleteBtn').style.display = 'inline-block';
+  document.getElementById('bulkEditToggle').style.display = 'inline-block';
+  const cancelBtn = document.getElementById('multiSelectCancelBtn');
+  cancelBtn.textContent = '0件選択解除';
+  cancelBtn.style.display = 'inline-block';
+  document.body.classList.add('multi-select-mode');
+  render();
 }
 
 function enterMultiSelect(t, cardEl) {
   _multiSelectMode = true;
   _selectedCards.clear();
+  document.getElementById('multiSelectToggle').style.display = 'none';
+  document.getElementById('bulkDeleteBtn').style.display = 'inline-block';
+  document.getElementById('bulkEditToggle').style.display = 'inline-block';
+  document.getElementById('multiSelectCancelBtn').style.display = 'inline-block';
+  document.body.classList.add('multi-select-mode');
   _addToSelection(t, cardEl);
-  
-  
+
+
   if (navigator.vibrate) navigator.vibrate(40);
 }
 
@@ -4631,22 +4635,8 @@ function _addToSelection(t, cardEl) {
     if (chk) chk.innerHTML = '<svg width="18" height="18" viewBox="0 0 18 18"><rect x="1" y="1" width="16" height="16" rx="3" fill="#1a2744" stroke="#1a2744" stroke-width="2"/><polyline points="4,9 7,13 14,5" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   }
   const count = _selectedCards.size;
-  const btn = document.getElementById('multiSelectToggle');
-  const editBtn = document.getElementById('bulkEditToggle');
-  if (btn) {
-    if (count > 0) {
-      btn.textContent = count + '件を削除';
-      btn.style.background = '#1a2744';
-      btn.style.color = 'white';
-      btn.style.borderColor = '#1a2744';
-    } else {
-      btn.textContent = '選択解除';
-      btn.style.background = '#888';
-      btn.style.color = 'white';
-      btn.style.borderColor = '#888';
-    }
-  }
-  if (editBtn) editBtn.style.display = count > 0 ? 'inline-block' : 'none';
+  const cancelBtn = document.getElementById('multiSelectCancelBtn');
+  if (cancelBtn) cancelBtn.textContent = count + '件選択解除';
   document.body.classList.toggle('dim-unselected', count > 0);
 }
 
@@ -4654,12 +4644,12 @@ function cancelMultiSelect() {
   _multiSelectMode = false;
   _selectedCards.forEach(({t, cardEl}) => cardEl.classList.remove('selected'));
   _selectedCards.clear();
-  
-  
-  const btn = document.getElementById('multiSelectToggle');
-  if (btn) { btn.textContent='複数選択'; btn.style.background='white'; btn.style.color='#888'; btn.style.borderColor='#ccc'; }
-  const editBtn = document.getElementById('bulkEditToggle');
-  if (editBtn) editBtn.style.display = 'none';
+
+  document.getElementById('multiSelectToggle').style.display = 'inline-block';
+  document.getElementById('bulkDeleteBtn').style.display = 'none';
+  document.getElementById('bulkEditToggle').style.display = 'none';
+  document.getElementById('multiSelectCancelBtn').style.display = 'none';
+  document.body.classList.remove('multi-select-mode');
   document.body.classList.remove('dim-unselected');
   render();
 }
