@@ -2532,7 +2532,7 @@ function _renderCard(tDisplay, cell, tOrig, srcMonday) {
 function dropTask(toDay, toSlot) {
   if (!dragInfo) return;
   const t0 = dragInfo.t;
-  takeSnapshot({action:'移動', card:_cardLabel(t0), from:{day:t0._dayIdx, slot:t0.slot}, to:{day:toDay, slot:SLOTS[toSlot]}});
+  takeSnapshot({action:'移動', card:_cardLabel(t0), subject:t0.subject, from:{day:t0._dayIdx, slot:t0.slot}, to:{day:toDay, slot:SLOTS[toSlot]}});
   const {t} = dragInfo;
   const wk = getWeekKey();
   if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
@@ -3022,7 +3022,7 @@ function saveTask() {
   if (newUnit !== t.unit_name) _changes.push({field:'カード名', from:t.unit_name||'-', to:newUnit||'-'});
   if (newTime !== t.study_time) _changes.push({field:'時間', from:(t.study_time!=null?t.study_time+'分':'-'), to:(newTime!=null?newTime+'分':'-')});
   if ((newMemo||'') !== (t.note||'')) _changes.push({field:'メモ', from:(t.note||'（空）'), to:(newMemo||'（空）')});
-  takeSnapshot({action:'編集', card:_cardLabel(t), changes:_changes});
+  takeSnapshot({action:'編集', card:_cardLabel(t), subject:(newSubject||t.subject), changes:_changes});
 
   if (t.display_type === 'weekly' && !t._isWeeklyMoved) {
     // 毎週タスク → 保存範囲選択モーダルを開く
@@ -3140,7 +3140,7 @@ function deleteTask() {
   if (!t) return;
   // 今週だけの予定 → 即削除
   if (t.display_type !== 'weekly' && !t._isWeeklyMoved) {
-    takeSnapshot({action:'削除', card:_cardLabel(t), at:{day:t._dayIdx, slot:t.slot}, scope:'今回のみ'});
+    takeSnapshot({action:'削除', card:_cardLabel(t), subject:t.subject, at:{day:t._dayIdx, slot:t.slot}, scope:'今回のみ'});
     const wk = getWeekKey();
     if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
     const lo = localOverrides[wk];
@@ -3167,7 +3167,7 @@ function closeDeleteConfirm() {
 function confirmDeleteOnce() {
   const t = _deleteTarget;
   if (!t) return;
-  takeSnapshot({action:'削除', card:_cardLabel(t), at:{day:t._dayIdx, slot:t.slot}, scope:'今回のみ'});
+  takeSnapshot({action:'削除', card:_cardLabel(t), subject:t.subject, at:{day:t._dayIdx, slot:t.slot}, scope:'今回のみ'});
   const wk = getWeekKey();
   if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
   const lo = localOverrides[wk];
@@ -3183,7 +3183,7 @@ function confirmDeleteOnce() {
 function confirmDeleteFrom() {
   const t = _deleteTarget;
   if (!t) return;
-  takeSnapshot({action:'削除', card:_cardLabel(t), at:{day:t._dayIdx, slot:t.slot}, scope:'以降すべて'});
+  takeSnapshot({action:'削除', card:_cardLabel(t), subject:t.subject, at:{day:t._dayIdx, slot:t.slot}, scope:'以降すべて'});
   const fromDateStr = dateKey(currentMonday);
   if (t._groupKey) {
     const fromDt = new Date(fromDateStr);
@@ -3209,7 +3209,7 @@ function confirmDeleteFrom() {
 function confirmDeleteAll() {
   const t = _deleteTarget;
   if (!t) return;
-  takeSnapshot({action:'削除', card:_cardLabel(t), at:{day:t._dayIdx, slot:t.slot}, scope:'すべて'});
+  takeSnapshot({action:'削除', card:_cardLabel(t), subject:t.subject, at:{day:t._dayIdx, slot:t.slot}, scope:'すべて'});
   // groupKeyがあれば全メンバーをweeklyAddedから除去
   if (t._groupKey) {
     localOverrides.weeklyAdded = (localOverrides.weeklyAdded||[]).filter(
@@ -4129,7 +4129,7 @@ function confirmAdd() {
       _addDayIdx = (new Date(_ay,_amo-1,_ad).getDay()+6)%7;
     }
   }
-  takeSnapshot({action:'追加', card:unit, at:{day:_addDayIdx, slot}});
+  takeSnapshot({action:'追加', card:unit, subject:subj, at:{day:_addDayIdx, slot}});
   const hash = document.getElementById('aHash').value;
   const memo = document.getElementById('aMemo').value;
   const st = parseInt(document.getElementById('aTime').value) || null;
@@ -5277,10 +5277,15 @@ function timeAgoLabel(ts) {
 // 履歴1件分の中身（アクションバッジ＋カード名＋位置情報）のHTMLを組み立てる
 function renderHistoryEntryHtml(entry) {
   const st = _ACTION_STYLE[entry.action] || _ACTION_STYLE['その他'];
+  // アクション名は塗りつぶしではなく罫線囲みのシンプルな四角に
   const badge = entry.action
-    ? '<span style="display:inline-block;background:' + st.bg + ';color:' + st.color + ';font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:5px;margin-right:6px;vertical-align:middle;">' + entry.action + '</span>'
+    ? '<span style="display:inline-block;background:transparent;border:1.5px solid ' + st.color + ';color:' + st.color + ';font-size:11.5px;font-weight:700;padding:1px 7px;border-radius:5px;margin-right:6px;vertical-align:middle;">' + entry.action + '</span>'
     : '';
-  const cardHtml = entry.card ? '「' + entry.card + '」' : '';
+  // カード名は教科色を背景にしたバッジで表示
+  const subjColor = SUBJ_COLOR[entry.subject] || null;
+  const cardHtml = entry.card
+    ? '<span style="display:inline-block;background:' + (subjColor ? subjColor[0] : '#eee') + ';color:' + (subjColor ? subjColor[1] : '#333') + ';font-weight:700;padding:1px 7px;border-radius:5px;">' + entry.card + '</span>'
+    : '';
 
   if (entry.action === '移動' && entry.from && entry.to) {
     const fromLabel = _dateSlotLabel(entry.from.day, entry.from.slot);
@@ -9595,7 +9600,7 @@ function openMoveModal(taskRef, toDay, toSlot) {
 
   // weeklyカード（繰り返し）のみポップアップ表示、それ以外は直接移動
   if (task.display_type !== 'weekly') {
-    takeSnapshot({action:'移動', card:_cardLabel(task), from:{day:task._dayIdx, slot:task.slot}, to:{day:destDayIdx, slot:SLOTS[toSlot]}});
+    takeSnapshot({action:'移動', card:_cardLabel(task), subject:task.subject, from:{day:task._dayIdx, slot:task.slot}, to:{day:destDayIdx, slot:SLOTS[toSlot]}});
     const SLOTS2 = ['plan','morning','am','pm','night'];
     if (!localOverrides[srcWk]) localOverrides[srcWk] = {added:[], hidden:{}};
     const srcLo = localOverrides[srcWk];
@@ -9652,7 +9657,7 @@ function closeMoveModal() {
 function confirmMove() {
   if (!_pendingMove) return;
   const {task, toDay, toSlot, srcWk, srcMondayYMD} = _pendingMove;
-  takeSnapshot({action:'移動', card:_cardLabel(task), from:{day:task._dayIdx, slot:task.slot}, to:{day:toDay, slot:SLOTS[toSlot]}});
+  takeSnapshot({action:'移動', card:_cardLabel(task), subject:task.subject, from:{day:task._dayIdx, slot:task.slot}, to:{day:toDay, slot:SLOTS[toSlot]}});
   const type = document.querySelector('input[name="moveType"]:checked').value;
   const SLOTS2 = ['plan','morning','am','pm','night'];
 
