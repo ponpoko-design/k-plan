@@ -5889,6 +5889,7 @@ async function runBalanceCheck() {
     prompt += '}\n';
     prompt += '問題がなければそのカテゴリのitemsは出力しない。全て問題なければitemsは[{"category":"確認OK","date":"-","slot":"-","subject":"-","detail":"バランスよく組めています！"}]のみ。\n';
     prompt += 'detailの中でカード名・タスク名を引用するときは必ず「」で囲むこと（例:「計算マスタ」「言葉 復習前半」）。\n';
+    prompt += '【重要】教科名を「」の外に書いて後からカード名だけを「」で囲む書き方（例: 社会「単元音読」）は禁止。「単元音読」「復習」「基礎力テスト」のように複数の教科で使われるカード名は、「」の中に教科名も一緒に含めること（例:「社会:単元音読」「算数:復習」）。\n';
     prompt += '【書き方ルール・最重要】\n';
     prompt += '・items配列に入れてよいのは「実際に直した方がいい」項目だけ。迷ったら入れない。\n';
     prompt += '・各項目を書く前に必ず自問すること：「これは結局、対応不要・問題なし、という結論になっていないか？」なっているなら、その項目は丸ごと書かずに捨てる（"確認OK"カテゴリにも入れない。ただ何も出力しない）。\n';
@@ -5957,6 +5958,106 @@ async function runBalanceCheck() {
         groups[cat].push(item);
       });
 
+      // カード名→教科色のバッジ変換（全カテゴリ共通）。
+      // 以前は「ルール違反・負荷バランス・入れ忘れ確認」だけがこの色付け表示で、
+      // 「確認OK・アドバイス」は無色の平文だったため、ここで共通化して全カテゴリに適用する。
+      const allWeekTasksForBadges = getTasksForWeek(balanceCheckMonday);
+      const getTasksForRow = (dateStr, slotStr) => {
+        const SLOT_MAP = {'朝':'morning','午前':'am','午後':'pm','夜':'night'};
+        const slot = SLOT_MAP[slotStr] || slotStr;
+        return allWeekTasksForBadges.filter(t => {
+          const mon2 = new Date(balanceCheckMonday);
+          const dt = new Date(mon2); dt.setDate(mon2.getDate() + (t._dayIdx||0));
+          const DAY2 = ['日','月','火','水','木','金','土'];
+          const ds = (dt.getMonth()+1) + '/' + dt.getDate() + '(' + DAY2[dt.getDay()] + ')';
+          return ds === dateStr && t.slot === slot;
+        });
+      };
+      // カード名に対応する教科色を返す（「教科:カード名」形式はコロン前の教科を最優先）
+      const getCardColorBySubject = (subjectName) => {
+        if (!subjectName) return '';
+        if (/算数/.test(subjectName)) return '#C1E8FB';
+        if (/国語/.test(subjectName)) return '#F2B9E4';
+        if (/理科/.test(subjectName)) return '#B6EBB0';
+        if (/社会/.test(subjectName)) return '#F9DB82';
+        if (/学校|宿題/.test(subjectName)) return '#E8E8E8';
+        if (/塾|プロタゴ|サッカー/.test(subjectName)) return '#D6C3AA';
+        if (/グノレブ|テスト/.test(subjectName)) return '#fce4f8';
+        return '';
+      };
+      const getCardColor = (cardName) => {
+        const colonMatch = cardName.match(/^(算数|国語|理科|社会|学校)[：:]/);
+        if (colonMatch) return getCardColorBySubject(colonMatch[1]);
+        if (/グノチェック|グノラー|確認問題|基本のまとめ|理科基礎力/.test(cardName)) return '#B6EBB0';
+        if (/Nテキスト|N家庭|T確認テスト|計算マスタ|計算ルール|基礎力テスト|基礎力復習/.test(cardName)) return '#C1E8FB';
+        if (/漢字|言葉|意味調べ|ことわざ/.test(cardName)) return '#F2B9E4';
+        if (/学校の宿題|宿題/.test(cardName)) return '#E8E8E8';
+        if (/塾|プロタゴ|サッカー/.test(cardName)) return '#D6C3AA';
+        if (/グノレブ|テスト振り返り/.test(cardName)) return '#fce4f8';
+        return '';
+      };
+      // 「」で囲まれた語句、またはカード名っぽい語句をバッジ（教科色の背景）に変換
+      const renderDetailWithBadges = (text, colorMap, rowDateStr) => {
+        const frag = document.createDocumentFragment();
+        const getColorFromMap = (name) => {
+          if (colorMap) {
+            const dateKey = rowDateStr + '|' + name;
+            if (colorMap[dateKey]) return colorMap[dateKey];
+            if (colorMap[name]) return colorMap[name];
+          }
+          return getCardColor(name);
+        };
+        const parts = text.split(/(「[^」]+」)/g);
+        parts.forEach((part, pi) => {
+          if (part.startsWith('「') && part.endsWith('」')) {
+            const name = part.slice(1, -1);
+            let color = getColorFromMap(name);
+            if (!color && pi > 0) {
+              // 保険：AIが「社会「単元音読」」のように教科名をカギカッコの外に
+              // 書いてしまった場合、直前のテキストの末尾から教科名を拾う
+              const prevText = parts[pi - 1] || '';
+              const subjMatch = prevText.match(/(算数|国語|理科|社会|学校)$/);
+              if (subjMatch) color = getCardColorBySubject(subjMatch[1]);
+            }
+            if (color) {
+              const sp = document.createElement('span');
+              sp.style.cssText = 'background:' + color + ';border-radius:4px;padding:1px 5px;font-size:16px;font-weight:700;display:inline-block;margin:1px 2px;white-space:nowrap;';
+              sp.textContent = name;
+              frag.appendChild(sp);
+            } else {
+              frag.appendChild(document.createTextNode(part));
+            }
+          } else {
+            // カード名キーワードをバッジに（計算マスタ、Nテキスト等、「」で囲まれていない場合も変換）
+            const cardKeywords = [
+              '計算マスタ','計算ルール','Nテキスト','N家庭学習','T確認テスト',
+              'グノチェック','グノラー','基礎力テスト','基礎力復習','テスト振り返り',
+              '単元音読','意味調べ','グノレブ振り返り','グノレブ解き直し',
+              '言葉 復習前半','言葉 復習後半','漢字復習','漢字 復習',
+              '用語/基礎力確認','用語確認','基礎問題','確認問題','基本のまとめ',
+              'N間違い','振り返り','復習前半','復習後半','学校の宿題'
+            ];
+            let remaining = part;
+            let node = document.createDocumentFragment();
+            cardKeywords.forEach(kw => {
+              const idx = remaining.indexOf(kw);
+              if (idx >= 0) {
+                if (idx > 0) node.appendChild(document.createTextNode(remaining.slice(0, idx)));
+                const sp = document.createElement('span');
+                const color = getColorFromMap(kw);
+                sp.style.cssText = 'background:' + (color||'#eee') + ';border-radius:4px;padding:1px 5px;font-size:16px;font-weight:700;display:inline-block;margin:1px 2px;white-space:nowrap;';
+                sp.textContent = kw;
+                node.appendChild(sp);
+                remaining = remaining.slice(idx + kw.length);
+              }
+            });
+            if (remaining) node.appendChild(document.createTextNode(remaining));
+            frag.appendChild(node);
+          }
+        });
+        return frag;
+      };
+
       ['ルール違反','負荷・バランス','入れ忘れ確認','確認OK','アドバイス'].forEach(cat => {
         if (!groups[cat] || groups[cat].length === 0) return;
         const st = CAT_STYLE[cat] || CAT_STYLE['アドバイス'];
@@ -5985,29 +6086,19 @@ async function runBalanceCheck() {
         groups[cat].forEach((item, idx) => {
           const tr = document.createElement('tr');
           tr.style.cssText = 'background:' + (idx%2===0 ? 'white' : st.bg) + ';';
+          // 実際のスケジュールデータからカード名→色を引くルックアップを、この行（日付・スロット）用に構築
+          const rowTasks = getTasksForRow(item.date||'', item.slot||'');
+          const rowColorMap = {};
+          rowTasks.forEach(t => { if(t.unit_name) rowColorMap[t.unit_name] = t._aiSuggest ? '#dab3ff' : (t.color||'#eee'); });
+
           if (simpleMode) {
             const td = document.createElement('td');
             td.style.cssText = 'padding:6px 8px;color:#444;line-height:1.5;';
             const datePrefix = (item.date && item.date !== '-') ? item.date + ' ' : '';
-            td.textContent = '・' + datePrefix + (item.detail || '');
+            td.appendChild(document.createTextNode('・' + datePrefix));
+            td.appendChild(renderDetailWithBadges(item.detail || '', rowColorMap, item.date||''));
             tr.appendChild(td);
           } else {
-            // 実際のスケジュールデータからカード名→色を引くルックアップを構築
-            // 実際のスケジュールタスク一覧を取得（色の参照用）
-            const allWeekTasks = getTasksForWeek(balanceCheckMonday);
-            // item.date と item.slot からその行のタスク群を返す関数
-            const getTasksForRow = (dateStr, slotStr) => {
-              const SLOT_MAP = {'朝':'morning','午前':'am','午後':'pm','夜':'night'};
-              const slot = SLOT_MAP[slotStr] || slotStr;
-              return allWeekTasks.filter(t => {
-                const mon2 = new Date(balanceCheckMonday);
-                const dt = new Date(mon2); dt.setDate(mon2.getDate() + (t._dayIdx||0));
-                const DAY2 = ['日','月','火','水','木','金','土'];
-                const ds = (dt.getMonth()+1) + '/' + dt.getDate() + '(' + DAY2[dt.getDay()] + ')';
-                return ds === dateStr && t.slot === slot;
-              });
-            };
-            const cardColorMap = null; // 後でitem.dateごとに動的に引く
             [
               {val: item.date||'-',    style:'padding:5px 4px;color:#555;word-break:break-word;width:22%;'},
               {val: item.slot||'-',    style:'padding:5px 4px;color:#555;word-break:break-word;width:16%;'},
@@ -6015,100 +6106,7 @@ async function runBalanceCheck() {
             ].forEach(c => {
               const td = document.createElement('td');
               td.style.cssText = c.style + 'border-bottom:1px solid #f0f0f0;';
-              if (c.badge) {
-                const sp = document.createElement('span');
-                sp.style.cssText = 'background:' + subjColor + ';border-radius:4px;padding:1px 6px;font-weight:700;';
-                sp.textContent = c.val;
-                td.appendChild(sp);
-              } else if (c.isDetail) {
-                // detail欄: 「カード名」パターンをバッジに変換
-                const SUBJ_COLOR2 = {'算数':'#C1E8FB','国語':'#F2B9E4','理科':'#B6EBB0','社会':'#F9DB82','予定':'#F5F4E4','習い事':'#D6C3AA','テスト':'#fce4f8','学校':'#E8E8E8','宿題':'#E8E8E8'};
-                // カード名に対応する教科色を返す
-                // 「教科:カード名」形式のバッジは教科名で色を決める
-                // それ以外は行の教科色を使う
-                const getCardColorBySubject = (subjectName) => {
-                  if (!subjectName) return '';
-                  if (/算数/.test(subjectName)) return '#C1E8FB';
-                  if (/国語/.test(subjectName)) return '#F2B9E4';
-                  if (/理科/.test(subjectName)) return '#B6EBB0';
-                  if (/社会/.test(subjectName)) return '#F9DB82';
-                  if (/学校|宿題/.test(subjectName)) return '#E8E8E8';
-                  if (/塾|プロタゴ|サッカー/.test(subjectName)) return '#D6C3AA';
-                  if (/グノレブ|テスト/.test(subjectName)) return '#fce4f8';
-                  return '';
-                };
-                const getCardColor = (cardName) => {
-                  // 1. 「教科:カード名」形式はコロン前の教科を最優先
-                  const colonMatch = cardName.match(/^(算数|国語|理科|社会|学校)[：:]/);
-                  if (colonMatch) return getCardColorBySubject(colonMatch[1]);
-                  // 2. カード名のキーワードで教科を判定
-                  if (/グノチェック|グノラー|確認問題|基本のまとめ|理科基礎力/.test(cardName)) return '#B6EBB0';
-                  if (/Nテキスト|N家庭|T確認テスト|計算マスタ|計算ルール|基礎力テスト|基礎力復習/.test(cardName)) return '#C1E8FB';
-                  if (/漢字|言葉|意味調べ|ことわざ/.test(cardName)) return '#F2B9E4';
-                  if (/学校の宿題|宿題/.test(cardName)) return '#E8E8E8';
-                  if (/塾|プロタゴ|サッカー/.test(cardName)) return '#D6C3AA';
-                  if (/グノレブ|テスト振り返り/.test(cardName)) return '#fce4f8';
-                  return '';
-                };
-                // 「」や『』で囲まれた語句、またはカード名っぽい語句をバッジに変換
-                const renderDetailWithBadges = (text, colorMap, rowDateStr) => {
-                  const frag = document.createDocumentFragment();
-                  // 実際のスケジュールデータから色を引く（日付+カード名を優先）
-                  const getColorFromMap = (name) => {
-                    if (colorMap) {
-                      const dateKey = rowDateStr + '|' + name;
-                      if (colorMap[dateKey]) return colorMap[dateKey];
-                      if (colorMap[name]) return colorMap[name];
-                    }
-                    return getCardColor(name);
-                  };
-                  // 「〇〇」 パターンを検出
-                  const parts = text.split(/(「[^」]+」)/g);
-                  parts.forEach(part => {
-                    if (part.startsWith('「') && part.endsWith('」')) {
-                      const name = part.slice(1, -1);
-                      const color = getColorFromMap(name);
-                      if (color) {
-                        const sp = document.createElement('span');
-                        sp.style.cssText = 'background:' + color + ';border-radius:4px;padding:1px 5px;font-size:16px;font-weight:700;display:inline-block;margin:1px 2px;white-space:nowrap;';
-                        sp.textContent = name;
-                        frag.appendChild(sp);
-                      } else {
-                        frag.appendChild(document.createTextNode(part));
-                      }
-                    } else {
-                      // カード名キーワードをバッジに（計算マスタ、Nテキスト等）
-                      const cardKeywords = [
-                        '計算マスタ','計算ルール','Nテキスト','N家庭学習','T確認テスト',
-                        'グノチェック','グノラー','基礎力テスト','基礎力復習','テスト振り返り',
-                        '単元音読','意味調べ','グノレブ振り返り','グノレブ解き直し',
-                        '言葉 復習前半','言葉 復習後半','漢字復習','漢字 復習',
-                        '用語/基礎力確認','用語確認','基礎問題','確認問題','基本のまとめ',
-                        'N間違い','振り返り','復習前半','復習後半','学校の宿題'
-                      ];
-                      let remaining = part;
-                      let node = document.createDocumentFragment();
-                      cardKeywords.forEach(kw => {
-                        const idx = remaining.indexOf(kw);
-                        if (idx >= 0) {
-                          if (idx > 0) node.appendChild(document.createTextNode(remaining.slice(0, idx)));
-                          const sp = document.createElement('span');
-                          const color = getColorFromMap(kw);
-                          sp.style.cssText = 'background:' + (color||'#eee') + ';border-radius:4px;padding:1px 5px;font-size:16px;font-weight:700;display:inline-block;margin:1px 2px;white-space:nowrap;';
-                          sp.textContent = kw;
-                          node.appendChild(sp);
-                          remaining = remaining.slice(idx + kw.length);
-                        }
-                      });
-                      if (remaining) node.appendChild(document.createTextNode(remaining));
-                      frag.appendChild(node);
-                    }
-                  });
-                  return frag;
-                };
-                const rowTasks = getTasksForRow(item.date||'', item.slot||'');
-                const rowColorMap = {};
-                rowTasks.forEach(t => { if(t.unit_name) rowColorMap[t.unit_name] = t._aiSuggest ? '#dab3ff' : (t.color||'#eee'); });
+              if (c.isDetail) {
                 td.appendChild(renderDetailWithBadges(c.val, rowColorMap, item.date||''));
               } else {
                 td.textContent = c.val;
