@@ -5844,6 +5844,28 @@ async function runBalanceCheck() {
       prompt += '\n';
     }
 
+    // 祝日（予定欄に赤い「祝日」カードがある日）を検出し、休暇期間中かどうかに関わらず
+    // 必ず「土日と同じルール」を適用するようAIに明示する。
+    // ※以前はこの指示が「長期休暇期間中の週」にしか含まれておらず、
+    // 　学期中のふつうの祝日（敬老の日など）ではAIに伝わらず、判断に迷ってしまっていた。
+    const holidayDaysInWeek2 = [];
+    for (let d = 0; d < 7; d++) {
+      const dt = new Date(mon); dt.setDate(mon.getDate() + d);
+      const tasksH = getTasksForWeek(new Date(balanceCheckMonday));
+      const holidayTask = tasksH.find(t => t._dayIdx === d && t.slot === 'plan' && t.subject === '祝日');
+      if (holidayTask) {
+        const dateLabel = (dt.getMonth()+1) + '/' + dt.getDate() + '(' + DAY_NAMES[d] + ')';
+        holidayDaysInWeek2.push({ dateLabel, name: holidayTask.unit_name || '祝日' });
+      }
+    }
+    if (holidayDaysInWeek2.length > 0) {
+      prompt += '【祝日の扱い・重要】\n';
+      holidayDaysInWeek2.forEach(ev => {
+        prompt += '・' + ev.dateLabel + 'は「' + ev.name + '」で学校がない祝日。この日は曜日別のスロット制限（月=朝のみ/水=〜16:00 等）を適用せず、土日と同じルール（朝+午前(am)+午後+夜すべて使える）として扱うこと。\n';
+      });
+      prompt += '・上記の判断に理由の確認や推測は不要。「祝日だから土日ルール」という単純な判断でよい。「〜の確認が必要」「〜を確認すること」のような結論を出さない書き方はせず、必ず断定すること。\n\n';
+    }
+
     prompt += '【この週のスケジュール】\n' + scheduleSummary + '\n\n';
 
     if (noJukuAssumed) {
