@@ -237,7 +237,7 @@ body.multi-select-mode .undo-btn{
     <button class="bnav-btn active" onclick="goHome()">
       <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
     </button>
-    <button class="bnav-btn" onclick="openBulkSearchModal()">
+    <button class="bnav-btn" onclick="openEditMenuModal()">
       <svg viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="M15 5l4 4"/></svg>
     </button>
     <button class="bnav-btn" onclick="openAIModal()">
@@ -252,6 +252,46 @@ body.multi-select-mode .undo-btn{
   </div>
 
   <div id="toast"></div>
+
+  <!-- 編集メニュー（下部ナビ左から2番目） -->
+  <div class="modal-bg" id="editMenuModal" style="z-index:200;">
+    <div class="modal" style="width:min(400px,94vw);">
+      <div class="modal-hdr">
+        <span>編集</span>
+        <button class="modal-close" onclick="closeEditMenuModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div onclick="closeEditMenuModal();openHistoryEditModal();" style="background:#fafbff;border-radius:16px;padding:16px 14px;display:flex;align-items:center;gap:14px;margin-bottom:12px;cursor:pointer;box-shadow:0 2px 6px rgba(26,39,68,.06);">
+          <div style="width:44px;height:44px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;background:#eef6ff;">🕐</div>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:#1a2744;margin-bottom:3px;">履歴の編集</div>
+            <div style="font-size:11.5px;color:#888;line-height:1.5;">直近5件の操作を確認して、好きな時点まで戻す</div>
+          </div>
+          <div style="margin-left:auto;color:#bbb;font-size:16px;flex-shrink:0;">›</div>
+        </div>
+        <div onclick="closeEditMenuModal();openBulkSearchModal();" style="background:#fafbff;border-radius:16px;padding:16px 14px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 2px 6px rgba(26,39,68,.06);">
+          <div style="width:44px;height:44px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;background:#FBEAF0;">📝</div>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:#1a2744;margin-bottom:3px;">カード一括編集</div>
+            <div style="font-size:11.5px;color:#888;line-height:1.5;">条件を指定して、複数のカードをまとめて削除・変更する</div>
+          </div>
+          <div style="margin-left:auto;color:#bbb;font-size:16px;flex-shrink:0;">›</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 履歴の編集 -->
+  <div class="modal-bg" id="historyEditModal" style="z-index:200;">
+    <div class="modal" style="width:min(400px,94vw);max-height:80vh;">
+      <div class="modal-hdr">
+        <span>履歴の編集</span>
+        <button class="modal-close" onclick="closeHistoryEditModal()">×</button>
+      </div>
+      <div class="modal-body" id="historyEditList"></div>
+    </div>
+  </div>
+
 
   <!-- AI ラクラク機能モーダル -->
   <div class="modal-bg" id="aiModal" style="z-index:200;">
@@ -1884,7 +1924,7 @@ if (migrateLectureSeasonLabels(localOverrides)) {
 }
 
 let dragInfo = null;
-let _undoSnapshot = null; // 直前のlocalOverridesのスナップショット
+let _undoHistory = []; // 履歴スタック（最大5件・新しい順）
 let _pendingParsed = null; // 画像インポート確認モーダル用
 let editUID = null;
 let nextUID = Date.now();
@@ -1954,9 +1994,20 @@ function saveLocal() {
   localStorage.setItem('schedule_overrides', JSON.stringify(localOverrides));
 }
 
-// undo用スナップショットを取る（操作開始時に呼ぶ）
-function takeSnapshot() {
-  _undoSnapshot = JSON.parse(JSON.stringify(localOverrides));
+// ===== 履歴（最大5件）=====
+// 以前は直前の1状態だけを覚えるsnapshot方式だったが、
+// 「履歴の編集」画面で過去5件から選んで戻せるようにスタック化した。
+const MAX_HISTORY = 5;
+function takeSnapshot(label) {
+  try {
+    if (!Array.isArray(window._undoHistory)) window._undoHistory = [];
+    _undoHistory.unshift({
+      label: label || '操作',
+      time: Date.now(),
+      snapshot: JSON.parse(JSON.stringify(localOverrides))
+    });
+    if (_undoHistory.length > MAX_HISTORY) _undoHistory.length = MAX_HISTORY;
+  } catch(e) { console.error('履歴の保存に失敗:', e); }
   updateUndoBtn();
   if (typeof updateFloatingClose === 'function') updateFloatingClose();
 }
@@ -2443,7 +2494,7 @@ function _renderCard(tDisplay, cell, tOrig, srcMonday) {
 // ===== D&D =====
 function dropTask(toDay, toSlot) {
   if (!dragInfo) return;
-  takeSnapshot();
+  takeSnapshot('「' + (dragInfo.t.unit_name || 'カード') + '」を移動');
   const {t} = dragInfo;
   const wk = getWeekKey();
   if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
@@ -2787,7 +2838,7 @@ function clearDRRTo() {
 function saveDetailRepeatSettings() {
   const t = document.getElementById('detailModal')._task;
   if (!t) return;
-  takeSnapshot();
+  takeSnapshot('「' + (t.unit_name || 'カード') + '」の繰り返し設定を変更');
 
   const fromStr = document.getElementById('dRrFromDate').value || null;
   const toStr = document.getElementById('dRrToDate').value || null;
@@ -2921,7 +2972,7 @@ let _saveTaskData = null; // 保存範囲選択モーダル用
 function saveTask() {
   const t = document.getElementById('detailModal')._task;
   if (!t) return;
-  takeSnapshot();
+  takeSnapshot('「' + (t.unit_name || 'カード') + '」を編集');
   const newSubject = document.getElementById('dSubject').value;
   const newUnit = document.getElementById('dUnit').value;
   const newHash = document.getElementById('dHash').value;
@@ -3070,7 +3121,7 @@ function closeDeleteConfirm() {
 function confirmDeleteOnce() {
   const t = _deleteTarget;
   if (!t) return;
-  takeSnapshot();
+  takeSnapshot('「' + (t.unit_name || 'カード') + '」を削除（今回のみ）');
   const wk = getWeekKey();
   if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
   const lo = localOverrides[wk];
@@ -3086,7 +3137,7 @@ function confirmDeleteOnce() {
 function confirmDeleteFrom() {
   const t = _deleteTarget;
   if (!t) return;
-  takeSnapshot();
+  takeSnapshot('「' + (t.unit_name || 'カード') + '」を削除（以降すべて）');
   const fromDateStr = dateKey(currentMonday);
   if (t._groupKey) {
     const fromDt = new Date(fromDateStr);
@@ -3112,7 +3163,7 @@ function confirmDeleteFrom() {
 function confirmDeleteAll() {
   const t = _deleteTarget;
   if (!t) return;
-  takeSnapshot();
+  takeSnapshot('「' + (t.unit_name || 'カード') + '」を削除（すべて）');
   // groupKeyがあれば全メンバーをweeklyAddedから除去
   if (t._groupKey) {
     localOverrides.weeklyAdded = (localOverrides.weeklyAdded||[]).filter(
@@ -3271,11 +3322,11 @@ function selectCopyDate(str,d,m,y){
   hideCopyCalendar();
 }
 function confirmCopy(){
-  takeSnapshot();
   const t = document.getElementById('copyModal')._task;
   if(!t) return;
   const selectedStr = document.getElementById('copyTargetDate').getAttribute('data-selected');
   if(!selectedStr){alert('日付を選んでください');return;}
+  takeSnapshot('「' + (t.unit_name || 'カード') + '」をコピー');
   const [y,mo,d]=selectedStr.split('-').map(Number);
   const targetDate=new Date(y,mo-1,d);
   const targetMonday=getMonday(targetDate);
@@ -3452,7 +3503,7 @@ function selectRepeatFromToday() {
 function confirmRepeatRange() {
   const t = _repeatRangeTask;
   if (!t) return;
-  takeSnapshot();
+  takeSnapshot('「' + (t.unit_name || 'カード') + '」の繰り返し範囲を変更');
   const fromStr = document.getElementById('repeatFromDate').value;
   const toStr = document.getElementById('repeatToDate').value || null;
   const fromDt = fromStr ? new Date(fromStr) : new Date();
@@ -4011,12 +4062,12 @@ function updateSubjectColor() {
 }
 function closeAdd() { document.getElementById('addModal').classList.remove('open'); updateFloatingClose(); }
 function confirmAdd() {
-  takeSnapshot();
   const isRepeat = document.getElementById('addRepeatSection').style.display !== 'none';
   const slot = document.getElementById('aSlot').value;
   const subj = document.getElementById('aSubject').value;
   if (!subj) { alert('予定の種類を選んでください'); return; }
   const unit = document.getElementById('aUnit').value || '新しい予定';
+  takeSnapshot('「' + unit + '」を追加');
   const hash = document.getElementById('aHash').value;
   const memo = document.getElementById('aMemo').value;
   const st = parseInt(document.getElementById('aTime').value) || null;
@@ -4920,7 +4971,7 @@ function updateBsActionBar() {
 function bsDeleteSelected() {
   const tasks = Array.from(_bsSelected).map(i => _bsResults[i]);
   if (tasks.length === 0) return;
-  takeSnapshot();
+  takeSnapshot('一括編集：' + tasks.length + '件を削除');
   tasks.forEach(t => {
     const wk = t._srcMonday;
     if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
@@ -5070,7 +5121,7 @@ function saveBulkEdit() {
     const noteVals = applyNote ? _getBulkFieldValues('Note') : null;
     const timeVals = applyTime ? _getBulkFieldValues('Time') : null;
 
-    takeSnapshot();
+    takeSnapshot('一括編集：' + _bulkFieldTasks.length + '件を変更');
     const count = _bulkFieldTasks.length;
     _bulkFieldTasks.forEach((t, i) => {
       const newUnit = unitVals ? unitVals[i] : t.unit_name;
@@ -5096,10 +5147,9 @@ function saveBulkEdit() {
 
 // ===== Undo機能 =====
 function undoLast() {
-  if (!_undoSnapshot) return;
-  const snapshot = JSON.parse(JSON.stringify(_undoSnapshot));
-  _undoSnapshot = null;
-  localOverrides = snapshot;
+  if (!_undoHistory || _undoHistory.length === 0) return;
+  const entry = _undoHistory.shift(); // 直前の1件だけ取り出して使う
+  localOverrides = entry.snapshot;
   saveLocal(); // _savingToFirestoreフラグを立ててからFirestore保存
   updateUndoBtn();
   render();
@@ -5107,11 +5157,96 @@ function undoLast() {
 }
 
 function updateUndoBtn() {
+  const has = _undoHistory && _undoHistory.length > 0;
   const btns = document.querySelectorAll('.undo-btn');
   btns.forEach(btn => {
-    btn.style.opacity = _undoSnapshot ? '1' : '0.35';
-    btn.style.pointerEvents = _undoSnapshot ? 'auto' : 'none';
+    btn.style.opacity = has ? '1' : '0.35';
+    btn.style.pointerEvents = has ? 'auto' : 'none';
   });
+}
+
+// 戻るボタンをタップした時の「1つ前に戻す／もっと前に戻す」ポップアップ
+function toggleUndoChoicePopup(ev) {
+  if (ev) ev.stopPropagation();
+  if (!_undoHistory || _undoHistory.length === 0) return;
+  const existing = document.getElementById('undoChoicePopup');
+  if (existing) { existing.remove(); return; }
+
+  const pop = document.createElement('div');
+  pop.id = 'undoChoicePopup';
+  pop.style.cssText = 'position:fixed;bottom:168px;right:16px;background:white;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.22);padding:8px;width:172px;z-index:501;font-family:inherit;';
+  pop.innerHTML =
+    '<button onclick="document.getElementById(\'undoChoicePopup\').remove();undoLast();" style="width:100%;display:flex;align-items:center;gap:8px;background:none;border:none;padding:9px 8px;border-radius:9px;font-size:12.5px;font-weight:700;color:#1a2744;cursor:pointer;font-family:inherit;">' +
+      '<span style="font-size:15px;">↶</span> 1つ前に戻す' +
+    '</button>' +
+    '<div style="height:1px;background:#eee;margin:2px 4px;"></div>' +
+    '<button onclick="document.getElementById(\'undoChoicePopup\').remove();openHistoryEditModal();" style="width:100%;display:flex;align-items:center;gap:8px;background:#eef6ff;border:none;padding:9px 8px;border-radius:9px;font-size:12.5px;font-weight:700;color:#1a6fa0;cursor:pointer;font-family:inherit;">' +
+      '<span style="font-size:14px;">🕐</span> もっと前に戻す' +
+    '</button>';
+  document.body.appendChild(pop);
+  // 外側タップで閉じる
+  setTimeout(() => {
+    document.addEventListener('click', function closeOnce(e) {
+      if (!pop.contains(e.target)) { pop.remove(); document.removeEventListener('click', closeOnce); }
+    });
+  }, 0);
+}
+
+// ===== 編集メニュー（下部ナビ左から2番目）=====
+function openEditMenuModal() {
+  document.getElementById('editMenuModal').classList.add('open');
+  updateFloatingClose();
+}
+function closeEditMenuModal() {
+  document.getElementById('editMenuModal').classList.remove('open');
+  updateFloatingClose();
+}
+
+// ===== 履歴の編集 =====
+function timeAgoLabel(ts) {
+  const diffMs = Date.now() - ts;
+  const min = Math.floor(diffMs / 60000);
+  if (min < 1) return 'たった今';
+  if (min < 60) return min + '分前';
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return hr + '時間前';
+  return Math.floor(hr / 24) + '日前';
+}
+function openHistoryEditModal() {
+  const listEl = document.getElementById('historyEditList');
+  listEl.innerHTML = '';
+  if (!_undoHistory || _undoHistory.length === 0) {
+    listEl.innerHTML = '<div style="text-align:center;color:#999;font-size:13px;padding:30px 10px;">戻せる操作履歴がまだありません</div>';
+  } else {
+    _undoHistory.forEach((entry, idx) => {
+      const row = document.createElement('div');
+      row.style.cssText = 'background:white;border-radius:14px;padding:12px 13px;margin-bottom:10px;box-shadow:0 2px 6px rgba(26,39,68,.05);border-left:4px solid ' + (idx===0 ? '#993556' : '#ddd') + ';';
+      row.innerHTML =
+        '<div style="font-size:10.5px;color:#999;font-weight:700;margin-bottom:4px;">' + timeAgoLabel(entry.time) + '</div>' +
+        '<div style="font-size:13px;color:#333;line-height:1.6;margin-bottom:9px;">' + entry.label + '</div>' +
+        '<button onclick="restoreToHistoryPoint(' + idx + ')" style="width:100%;background:#FBEAF0;color:#993556;border:none;border-radius:9999px;padding:7px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;">取り消して前に戻る</button>';
+      listEl.appendChild(row);
+    });
+  }
+  document.getElementById('historyEditModal').classList.add('open');
+  updateFloatingClose();
+}
+function closeHistoryEditModal() {
+  document.getElementById('historyEditModal').classList.remove('open');
+  updateFloatingClose();
+}
+function restoreToHistoryPoint(index) {
+  if (!_undoHistory || index >= _undoHistory.length) return;
+  const entry = _undoHistory[index];
+  if (!confirm(entry.label + ' より前の状態に戻します。よろしいですか？')) return;
+  localOverrides = entry.snapshot;
+  // この時点より新しい履歴はもう戻れないので破棄する
+  _undoHistory = _undoHistory.slice(index + 1);
+  saveLocal();
+  updateUndoBtn();
+  render();
+  closeHistoryEditModal();
+  showToast('選択した時点まで戻しました ↩');
 }
 
 // ===== 固定Xボタン制御 =====
@@ -6604,9 +6739,8 @@ function savePeriodSettings() {
     document.getElementById('periodSettingsError').textContent = '長期休暇期間は開始日・終了日の両方を入力してください。';
     return;
   }
-  takeSnapshot();
+  takeSnapshot('学習期間の設定を変更');
   localOverrides.periodSettings = {
-    lectureDays: Array.from(periodLectureDays).sort(),
     lectureStart: document.getElementById('periodLectureStart').value || '08:45',
     lectureEnd: document.getElementById('periodLectureEnd').value || '12:30',
     vacationStart: vacStart,
@@ -6620,7 +6754,7 @@ function savePeriodSettings() {
 
 function clearPeriodSettings() {
   if (!confirm('登録済みの講習期間・長期休暇期間・終日外出日をすべてクリアします。よろしいですか？')) return;
-  takeSnapshot();
+  takeSnapshot('学習期間の設定をクリア');
   localOverrides.periodSettings = { lectureDays:[], lectureStart:'08:45', lectureEnd:'12:30', vacationStart:'', vacationEnd:'', blockedDays:[] };
   saveLocal();
   periodLectureDays = new Set();
@@ -6850,8 +6984,7 @@ function runLecture() {
     return;
   }
   document.getElementById('lectureError').textContent = '';
-  takeSnapshot();
-
+  takeSnapshot('講習カードを一括配置：' + _lectureSelectedDates.size + '日分');
   const sortedDates = Array.from(_lectureSelectedDates).sort();
   const DAY_JP = ['日','月','火','水','木','金','土'];
   // 教科色の点線と同じ色をマークに使う
@@ -9351,7 +9484,7 @@ function openMoveModal(taskRef, toDay, toSlot) {
 
   // weeklyカード（繰り返し）のみポップアップ表示、それ以外は直接移動
   if (task.display_type !== 'weekly') {
-    takeSnapshot();
+    takeSnapshot('「' + (task.unit_name || 'カード') + '」を移動');
     const SLOTS2 = ['plan','morning','am','pm','night'];
     if (!localOverrides[srcWk]) localOverrides[srcWk] = {added:[], hidden:{}};
     const srcLo = localOverrides[srcWk];
@@ -9407,7 +9540,7 @@ function closeMoveModal() {
 
 function confirmMove() {
   if (!_pendingMove) return;
-  takeSnapshot();
+  takeSnapshot('「' + (_pendingMove.task.unit_name || 'カード') + '」を移動');
   const {task, toDay, toSlot, srcWk, srcMondayYMD} = _pendingMove;
   const type = document.querySelector('input[name="moveType"]:checked').value;
   const SLOTS2 = ['plan','morning','am','pm','night'];
@@ -9552,7 +9685,7 @@ render();
 }
 </style>
 
-<button id="floatingUndoBtn" class="undo-btn" onclick="undoLast()" ontouchend="event.preventDefault();undoLast();"
+<button id="floatingUndoBtn" class="undo-btn" onclick="toggleUndoChoicePopup(event)" ontouchend="event.preventDefault();toggleUndoChoicePopup(event);"
   style="display:none;position:fixed;bottom:112px;right:16px;width:48px;height:48px;border-radius:50%;background:rgba(26,39,68,0.92);color:white;border:none;cursor:pointer;z-index:500;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,0.3);opacity:0.35;pointer-events:none;">
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
 </button>
@@ -10244,7 +10377,7 @@ async function restoreBackup(dateStr) {
   try {
     const doc = await db.collection('backups').doc(dateStr).get();
     if (!doc.exists) { alert('バックアップが見つかりません'); return; }
-    takeSnapshot();
+    takeSnapshot('バックアップ（' + dateStr + '）から復元');
     localOverrides = doc.data().overrides || {};
     saveLocal(); render();
     document.getElementById('backupModal').classList.remove('open');
