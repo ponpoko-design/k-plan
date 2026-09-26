@@ -5276,10 +5276,9 @@ function timeAgoLabel(ts) {
 }
 // 履歴1件分の中身（アクションバッジ＋カード名＋位置情報）のHTMLを組み立てる
 function renderHistoryEntryHtml(entry) {
-  const st = _ACTION_STYLE[entry.action] || _ACTION_STYLE['その他'];
-  // アクション名は塗りつぶしではなく罫線囲みのシンプルな四角に
+  // アクション名は種類ごとの色分けをやめ、全て統一のグレー罫線囲みにする
   const badge = entry.action
-    ? '<span style="display:inline-block;background:transparent;border:1.5px solid ' + st.color + ';color:' + st.color + ';font-size:11.5px;font-weight:700;padding:1px 7px;border-radius:5px;margin-right:6px;vertical-align:middle;">' + entry.action + '</span>'
+    ? '<span style="display:inline-block;background:transparent;border:1.5px solid #888;color:#888;font-size:11.5px;font-weight:700;padding:1px 7px;border-radius:5px;margin-right:6px;vertical-align:middle;">' + entry.action + '</span>'
     : '';
   // カード名は教科色を背景にしたバッジで表示
   const subjColor = SUBJ_COLOR[entry.subject] || null;
