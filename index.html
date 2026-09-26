@@ -3893,8 +3893,10 @@ function openAddModal() {
   const todayMonday = getMonday(now);
   const isThisWeek = dateKey(currentMonday) === dateKey(todayMonday);
   // デフォルト日付：常に今見ている週の水曜日
+  // ※以前はdateKey()（UTC変換）を使っていたため、JST 0:00〜8:59の間は
+  // 　1日前にズレて表示される不具合があった（火曜日が表示される等）。
   const wed = addDays(currentMonday, 2);
-  const wedStr = dateKey(wed);
+  const wedStr = localYMD(wed);
   const dayIdx = 2; // 水曜
   const slotIdx = 3; // 午後
   openAdd(dayIdx, slotIdx, wedStr);
@@ -3969,8 +3971,12 @@ function _setAddDate(str) {
   document.getElementById('aWeekday').value=dayIdx;
 }
 function selectAddDate(str) {
-  _setAddDate(str);
-  renderAddCal(); // 選んだ日に色をつけて見せる
+  try {
+    _setAddDate(str);
+    renderAddCal(); // 選んだ日に色をつけて見せる
+  } catch(e) {
+    console.error('[selectAddDate] カレンダー再描画でエラー:', e);
+  }
   setTimeout(() => { document.getElementById('addCalWrap').style.display='none'; }, 350);
 }
 function selectAddDateToday() {
