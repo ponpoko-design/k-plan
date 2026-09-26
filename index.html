@@ -5440,7 +5440,7 @@ async function runMissedCheck(isPreGnorev, isGnorevWeek, gnorevDow, gnorevThisDo
       : '';
     missedPrompt += '\n\n除外OK: ' + morningExclude + '漢字・算数基礎力テストなど毎朝固定タスク / 塾・サッカー・プロタゴ / 学校の宿題\n';
     missedPrompt += '\n【重要】ベスト週と同じ内容が入っている場合は一切出力しない。問題がある（不足・欠落・違う）場合のみ出力する。「OKです」「問題なし」「入っています」などの確認コメントは一切出力しない。差分がなければ空配列[]を返す。\n';
-    missedPrompt += '\n最初の文字は { 最後の文字は } であること。コードブロック禁止。\n';
+    missedPrompt += '\n出力の1文字目は必ず「[」であること。最初の文字は[ 最後の文字は ]であること。「まず確認する」等の下書き・前置きは書かず、いきなり配列から書き始めること。コードブロック禁止。\n';
     missedPrompt += 'JSON配列のみ返す:\n[{"date":"6/25(木)など or -","slot":"朝/午前/午後/夜","subject":"算数/国語/理科/社会","best":"ベスト週の状況1行","current":"この週の状況1行","detail":"内容1行"}]';
 
     const controller = new AbortController();
@@ -5449,13 +5449,12 @@ async function runMissedCheck(isPreGnorev, isGnorevWeek, gnorevDow, gnorevThisDo
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       signal: controller.signal,
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 2000, messages: [{ role: 'user', content: missedPrompt }, { role: 'assistant', content: '[' }] })
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 2000, messages: [{ role: 'user', content: missedPrompt }] })
     });
     clearTimeout(timeoutId);
     const data = await res.json();
-    const rawReply = (data.content && data.content[0] && data.content[0].text) ? data.content[0].text : '';
-    // 「[」からプリフィルし、途中で切れて「入れ忘れなし」と誤判定されるのを防ぐ
-    const replyText = rawReply ? ('[' + rawReply) : '';
+    console.log('[missedCheck] API応答:', data);
+    const replyText = (data.content && data.content[0] && data.content[0].text) ? data.content[0].text : '';
 
     msgs.removeChild(loadDiv);
     if (btn) btn.remove();
@@ -5848,7 +5847,8 @@ async function runBalanceCheck() {
       prompt += '【念のため再確認・絶対厳守】この週は塾がない前提の週です。「計算マスタ」「Nテキスト」「N家庭学習」「T確認テスト」が未配置でも、"ルール違反"にも"入れ忘れ確認"にも"アドバイス"にも一切書かないこと。他のカテゴリで触れることも禁止。この4つの単語は今回の出力に一切登場させないこと。\n\n';
     }
 
-    prompt += '【出力形式の指示】\n';
+    prompt += '【出力形式の指示・最重要】\n';
+    prompt += '出力の1文字目は必ず「{」であること。「まず整理する」「チェックする」等の下書き・思考メモ・見出しを本文の前に書くことを禁止する。説明文もコードブロックも不要。いきなりJSONだけを書き始めること。\n';
     prompt += '以下のJSON形式のみで返してください（説明文・コードブロック不要）:\n';
     prompt += '{\n';
     prompt += '  "overall": "OK" または "要確認",\n';
@@ -5882,17 +5882,12 @@ async function runBalanceCheck() {
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 3000,
-        messages: [
-          { role: 'user', content: prompt },
-          { role: 'assistant', content: '{' }
-        ]
+        messages: [{ role: 'user', content: prompt }]
       })
     });
     const data = await res.json();
-    const rawReply = (data.content && data.content[0] && data.content[0].text) ? data.content[0].text : '';
-    // アシスタント発話を「{」からプリフィルすることで、JSONの前に
-    // 思考メモ・前置き文章が出力される余地を構造的になくす
-    const replyText = rawReply ? ('{' + rawReply) : '';
+    console.log('[balanceCheck] API応答:', data);
+    const replyText = (data.content && data.content[0] && data.content[0].text) ? data.content[0].text : '';
 
     msgs.removeChild(loadDiv);
 
@@ -5914,7 +5909,7 @@ async function runBalanceCheck() {
 
     if (!parsed || !parsed.items) {
       resultDiv.style.cssText += 'background:white;border-radius:10px;padding:12px;font-size:13px;color:#333;white-space:pre-wrap;';
-      resultDiv.textContent = replyText || 'エラーが発生しました。';
+      resultDiv.textContent = replyText || (data.error ? ('エラー: ' + (data.error.message || JSON.stringify(data.error))) : 'エラーが発生しました。応答が空でした（詳細はブラウザのコンソールを確認）。');
     } else {
       const SUBJ_COLOR = {'算数':'#C1E8FB','国語':'#F2B9E4','理科':'#B6EBB0','社会':'#F9DB82'};
       const CAT_STYLE = {
@@ -7241,7 +7236,8 @@ async function runJukuPropose() {
       '・塾がある日（月夜に塾カードがある月曜、水夜に塾カードがある水曜）は夜に追加しない。\n' +
       '優先順位：算数 > 理科 > 社会 > 国語\n' +
       '【重要】unit_nameは必ず "仮・提案" で固定。説明文不要。JSONのみ出力。\n\n' +
-      '【出力形式】\n' +
+      '【出力形式・最重要】\n' +
+      '出力の1文字目は必ず「[」であること。下書き・思考メモ・前置きの文章は一切書かず、いきなり配列から書き始めること。\n' +
       '以下のJSON配列のみを返す（説明文・コードブロック・マークダウン不要）:\n' +
       '[\n' +
       '  { "date": "2026-09-21", "slot": "am", "subject": "算数", "study_time": 30 },\n' +
@@ -7253,11 +7249,11 @@ async function runJukuPropose() {
     const res = await fetch('https://kota-ai-proxy.nacchukkim.workers.dev', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 3500, messages: [{ role:'user', content: prompt }, { role:'assistant', content: '[' }] })
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 3500, messages: [{ role:'user', content: prompt }] })
     });
     const data = await res.json();
-    const rawReply = (data.content?.[0]?.text) || '';
-    const replyText = rawReply ? ('[' + rawReply) : '';
+    console.log('[jukuBreakPlan] API応答:', data);
+    const replyText = (data.content?.[0]?.text) || '';
 
     // JSONパース（純配列 or コードブロック両対応）
     let tempCards = [];
@@ -7814,7 +7810,8 @@ async function runKadaiDistribute() {
       '・1回あたりのページ数は多くても20ページ以内を目安にする（講習がない日は40ページ以内でよい）。\n' +
       (minPerPg && maxMinVal ? '・時間情報があるので、1回あたり上限ページ数（' + Math.floor(maxMinVal / minPerPg) + 'ページ）を超えないよう分配する。\n' : '') +
       '\n【期間中のスケジュール（Firestoreから取得した最新データ）】\n' + scheduleTxt + '\n' +
-      '【出力形式】\n' +
+      '【出力形式・最重要】\n' +
+      '出力の1文字目は必ず「{」であること。下書き・思考メモ・前置きの文章は一切書かず、いきなりJSONから書き始めること。\n' +
       '以下のJSON形式のみで返す（説明文・コードブロック不要）:\n' +
       '{\n' +
       '  "summary": "1〜2行の分配概要（例：全15日間に分散、バッファ2日確保）",\n' +
@@ -7831,15 +7828,12 @@ async function runKadaiDistribute() {
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 4000,
-        messages: [
-          { role: 'user', content: prompt },
-          { role: 'assistant', content: '{' }
-        ]
+        messages: [{ role: 'user', content: prompt }]
       })
     });
     const data = await res.json();
-    const rawReply = (data.content && data.content[0] && data.content[0].text) ? data.content[0].text : '';
-    const replyText = rawReply ? ('{' + rawReply) : '';
+    const replyText = (data.content && data.content[0] && data.content[0].text) ? data.content[0].text : '';
+    console.log('[kadai] API応答:', data);
     console.log('[kadai] stop_reason:', data.stop_reason, 'replyText length:', replyText.length);
     console.log('[kadai] replyText:', replyText.slice(0, 500));
 
@@ -8234,6 +8228,7 @@ ${modePrompt}
 - GW講習・夏期講習はそれぞれ type: "GW講習" "夏期講習" にする
 - 単元表から番号→名前の対応を各 _units に入れる
 - 日付は必ず YYYY-MM-DD 形式
+- 出力の1文字目は必ず「{」であること。「まず確認する」等の下書き・思考メモ・前置きは一切書かず、いきなりJSONから書き始めること
 - JSONのみ出力。前後に余計な文字を一切含めないこと`
     });
 
@@ -8243,16 +8238,14 @@ ${modePrompt}
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 8000,
-        messages: [
-          { role: 'user', content: imageContent },
-          { role: 'assistant', content: '{' }
-        ]
+        messages: [{ role: 'user', content: imageContent }]
       })
     });
     if (bar) bar.style.width = '90%';
 
     // res.json()で受け取りdata.content[0].textを使う方式（他のAIフェッチと共通の最新ルールに統一）
     const data = await res.json();
+    console.log('[imgImport] API応答:', data);
 
     // エラーレスポンスチェック
     if (data.error) throw new Error('APIエラー: ' + (data.error.message || JSON.stringify(data.error)));
@@ -8263,9 +8256,7 @@ ${modePrompt}
 
     let parsed;
     try {
-      // アシスタント発話を「{」からプリフィルしているため、実際の返答には
-      // 先頭の「{」が含まれない。ここで復元してからパースする。
-      const clean = '{' + textBlock.text.replace(/```json\s*|```\s*/g, '').trim();
+      const clean = textBlock.text.replace(/```json\s*|```\s*/g, '').trim();
       parsed = JSON.parse(clean);
     } catch (e) {
       const len = textBlock.text.length;
@@ -8796,7 +8787,8 @@ async function confirmGnorevWithAI(dateStr, range, testDate, dow) {
 - 毎朝の漢字・算数基礎力テストは追加しない（固定タスクで既存）
 - テスト後の振り返りカードも必ず含める
 
-【回答形式】
+【回答形式・最重要】
+出力の1文字目は必ず「[」であること。下書き・思考メモ・前置きの文章は一切書かず、いきなり配列から書き始めること。
 JSON配列のみ返してください（説明文・コードブロック不要）:
 [
   {"date": "YYYY-MM-DD", "slot": "morning|am|pm|night", "subject": "算数|国語|理科|社会", "unit": "カード名（具体的に。例: 算数N復習・理科電気振り返り等）", "time": 分数},
@@ -8809,15 +8801,12 @@ JSON配列のみ返してください（説明文・コードブロック不要�
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 3500,
-        messages: [
-          { role: 'user', content: prompt },
-          { role: 'assistant', content: '[' }
-        ]
+        messages: [{ role: 'user', content: prompt }]
       })
     });
     const data = await res.json();
-    const rawText = data.content && data.content[0] ? data.content[0].text : '';
-    const text = rawText ? ('[' + rawText) : '';
+    console.log('[gnorevPlan] API応答:', data);
+    const text = data.content && data.content[0] ? data.content[0].text : '';
 
     // JSONパース
     const jsonMatch = text.match(/\[[\s\S]*\]/);
