@@ -3140,6 +3140,7 @@ function deleteTask() {
   if (!t) return;
   // 今週だけの予定 → 即削除
   if (t.display_type !== 'weekly' && !t._isWeeklyMoved) {
+    takeSnapshot({action:'削除', card:_cardLabel(t), at:{day:t._dayIdx, slot:t.slot}, scope:'今回のみ'});
     const wk = getWeekKey();
     if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
     const lo = localOverrides[wk];
@@ -3969,7 +3970,8 @@ function _setAddDate(str) {
 }
 function selectAddDate(str) {
   _setAddDate(str);
-  document.getElementById('addCalWrap').style.display='none';
+  renderAddCal(); // 選んだ日に色をつけて見せる
+  setTimeout(() => { document.getElementById('addCalWrap').style.display='none'; }, 350);
 }
 function selectAddDateToday() {
   const now=getNowJST();
