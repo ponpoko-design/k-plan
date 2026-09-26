@@ -2002,6 +2002,28 @@ function saveLocal() {
 // 以前は直前の1状態だけを覚えるsnapshot方式だったが、
 // 「履歴の編集」画面で過去5件から選んで戻せるようにスタック化した。
 const MAX_HISTORY = 5;
+
+// ===== 履歴ラベル用ヘルパー =====
+const _DAY_JP_MON0 = ['月','火','水','木','金','土','日']; // dayIdx: 0=月〜6=日
+const _SLOT_JP = {plan:'予定', morning:'朝', am:'午前', pm:'午後', night:'夜'};
+function _dayJp(dayIdx) {
+  if (dayIdx === undefined || dayIdx === null || isNaN(dayIdx)) return '';
+  return _DAY_JP_MON0[((dayIdx % 7) + 7) % 7] || '';
+}
+function _slotJp(slot) { return _SLOT_JP[slot] || slot || ''; }
+// カード名（そのカード自身の情報がなければ教科名などにフォールバック）
+function _cardLabel(t) {
+  if (!t) return 'カード';
+  return t.unit_name || t.subject || t.note || 'カード';
+}
+// 「学校の宿題」を移動（水曜 夜→土曜 午前）のようなラベルを組み立てる
+function _moveLabel(cardName, fromDay, fromSlot, toDay, toSlot) {
+  const from = (_dayJp(fromDay) ? _dayJp(fromDay) + '曜 ' : '') + _slotJp(fromSlot);
+  const to = (_dayJp(toDay) ? _dayJp(toDay) + '曜 ' : '') + _slotJp(toSlot);
+  const arrow = (from && to) ? '（' + from + '→' + to + '）' : '';
+  return '「' + cardName + '」を移動' + arrow;
+}
+
 function takeSnapshot(label) {
   try {
     if (!Array.isArray(window._undoHistory)) window._undoHistory = [];
@@ -2498,7 +2520,8 @@ function _renderCard(tDisplay, cell, tOrig, srcMonday) {
 // ===== D&D =====
 function dropTask(toDay, toSlot) {
   if (!dragInfo) return;
-  takeSnapshot('「' + (dragInfo.t.unit_name || 'カード') + '」を移動');
+  const t0 = dragInfo.t;
+  takeSnapshot(_moveLabel(_cardLabel(t0), t0._dayIdx, t0.slot, toDay, SLOTS[toSlot]));
   const {t} = dragInfo;
   const wk = getWeekKey();
   if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
@@ -2842,7 +2865,7 @@ function clearDRRTo() {
 function saveDetailRepeatSettings() {
   const t = document.getElementById('detailModal')._task;
   if (!t) return;
-  takeSnapshot('「' + (t.unit_name || 'カード') + '」の繰り返し設定を変更');
+  takeSnapshot('「' + _cardLabel(t) + '」の繰り返し設定を変更');
 
   const fromStr = document.getElementById('dRrFromDate').value || null;
   const toStr = document.getElementById('dRrToDate').value || null;
@@ -2976,7 +2999,7 @@ let _saveTaskData = null; // 保存範囲選択モーダル用
 function saveTask() {
   const t = document.getElementById('detailModal')._task;
   if (!t) return;
-  takeSnapshot('「' + (t.unit_name || 'カード') + '」を編集');
+  takeSnapshot('「' + _cardLabel(t) + '」を編集');
   const newSubject = document.getElementById('dSubject').value;
   const newUnit = document.getElementById('dUnit').value;
   const newHash = document.getElementById('dHash').value;
@@ -3125,7 +3148,7 @@ function closeDeleteConfirm() {
 function confirmDeleteOnce() {
   const t = _deleteTarget;
   if (!t) return;
-  takeSnapshot('「' + (t.unit_name || 'カード') + '」を削除（今回のみ）');
+  takeSnapshot('「' + _cardLabel(t) + '」を削除（今回のみ）');
   const wk = getWeekKey();
   if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
   const lo = localOverrides[wk];
@@ -3141,7 +3164,7 @@ function confirmDeleteOnce() {
 function confirmDeleteFrom() {
   const t = _deleteTarget;
   if (!t) return;
-  takeSnapshot('「' + (t.unit_name || 'カード') + '」を削除（以降すべて）');
+  takeSnapshot('「' + _cardLabel(t) + '」を削除（以降すべて）');
   const fromDateStr = dateKey(currentMonday);
   if (t._groupKey) {
     const fromDt = new Date(fromDateStr);
@@ -3167,7 +3190,7 @@ function confirmDeleteFrom() {
 function confirmDeleteAll() {
   const t = _deleteTarget;
   if (!t) return;
-  takeSnapshot('「' + (t.unit_name || 'カード') + '」を削除（すべて）');
+  takeSnapshot('「' + _cardLabel(t) + '」を削除（すべて）');
   // groupKeyがあれば全メンバーをweeklyAddedから除去
   if (t._groupKey) {
     localOverrides.weeklyAdded = (localOverrides.weeklyAdded||[]).filter(
@@ -3330,7 +3353,7 @@ function confirmCopy(){
   if(!t) return;
   const selectedStr = document.getElementById('copyTargetDate').getAttribute('data-selected');
   if(!selectedStr){alert('日付を選んでください');return;}
-  takeSnapshot('「' + (t.unit_name || 'カード') + '」をコピー');
+  takeSnapshot('「' + _cardLabel(t) + '」をコピー');
   const [y,mo,d]=selectedStr.split('-').map(Number);
   const targetDate=new Date(y,mo-1,d);
   const targetMonday=getMonday(targetDate);
@@ -3507,7 +3530,7 @@ function selectRepeatFromToday() {
 function confirmRepeatRange() {
   const t = _repeatRangeTask;
   if (!t) return;
-  takeSnapshot('「' + (t.unit_name || 'カード') + '」の繰り返し範囲を変更');
+  takeSnapshot('「' + _cardLabel(t) + '」の繰り返し範囲を変更');
   const fromStr = document.getElementById('repeatFromDate').value;
   const toStr = document.getElementById('repeatToDate').value || null;
   const fromDt = fromStr ? new Date(fromStr) : new Date();
@@ -9488,7 +9511,7 @@ function openMoveModal(taskRef, toDay, toSlot) {
 
   // weeklyカード（繰り返し）のみポップアップ表示、それ以外は直接移動
   if (task.display_type !== 'weekly') {
-    takeSnapshot('「' + (task.unit_name || 'カード') + '」を移動');
+    takeSnapshot(_moveLabel(_cardLabel(task), task._dayIdx, task.slot, destDayIdx, SLOTS[toSlot]));
     const SLOTS2 = ['plan','morning','am','pm','night'];
     if (!localOverrides[srcWk]) localOverrides[srcWk] = {added:[], hidden:{}};
     const srcLo = localOverrides[srcWk];
@@ -9527,7 +9550,7 @@ function openMoveModal(taskRef, toDay, toSlot) {
     saveLocal(); render();
     return;
   }
-  _pendingMove = {task: taskRef, toDay, toSlot, srcWk, srcMondayYMD};
+  _pendingMove = {task: task, toDay, toSlot, srcWk, srcMondayYMD};
   const slotNames = {0:'予定',1:'朝',2:'午前',3:'午後',4:'夜'};
   document.getElementById('moveModalTitle').textContent =
     DAYS_JP2[destDayIdx] + '曜日の' + (slotNames[toSlot]||'') + 'に移動しますか？';
@@ -9544,8 +9567,8 @@ function closeMoveModal() {
 
 function confirmMove() {
   if (!_pendingMove) return;
-  takeSnapshot('「' + (_pendingMove.task.unit_name || 'カード') + '」を移動');
   const {task, toDay, toSlot, srcWk, srcMondayYMD} = _pendingMove;
+  takeSnapshot(_moveLabel(_cardLabel(task), task._dayIdx, task.slot, toDay, SLOTS[toSlot]));
   const type = document.querySelector('input[name="moveType"]:checked').value;
   const SLOTS2 = ['plan','morning','am','pm','night'];
 
