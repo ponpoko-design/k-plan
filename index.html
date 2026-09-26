@@ -5298,23 +5298,37 @@ function renderHistoryEntryHtml(entry) {
   // 構造化情報がない場合はラベル文字列のみ表示（後方互換）
   return badge + (entry.label || (cardHtml ? cardHtml + 'を' + (entry.action||'操作') : (entry.action || '操作')));
 }
-function openHistoryEditModal() {
+function renderHistoryEditList() {
   const listEl = document.getElementById('historyEditList');
   listEl.innerHTML = '';
   if (!_undoHistory || _undoHistory.length === 0) {
     listEl.innerHTML = '<div style="text-align:center;color:#999;font-size:13px;padding:30px 10px;">戻せる操作履歴がまだありません</div>';
-  } else {
-    _undoHistory.forEach((h, idx) => {
-      const entry = h.entry || { action:'その他', label: h.label };
-      const row = document.createElement('div');
-      row.style.cssText = 'background:white;border-radius:14px;padding:12px 13px;margin-bottom:10px;box-shadow:0 2px 6px rgba(26,39,68,.05);border-left:4px solid ' + (idx===0 ? '#993556' : '#ddd') + ';';
-      row.innerHTML =
-        '<div style="font-size:10.5px;color:#999;font-weight:700;margin-bottom:4px;">' + timeAgoLabel(h.time) + '</div>' +
-        '<div style="font-size:13px;color:#333;line-height:1.7;margin-bottom:9px;">' + renderHistoryEntryHtml(entry) + '</div>' +
-        '<button onclick="restoreToHistoryPoint(' + idx + ')" style="width:100%;background:#FBEAF0;color:#993556;border:none;border-radius:9999px;padding:7px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;">取り消して前に戻る</button>';
-      listEl.appendChild(row);
-    });
+    return;
   }
+  _undoHistory.forEach((h, idx) => {
+    const entry = h.entry || { action:'その他', label: h.label };
+    const row = document.createElement('div');
+    row.style.cssText = 'background:white;border-radius:14px;padding:12px 13px;margin-bottom:10px;box-shadow:0 2px 6px rgba(26,39,68,.05);border-left:4px solid ' + (idx===0 ? '#993556' : '#ddd') + ';';
+    row.innerHTML =
+      '<div style="font-size:10.5px;color:#999;font-weight:700;margin-bottom:4px;">' + timeAgoLabel(h.time) + '</div>' +
+      '<div style="font-size:13px;color:#333;line-height:1.7;margin-bottom:9px;">' + renderHistoryEntryHtml(entry) + '</div>' +
+      '<button onclick="restoreToHistoryPoint(' + idx + ')" style="width:100%;background:#FBEAF0;color:#993556;border:none;border-radius:9999px;padding:7px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;">取り消して前に戻る</button>';
+    listEl.appendChild(row);
+  });
+}
+// 確認ダイアログ用の短いプレーンテキスト（バッジ等のHTMLを含まない）
+function historyEntryPlainText(entry) {
+  const cardPart = entry.card ? '「' + entry.card + '」' : '';
+  if (entry.action === '移動' && entry.from && entry.to) {
+    return cardPart + 'の移動（' + _dateSlotLabel(entry.from.day, entry.from.slot) + '→' + _dateSlotLabel(entry.to.day, entry.to.slot) + '）';
+  }
+  if (entry.action === '追加') return cardPart + 'の追加';
+  if (entry.action === '削除') return cardPart + 'の削除';
+  if (entry.action === '編集') return cardPart + 'の編集';
+  return entry.label || (entry.action || 'この操作');
+}
+function openHistoryEditModal() {
+  renderHistoryEditList();
   document.getElementById('historyEditModal').classList.add('open');
   updateFloatingClose();
 }
@@ -5324,15 +5338,17 @@ function closeHistoryEditModal() {
 }
 function restoreToHistoryPoint(index) {
   if (!_undoHistory || index >= _undoHistory.length) return;
-  const entry = _undoHistory[index];
-  if (!confirm(entry.label + ' より前の状態に戻します。よろしいですか？')) return;
-  localOverrides = entry.snapshot;
+  const h = _undoHistory[index];
+  const entry = h.entry || {};
+  if (!confirm(historyEntryPlainText(entry) + ' より前の状態に戻します。よろしいですか？')) return;
+  localOverrides = h.snapshot;
   // この時点より新しい履歴はもう戻れないので破棄する
   _undoHistory = _undoHistory.slice(index + 1);
   saveLocal();
   updateUndoBtn();
   render();
-  closeHistoryEditModal();
+  // ウィンドウは閉じず、残っている履歴だけを再表示する（履歴が0件ならその旨を表示）
+  renderHistoryEditList();
   showToast('選択した時点まで戻しました ↩');
 }
 
