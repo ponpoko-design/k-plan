@@ -5384,6 +5384,20 @@ async function runMissedCheck(isPreGnorev, isGnorevWeek, gnorevDow, gnorevThisDo
   msgs.appendChild(loadDiv);
   msgs.scrollTop = msgs.scrollHeight;
 
+  // 土曜グノレブ（8/29・1/9）はまだ比較用の「ベスト実績パターン」が記録されていないため、
+  // 誤った基準（月曜パターン）と比較してしまわないよう、ここで案内を出して終了する
+  const relevantDow = isPreGnorev ? gnorevDow : gnorevThisDow;
+  if (relevantDow === 6) {
+    msgs.removeChild(loadDiv);
+    if (btn) btn.remove();
+    const infoDiv = document.createElement('div');
+    infoDiv.style.cssText = 'padding:8px 10px;background:#eef6ff;border:1px solid #2980b9;border-radius:8px;font-size:12px;color:#1a6fa0;';
+    infoDiv.textContent = '📋 土曜グノレブはまだ比較用の実績データがないため、入れ忘れ確認は準備中です。';
+    msgs.appendChild(infoDiv);
+    msgs.scrollTop = msgs.scrollHeight;
+    return;
+  }
+
   try {
     // ベストスケジュールを取得
     const bestPreMonday = gnorevDow === 3
@@ -5661,47 +5675,23 @@ async function runBalanceCheck() {
       return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
     })();
     const findGnorev = (targetWk) => {
-      // targetWkの月〜日の日付範囲を計算
+      // 2026年度グノレブ本番日程（固定）。
+      // 以前はスケジュール中のカード名に「グノレブ」の文字が含まれるかどうかで
+      // 本番日を推測していたが、「グノレブ8月」のような《後日の復習カード》も
+      // 「グノレブ」を含むため本番日と誤検知してしまっていた。
+      // → 本番日は年間で決まっているので、日付そのものと照合する方式に変更。
+      const GNOREV_EXAM_DATES = [
+        '2026-06-01', '2026-07-01', '2026-07-05', '2026-08-29',
+        '2026-10-12', '2026-11-11', '2026-12-14', '2027-01-09'
+      ];
       const twParts = targetWk.split('-');
       const twMonday = new Date(parseInt(twParts[0]), parseInt(twParts[1])-1, parseInt(twParts[2]));
       const twSunday = new Date(twMonday); twSunday.setDate(twMonday.getDate() + 6);
 
-      // 全localOverridesを検索
-      for (const ck of Object.keys(localOverrides)) {
-        const added = (localOverrides[ck].added || []);
-        for (const t of added) {
-          if (!t.unit_name || !t.unit_name.includes('グノレブ')) continue;
-          if (t.unit_name.includes('振り返り')) continue;
-
-          // 実際の日付を計算
-          let taskDate = null;
-          if (t._fromDateExact || t.date) {
-            taskDate = new Date(t._fromDateExact || t.date);
-          } else if (t.weekday_index !== undefined) {
-            // 週キー（日曜起点）+ weekday_index+1 = 月〜土
-            const ckParts = ck.split('-');
-            const ckSun = new Date(parseInt(ckParts[0]), parseInt(ckParts[1])-1, parseInt(ckParts[2]));
-            taskDate = new Date(ckSun);
-            taskDate.setDate(ckSun.getDate() + t.weekday_index + 1);
-          }
-
-          if (!taskDate || isNaN(taskDate)) continue;
-
-          // targetWkの月〜日の範囲内か確認
-          if (taskDate >= twMonday && taskDate <= twSunday) {
-            return taskDate;
-          }
-        }
+      for (const ds of GNOREV_EXAM_DATES) {
+        const d = new Date(ds + 'T00:00:00');
+        if (d >= twMonday && d <= twSunday) return d;
       }
-
-      // OVERRIDE_DATAも検索
-      const fromOverride = OVERRIDE_DATA.find(t => {
-        if (!t.unit_name || !t.unit_name.includes('グノレブ')) return false;
-        if (t.unit_name.includes('振り返り')) return false;
-        const d = new Date(t.date);
-        return d >= twMonday && d <= twSunday;
-      });
-      if (fromOverride) return new Date(fromOverride.date);
       return null;
     };
     const gnorevNextWeek = findGnorev(nextWk);
@@ -5709,22 +5699,22 @@ async function runBalanceCheck() {
     const isPreGnorev = !!gnorevNextWeek;
     const gnorevDow = gnorevNextWeek ? gnorevNextWeek.getDay() : null; // 1=月, 3=水
 
-    // グノレブ前週のベスト実績スケジュール
+    // グノレブ前週のベスト実績スケジュール（土曜グノレブはまだ実績データがないため対象外）
     const bestPreMonday = gnorevDow === 3
       ? new Date('2026-06-22T00:00:00')  // 7/1水グノレブの前週
       : new Date('2026-05-25T00:00:00'); // 6/1月グノレブの前週
-    const bestPreSummary = isPreGnorev ? buildScheduleSummary(bestPreMonday, 1) : '';
+    const bestPreSummary = (isPreGnorev && gnorevDow !== 6) ? buildScheduleSummary(bestPreMonday, 1) : '';
 
     // この週にグノレブがあるか（テスト当日〜残り日程の振り返りチェック用）
     const gnorevThisWeek = findGnorev(wk);
     const isGnorevWeek = !!gnorevThisWeek;
     const gnorevThisDow = gnorevThisWeek ? gnorevThisWeek.getDay() : null;
 
-    // グノレブ週のベスト実績（振り返りカード含む同じ週）
+    // グノレブ週のベスト実績（振り返りカード含む同じ週。土曜グノレブは実績データなし）
     const bestGnorevMonday = gnorevThisDow === 3
       ? new Date('2026-06-29T00:00:00')  // 7/1水グノレブ当日週の月曜
       : new Date('2026-06-01T00:00:00'); // 6/1月グノレブ当日週の月曜
-    const bestGnorevSummary = isGnorevWeek ? buildScheduleSummary(bestGnorevMonday, 1) : '';
+    const bestGnorevSummary = (isGnorevWeek && gnorevThisDow !== 6) ? buildScheduleSummary(bestGnorevMonday, 1) : '';
 
     // プロンプトを文字列結合で構築（テンプレートリテラルのネスト回避）
     let prompt = 'あなたはこうたくん（小学5年生・グノーブル塾）の学習スケジュールをチェックするAIです。\n\n';
@@ -5782,7 +5772,14 @@ async function runBalanceCheck() {
       prompt += '\n';
     }
 
-    if (isPreGnorev) {
+    if (isPreGnorev && gnorevDow === 6) {
+      // 土曜グノレブ前週：まだ実績データがないので、月・水のような
+      // 「ベスト実績パターン」との比較はせず、一般ルールのみでチェックする
+      prompt += '【今週のモード: グノレブ前週（今度の土曜がグノレブ・9:00〜12:00開催）】\n';
+      prompt += '◆ルール: 4教科復習が最優先/理科基礎力テスト週1回OK（週2不要）/グノラー不要/算数基礎力・漢字毎朝必須\n';
+      prompt += '※土曜グノレブはまだ比較用の「ベスト実績パターン」が記録されていないため、特定の理想スケジュールとの比較は行わない。一般的なスロット違反・4教科バランス・負荷過多の観点のみでチェックすること。\n\n';
+      prompt += '◆チェック観点: 1.スロット違反 2.4教科バランス 3.負荷過多 4.漢字毎日/算数基礎力毎日 5.アドバイス\n\n';
+    } else if (isPreGnorev) {
       const dowLabel = gnorevDow === 3 ? '水' : '月';
       prompt += '【今週のモード: グノレブ前週】翌週' + dowLabel + 'がグノレブ。\n';
       if (gnorevDow === 3) {
@@ -5801,6 +5798,12 @@ async function runBalanceCheck() {
         : '【月曜グノレブ前週の朝チェック注意】水〜日の朝に漢字間違い復習15分が入っているか確認する。月・火の朝は通常どおりでOK。';
       prompt += morningNote + '\n\n';
       prompt += '◆チェック観点: 1.スロット違反 2.4教科バランスがベストパターンに近いか 3.負荷過多 4.漢字毎日/算数基礎力毎日 5.アドバイス\n\n';
+    } else if (isGnorevWeek && gnorevThisDow === 6) {
+      // 土曜グノレブ当日週：同じく実績データがないため一般ルールのみ
+      prompt += '【今週のモード: グノレブ当日週（今週土曜がグノレブ・9:00〜12:00開催）】\n';
+      prompt += '◆ルール: 当日午前(am)はテスト時間のため勉強を入れない/当日朝は軽め（漢字・基礎力テストのみ）/テスト後（当日午後・夜〜翌週）に4教科の振り返りを分散して入れる/算数基礎力・漢字毎朝必須\n';
+      prompt += '※土曜グノレブはまだ比較用の「ベスト実績パターン」が記録されていないため、特定の理想スケジュールとの比較は行わない。振り返りが分散して入っているか・負荷が偏っていないかを一般ルールで確認すること。\n\n';
+      prompt += '◆チェック観点: 1.スロット違反 2.振り返りの分散具合 3.テスト前後の負荷バランス 4.漢字毎日/算数基礎力毎日 5.アドバイス\n\n';
     } else if (isGnorevWeek) {
       const dowLabel2 = gnorevThisDow === 3 ? '水' : '月';
       const afterLabel = gnorevThisDow === 3 ? '木曜以降' : '火曜以降';
