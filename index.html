@@ -3372,12 +3372,12 @@ function confirmCopy(){
   if(!t) return;
   const selectedStr = document.getElementById('copyTargetDate').getAttribute('data-selected');
   if(!selectedStr){alert('日付を選んでください');return;}
-  takeSnapshot('「' + _cardLabel(t) + '」をコピー');
   const [y,mo,d]=selectedStr.split('-').map(Number);
   const targetDate=new Date(y,mo-1,d);
   const targetMonday=getMonday(targetDate);
   const targetDayIdx=(targetDate.getDay()+6)%7;
   const targetSlot=document.getElementById('copySlot').value;
+  takeSnapshot({action:'コピー', card:_cardLabel(t), subject:t.subject, from:{day:t._dayIdx, slot:t.slot}, to:{day:targetDayIdx, slot:targetSlot}});
   const targetRepeat=document.getElementById('copyRepeat').value;
   const newUid='copy_'+Date.now();
 
@@ -5286,7 +5286,7 @@ function renderHistoryEntryHtml(entry) {
     ? '<span style="display:inline-block;background:' + (subjColor ? subjColor[0] : '#eee') + ';color:' + (subjColor ? subjColor[1] : '#333') + ';font-weight:700;padding:1px 7px;border-radius:5px;">' + entry.card + '</span>'
     : '';
 
-  if (entry.action === '移動' && entry.from && entry.to) {
+  if ((entry.action === '移動' || entry.action === 'コピー') && entry.from && entry.to) {
     const fromLabel = _dateSlotLabel(entry.from.day, entry.from.slot);
     const toLabel = _dateSlotLabel(entry.to.day, entry.to.slot);
     return badge + cardHtml + '<br>' +
@@ -5331,8 +5331,8 @@ function renderHistoryEditList() {
 // 確認ダイアログ用の短いプレーンテキスト（バッジ等のHTMLを含まない）
 function historyEntryPlainText(entry) {
   const cardPart = entry.card ? '「' + entry.card + '」' : '';
-  if (entry.action === '移動' && entry.from && entry.to) {
-    return cardPart + 'の移動（' + _dateSlotLabel(entry.from.day, entry.from.slot) + '→' + _dateSlotLabel(entry.to.day, entry.to.slot) + '）';
+  if ((entry.action === '移動' || entry.action === 'コピー') && entry.from && entry.to) {
+    return cardPart + 'の' + entry.action + '（' + _dateSlotLabel(entry.from.day, entry.from.slot) + '→' + _dateSlotLabel(entry.to.day, entry.to.slot) + '）';
   }
   if (entry.action === '追加') return cardPart + 'の追加';
   if (entry.action === '削除') return cardPart + 'の削除';
