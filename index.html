@@ -5321,16 +5321,38 @@ function renderHistoryEditList() {
     listEl.innerHTML = '<div style="text-align:center;color:#999;font-size:13px;padding:30px 10px;">戻せる操作履歴がまだありません</div>';
     return;
   }
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'position:relative;padding-left:22px;';
+  const line = document.createElement('div');
+  line.style.cssText = 'position:absolute;left:5px;top:6px;bottom:6px;width:2px;background:#e3e3ea;';
+  wrap.appendChild(line);
+
   _undoHistory.forEach((h, idx) => {
     const entry = h.entry || { action:'その他', label: h.label };
-    const row = document.createElement('div');
-    row.style.cssText = 'background:white;border-radius:14px;padding:12px 13px;margin-bottom:10px;box-shadow:0 2px 6px rgba(26,39,68,.05);border-left:4px solid ' + (idx===0 ? '#993556' : '#ddd') + ';';
-    row.innerHTML =
+    // 左端の帯・タイムラインの点は、そのカードの教科色に合わせる
+    const subjColor = (SUBJ_COLOR[entry.subject] && SUBJ_COLOR[entry.subject][0]) || '#ddd';
+    // 新しいほど点が大きく・くっきり、古いほど小さく・薄くして新旧を表す
+    const dotOpacity = Math.max(1 - idx * 0.2, 0.4);
+    const dotSize = idx === 0 ? 13 : 11;
+
+    const item = document.createElement('div');
+    item.style.cssText = 'position:relative;margin-bottom:10px;';
+
+    const dot = document.createElement('div');
+    dot.style.cssText = 'position:absolute;left:-22px;top:14px;width:' + dotSize + 'px;height:' + dotSize + 'px;border-radius:50%;background:' + subjColor + ';opacity:' + dotOpacity + ';border:2px solid white;' + (idx===0 ? 'box-shadow:0 0 0 2px #993556;' : 'box-shadow:0 0 0 1px #ddd;');
+
+    const card = document.createElement('div');
+    card.style.cssText = 'background:white;border-radius:14px;padding:12px 13px;box-shadow:0 2px 6px rgba(26,39,68,.05);border-left:4px solid ' + subjColor + ';';
+    card.innerHTML =
       '<div style="font-size:10.5px;color:#999;font-weight:700;margin-bottom:4px;">' + timeAgoLabel(h.time) + '</div>' +
       '<div style="font-size:13px;color:#333;line-height:1.7;margin-bottom:9px;">' + renderHistoryEntryHtml(entry) + '</div>' +
       '<button onclick="restoreToHistoryPoint(' + idx + ')" style="width:100%;background:#FBEAF0;color:#993556;border:none;border-radius:9999px;padding:7px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;">取り消して前に戻る</button>';
-    listEl.appendChild(row);
+
+    item.appendChild(dot);
+    item.appendChild(card);
+    wrap.appendChild(item);
   });
+  listEl.appendChild(wrap);
 }
 // 確認ダイアログ用の短いプレーンテキスト（バッジ等のHTMLを含まない）
 function historyEntryPlainText(entry) {
