@@ -5374,20 +5374,159 @@ function closeHistoryEditModal() {
   document.getElementById('historyEditModal').classList.remove('open');
   updateFloatingClose();
 }
+// ===== 「この1件だけ取り消す」ための差分計算・逆再生ヘルパー =====
+// 週バケット（{added:[...], hidden:{...}}）のbefore→afterの差分を計算する
+function _diffBucket(before, after) {
+  const b = before || {added:[], hidden:{}};
+  const a = after || {added:[], hidden:{}};
+  const bAdded = {}; (b.added||[]).forEach(x => { if (x && x.uid) bAdded[x.uid] = x; });
+  const aAdded = {}; (a.added||[]).forEach(x => { if (x && x.uid) aAdded[x.uid] = x; });
+  const addedUids = Object.keys(aAdded).filter(u => !bAdded[u]);      // このアクションで新規追加された
+  const removedUids = Object.keys(bAdded).filter(u => !aAdded[u]);    // このアクションで削除された
+  const changedUids = Object.keys(aAdded).filter(u => bAdded[u] && JSON.stringify(bAdded[u]) !== JSON.stringify(aAdded[u])); // 内容変更された
+  const bHidden = b.hidden || {};
+  const aHidden = a.hidden || {};
+  const hiddenAdded = Object.keys(aHidden).filter(k => aHidden[k] && !bHidden[k]);   // このアクションで非表示化された
+  const hiddenRemoved = Object.keys(bHidden).filter(k => bHidden[k] && !aHidden[k]); // このアクションで再表示された
+  return { addedUids, removedUids, changedUids, hiddenAdded, hiddenRemoved, bAdded };
+}
+// 現在のlocalOverrides上で、そのバケットの差分だけを打ち消す（逆再生）
+function _revertBucketDiff(wkKey, diff, afterBucket) {
+  if (!localOverrides[wkKey]) localOverrides[wkKey] = {added:[], hidden:{}};
+  const cur = localOverrides[wkKey];
+  cur.added = cur.added || [];
+  cur.hidden = cur.hidden || {};
+  // 「このアクション直後」の内容（衝突チェック用の基準）
+  const aAddedMap = {};
+  ((afterBucket && afterBucket.added) || []).forEach(x => { if (x && x.uid) aAddedMap[x.uid] = x; });
+
+  // このアクションで追加されたものは取り除く（後続操作でさらに変更されていたらスキップ）
+  diff.addedUids.forEach(uid => {
+    const idx = cur.added.findIndex(x => x.uid === uid);
+    if (idx < 0) return; // 既に無い（後の操作で削除済み等）→ 何もしなくてよい
+    if (JSON.stringify(cur.added[idx]) !== JSON.stringify(aAddedMap[uid])) {
+      console.warn('[取り消し] 「' + (cur.added[idx].unit_name||uid) + '」は後続の操作でさらに変更されているため、この項目はスキップしました');
+      return;
+    }
+    cur.added.splice(idx, 1);
+  });
+  // このアクションで削除されたものは元に戻す（同じuidが既に存在するなら触らない＝後で再追加された等）
+  diff.removedUids.forEach(uid => {
+    if (!cur.added.find(x => x.uid === uid)) cur.added.push(JSON.parse(JSON.stringify(diff.bAdded[uid])));
+  });
+  // このアクションで内容変更されたものは、変わった項目「ごとに」元へ戻す。
+  // 項目単位で、後続操作がその項目をさらに変えていなければ安全に戻し、
+  // 変えていればその項目だけスキップする（他の項目には影響しない）。
+  diff.changedUids.forEach(uid => {
+    const idx = cur.added.findIndex(x => x.uid === uid);
+    if (idx < 0) return;
+    cur.added[idx] = _mergeRevertFields(cur.added[idx], diff.bAdded[uid], aAddedMap[uid] || {});
+  });
+  diff.hiddenAdded.forEach(k => { delete cur.hidden[k]; });
+  diff.hiddenRemoved.forEach(k => { cur.hidden[k] = true; });
+}
+// このアクションで変わった項目だけを、フィールド単位で安全に巻き戻すマージ処理。
+// curObj: 今のカードの中身 / beforeObj: このアクション直前の中身 / afterObj: このアクション直後の中身
+function _mergeRevertFields(curObj, beforeObj, afterObj) {
+  const merged = {...curObj};
+  const skippedFields = [];
+  const allFields = new Set([...Object.keys(beforeObj||{}), ...Object.keys(afterObj||{})]);
+  allFields.forEach(field => {
+    const beforeVal = (beforeObj||{})[field];
+    const afterVal = (afterObj||{})[field];
+    if (JSON.stringify(beforeVal) === JSON.stringify(afterVal)) return; // このアクションでは変えていない項目
+    // このアクションが変えた項目について、後続操作でさらに変わっていないか確認
+    if (JSON.stringify(curObj[field]) !== JSON.stringify(afterVal)) {
+      skippedFields.push(field); // 競合＝この項目だけスキップ
+      return;
+    }
+    merged[field] = beforeVal; // 安全に戻せる項目
+  });
+  if (skippedFields.length > 0) {
+    console.warn('[取り消し] 「' + (curObj.unit_name||curObj.uid) + '」の' + skippedFields.join('・') + 'は後続の操作でさらに変更されているため、その項目だけスキップしました');
+  }
+  return merged;
+}
+// uidをキーにした配列（weeklyAdded等）の差分計算・逆再生
+function _diffArrayByUid(beforeArr, afterArr) {
+  const bMap = {}; (beforeArr||[]).forEach(x => { if (x && x.uid) bMap[x.uid] = x; });
+  const aMap = {}; (afterArr||[]).forEach(x => { if (x && x.uid) aMap[x.uid] = x; });
+  const addedUids = Object.keys(aMap).filter(u => !bMap[u]);
+  const removedUids = Object.keys(bMap).filter(u => !aMap[u]);
+  const changedUids = Object.keys(aMap).filter(u => bMap[u] && JSON.stringify(bMap[u]) !== JSON.stringify(aMap[u]));
+  return { addedUids, removedUids, changedUids, bMap };
+}
+function _revertArrayDiff(container, key, diff, afterArr) {
+  const arr = container[key] || [];
+  const aMap = {}; (afterArr||[]).forEach(x => { if (x && x.uid) aMap[x.uid] = x; });
+  diff.addedUids.forEach(uid => {
+    const idx = arr.findIndex(x => x.uid === uid);
+    if (idx < 0) return;
+    if (JSON.stringify(arr[idx]) !== JSON.stringify(aMap[uid])) {
+      console.warn('[取り消し] 「' + (arr[idx].unit_name||uid) + '」は後続の操作でさらに変更されているため、この項目はスキップしました');
+      return;
+    }
+    arr.splice(idx, 1);
+  });
+  diff.removedUids.forEach(uid => {
+    if (!arr.find(x => x.uid === uid)) arr.push(JSON.parse(JSON.stringify(diff.bMap[uid])));
+  });
+  diff.changedUids.forEach(uid => {
+    const idx = arr.findIndex(x => x.uid === uid);
+    if (idx < 0) return;
+    arr[idx] = _mergeRevertFields(arr[idx], diff.bMap[uid], aMap[uid] || {});
+  });
+  container[key] = arr;
+}
+// periodSettings（学習期間の設定）は単純比較で復元。後続の操作で既に変更されている場合は
+// 衝突を避けるため何もしない（コンソールに警告だけ出す）
+function _revertPeriodSettings(before, after) {
+  const beforeStr = JSON.stringify(before || null);
+  const afterStr = JSON.stringify(after || null);
+  if (beforeStr === afterStr) return; // このアクションでは変更されていない
+  const curStr = JSON.stringify(localOverrides.periodSettings || null);
+  if (curStr === afterStr) {
+    localOverrides.periodSettings = before ? JSON.parse(JSON.stringify(before)) : undefined;
+  } else {
+    console.warn('[取り消し] periodSettingsは後続の操作で変更されているため、この項目は取り消せませんでした');
+  }
+}
 function restoreToHistoryPoint(index) {
   if (!_undoHistory || index >= _undoHistory.length) return;
   const h = _undoHistory[index];
   const entry = h.entry || {};
-  if (!confirm(historyEntryPlainText(entry) + ' より前の状態に戻します。よろしいですか？')) return;
-  localOverrides = h.snapshot;
-  // この時点より新しい履歴はもう戻れないので破棄する
-  _undoHistory = _undoHistory.slice(index + 1);
+  if (!confirm(historyEntryPlainText(entry) + ' を取り消します。よろしいですか？')) return;
+
+  const beforeState = h.snapshot;
+  // index===0（最新）の場合の「後」の状態は今のlocalOverrides。これから書き換えるので先にクローンしておく
+  const afterState = index === 0 ? JSON.parse(JSON.stringify(localOverrides)) : _undoHistory[index-1].snapshot;
+
+  // 週ごとのバケット（この操作の前後どちらかに登場したキーだけ対象）
+  const weekKeys = new Set([
+    ...Object.keys(beforeState||{}).filter(k => k!=='weeklyAdded' && k!=='periodSettings'),
+    ...Object.keys(afterState||{}).filter(k => k!=='weeklyAdded' && k!=='periodSettings'),
+  ]);
+  weekKeys.forEach(wk => {
+    const diff = _diffBucket((beforeState||{})[wk], (afterState||{})[wk]);
+    _revertBucketDiff(wk, diff, (afterState||{})[wk]);
+  });
+
+  // weeklyAdded（繰り返しカード）の差分も同様に打ち消す
+  const waDiff = _diffArrayByUid((beforeState||{}).weeklyAdded, (afterState||{}).weeklyAdded);
+  _revertArrayDiff(localOverrides, 'weeklyAdded', waDiff, (afterState||{}).weeklyAdded);
+
+  // periodSettings（学習期間の設定）
+  _revertPeriodSettings((beforeState||{}).periodSettings, (afterState||{}).periodSettings);
+
+  // このエントリは解決済みなので履歴から取り除く（他の履歴の項目はそのまま残す）
+  _undoHistory.splice(index, 1);
+
   saveLocal();
   updateUndoBtn();
   render();
   // ウィンドウは閉じず、残っている履歴だけを再表示する（履歴が0件ならその旨を表示）
   renderHistoryEditList();
-  showToast('選択した時点まで戻しました ↩');
+  showToast('選択した操作だけを取り消しました ↩');
 }
 
 // ===== 固定Xボタン制御 =====
