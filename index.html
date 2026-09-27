@@ -2016,13 +2016,21 @@ function _cardLabel(t) {
   if (!t) return 'カード';
   return t.unit_name || t.subject || t.note || 'カード';
 }
-// 「（月）予定」のような、日付＋スロットの表示
-function _dateSlotLabel(day, slot) {
-  const d = _dayJp(day);
+// 週の月曜日(Date)と曜日index(0=月〜6=日)から、実際の日付文字列(YYYY-MM-DD)を求める
+function _absDateStr(monday, dayIdx) {
+  if (!monday || dayIdx === undefined || dayIdx === null || isNaN(dayIdx)) return '';
+  return localYMD(addDays(monday, dayIdx));
+}
+// 「9/26(土) 予定」のような、実際の日付＋スロットの表示
+function _dateSlotLabel(dateStr, slot) {
   const s = _slotJp(slot);
-  if (!d && !s) return '';
-  if (!d) return s;
-  return '（' + d + '）' + s;
+  if (!dateStr) return s;
+  const dt = new Date(dateStr + 'T00:00:00');
+  if (isNaN(dt.getTime())) return s;
+  const mmdd = (dt.getMonth()+1) + '/' + dt.getDate();
+  const dow = _DAY_JP_MON0[(dt.getDay()+6)%7];
+  const dateLabel = mmdd + '(' + dow + ')';
+  return s ? (dateLabel + ' ' + s) : dateLabel;
 }
 // アクション種別ごとの見た目（バッジの色）
 const _ACTION_STYLE = {
@@ -2532,7 +2540,7 @@ function _renderCard(tDisplay, cell, tOrig, srcMonday) {
 function dropTask(toDay, toSlot) {
   if (!dragInfo) return;
   const t0 = dragInfo.t;
-  takeSnapshot({action:'移動', card:_cardLabel(t0), subject:t0.subject, from:{day:t0._dayIdx, slot:t0.slot}, to:{day:toDay, slot:SLOTS[toSlot]}});
+  takeSnapshot({action:'移動', card:_cardLabel(t0), subject:t0.subject, from:{date:_absDateStr(currentMonday, t0._dayIdx), slot:t0.slot}, to:{date:_absDateStr(currentMonday, toDay), slot:SLOTS[toSlot]}});
   const {t} = dragInfo;
   const wk = getWeekKey();
   if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
@@ -3140,7 +3148,7 @@ function deleteTask() {
   if (!t) return;
   // 今週だけの予定 → 即削除
   if (t.display_type !== 'weekly' && !t._isWeeklyMoved) {
-    takeSnapshot({action:'削除', card:_cardLabel(t), subject:t.subject, at:{day:t._dayIdx, slot:t.slot}, scope:'今回のみ'});
+    takeSnapshot({action:'削除', card:_cardLabel(t), subject:t.subject, at:{date:_absDateStr(currentMonday, t._dayIdx), slot:t.slot}, scope:'今回のみ'});
     const wk = getWeekKey();
     if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
     const lo = localOverrides[wk];
@@ -3167,7 +3175,7 @@ function closeDeleteConfirm() {
 function confirmDeleteOnce() {
   const t = _deleteTarget;
   if (!t) return;
-  takeSnapshot({action:'削除', card:_cardLabel(t), subject:t.subject, at:{day:t._dayIdx, slot:t.slot}, scope:'今回のみ'});
+  takeSnapshot({action:'削除', card:_cardLabel(t), subject:t.subject, at:{date:_absDateStr(currentMonday, t._dayIdx), slot:t.slot}, scope:'今回のみ'});
   const wk = getWeekKey();
   if (!localOverrides[wk]) localOverrides[wk] = {added:[], hidden:{}};
   const lo = localOverrides[wk];
@@ -3183,7 +3191,7 @@ function confirmDeleteOnce() {
 function confirmDeleteFrom() {
   const t = _deleteTarget;
   if (!t) return;
-  takeSnapshot({action:'削除', card:_cardLabel(t), subject:t.subject, at:{day:t._dayIdx, slot:t.slot}, scope:'以降すべて'});
+  takeSnapshot({action:'削除', card:_cardLabel(t), subject:t.subject, at:{date:_absDateStr(currentMonday, t._dayIdx), slot:t.slot}, scope:'以降すべて'});
   const fromDateStr = dateKey(currentMonday);
   if (t._groupKey) {
     const fromDt = new Date(fromDateStr);
@@ -3209,7 +3217,7 @@ function confirmDeleteFrom() {
 function confirmDeleteAll() {
   const t = _deleteTarget;
   if (!t) return;
-  takeSnapshot({action:'削除', card:_cardLabel(t), subject:t.subject, at:{day:t._dayIdx, slot:t.slot}, scope:'すべて'});
+  takeSnapshot({action:'削除', card:_cardLabel(t), subject:t.subject, at:{date:_absDateStr(currentMonday, t._dayIdx), slot:t.slot}, scope:'すべて'});
   // groupKeyがあれば全メンバーをweeklyAddedから除去
   if (t._groupKey) {
     localOverrides.weeklyAdded = (localOverrides.weeklyAdded||[]).filter(
@@ -3377,7 +3385,7 @@ function confirmCopy(){
   const targetMonday=getMonday(targetDate);
   const targetDayIdx=(targetDate.getDay()+6)%7;
   const targetSlot=document.getElementById('copySlot').value;
-  takeSnapshot({action:'コピー', card:_cardLabel(t), subject:t.subject, from:{day:t._dayIdx, slot:t.slot}, to:{day:targetDayIdx, slot:targetSlot}});
+  takeSnapshot({action:'コピー', card:_cardLabel(t), subject:t.subject, from:{date:_absDateStr(currentMonday, t._dayIdx), slot:t.slot}, to:{date:selectedStr, slot:targetSlot}});
   const targetRepeat=document.getElementById('copyRepeat').value;
   const newUid='copy_'+Date.now();
 
@@ -4120,16 +4128,12 @@ function confirmAdd() {
   const subj = document.getElementById('aSubject').value;
   if (!subj) { alert('予定の種類を選んでください'); return; }
   const unit = document.getElementById('aUnit').value || '新しい予定';
-  // 履歴用：今週だけ追加の場合は曜日を特定できる。繰り返し追加は複数日にまたがるため曜日なし。
-  let _addDayIdx = null;
+  // 履歴用：今週だけ追加の場合は正確な日付が分かる。繰り返し追加は複数日にまたがるため日付なし。
+  let _addDateStr = null;
   if (!isRepeat) {
-    const _ds = document.getElementById('addSelectedDate').value;
-    if (_ds) {
-      const [_ay,_amo,_ad] = _ds.split('-').map(Number);
-      _addDayIdx = (new Date(_ay,_amo-1,_ad).getDay()+6)%7;
-    }
+    _addDateStr = document.getElementById('addSelectedDate').value || null;
   }
-  takeSnapshot({action:'追加', card:unit, subject:subj, at:{day:_addDayIdx, slot}});
+  takeSnapshot({action:'追加', card:unit, subject:subj, at:{date:_addDateStr, slot}});
   const hash = document.getElementById('aHash').value;
   const memo = document.getElementById('aMemo').value;
   const st = parseInt(document.getElementById('aTime').value) || null;
@@ -5287,18 +5291,18 @@ function renderHistoryEntryHtml(entry) {
     : '';
 
   if ((entry.action === '移動' || entry.action === 'コピー') && entry.from && entry.to) {
-    const fromLabel = _dateSlotLabel(entry.from.day, entry.from.slot);
-    const toLabel = _dateSlotLabel(entry.to.day, entry.to.slot);
+    const fromLabel = _dateSlotLabel(entry.from.date, entry.from.slot);
+    const toLabel = _dateSlotLabel(entry.to.date, entry.to.slot);
     return badge + cardHtml + '<br>' +
       '<span style="color:#555;">' + fromLabel + '　→　' + toLabel + '</span>';
   }
   if (entry.action === '追加' && entry.at) {
     return badge + cardHtml + '<br>' +
-      '<span style="color:#555;">' + _dateSlotLabel(entry.at.day, entry.at.slot) + 'に追加</span>';
+      '<span style="color:#555;">' + _dateSlotLabel(entry.at.date, entry.at.slot) + 'に追加</span>';
   }
   if (entry.action === '削除' && entry.at) {
     return badge + cardHtml + '<br>' +
-      '<span style="color:#555;">' + _dateSlotLabel(entry.at.day, entry.at.slot) + 'から削除' + (entry.scope ? '（' + entry.scope + '）' : '') + '</span>';
+      '<span style="color:#555;">' + _dateSlotLabel(entry.at.date, entry.at.slot) + 'から削除' + (entry.scope ? '（' + entry.scope + '）' : '') + '</span>';
   }
   if (entry.action === '編集' && entry.changes && entry.changes.length > 0) {
     const changeLines = entry.changes.map(c => c.field + '：' + c.from + '　→　' + c.to).join('<br>');
@@ -5332,7 +5336,7 @@ function renderHistoryEditList() {
 function historyEntryPlainText(entry) {
   const cardPart = entry.card ? '「' + entry.card + '」' : '';
   if ((entry.action === '移動' || entry.action === 'コピー') && entry.from && entry.to) {
-    return cardPart + 'の' + entry.action + '（' + _dateSlotLabel(entry.from.day, entry.from.slot) + '→' + _dateSlotLabel(entry.to.day, entry.to.slot) + '）';
+    return cardPart + 'の' + entry.action + '（' + _dateSlotLabel(entry.from.date, entry.from.slot) + '→' + _dateSlotLabel(entry.to.date, entry.to.slot) + '）';
   }
   if (entry.action === '追加') return cardPart + 'の追加';
   if (entry.action === '削除') return cardPart + 'の削除';
@@ -9599,7 +9603,7 @@ function openMoveModal(taskRef, toDay, toSlot) {
 
   // weeklyカード（繰り返し）のみポップアップ表示、それ以外は直接移動
   if (task.display_type !== 'weekly') {
-    takeSnapshot({action:'移動', card:_cardLabel(task), subject:task.subject, from:{day:task._dayIdx, slot:task.slot}, to:{day:destDayIdx, slot:SLOTS[toSlot]}});
+    takeSnapshot({action:'移動', card:_cardLabel(task), subject:task.subject, from:{date:_absDateStr(new Date(srcMondayYMD+'T00:00:00'), task._dayIdx), slot:task.slot}, to:{date:newDateStr, slot:SLOTS[toSlot]}});
     const SLOTS2 = ['plan','morning','am','pm','night'];
     if (!localOverrides[srcWk]) localOverrides[srcWk] = {added:[], hidden:{}};
     const srcLo = localOverrides[srcWk];
@@ -9656,7 +9660,7 @@ function closeMoveModal() {
 function confirmMove() {
   if (!_pendingMove) return;
   const {task, toDay, toSlot, srcWk, srcMondayYMD} = _pendingMove;
-  takeSnapshot({action:'移動', card:_cardLabel(task), subject:task.subject, from:{day:task._dayIdx, slot:task.slot}, to:{day:toDay, slot:SLOTS[toSlot]}});
+  takeSnapshot({action:'移動', card:_cardLabel(task), subject:task.subject, from:{date:_absDateStr(new Date(srcMondayYMD+'T00:00:00'), task._dayIdx), slot:task.slot}, to:{date:_absDateStr(currentMonday, toDay), slot:SLOTS[toSlot]}});
   const type = document.querySelector('input[name="moveType"]:checked').value;
   const SLOTS2 = ['plan','morning','am','pm','night'];
 
