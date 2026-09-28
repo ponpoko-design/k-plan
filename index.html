@@ -5232,8 +5232,14 @@ function updateUndoBtn() {
 }
 
 // 戻るボタンをタップした時の「1つ前に戻す／もっと前に戻す」ポップアップ
+let _lastUndoPopupToggle = 0;
 function toggleUndoChoicePopup(ev) {
   if (ev) ev.stopPropagation();
+  // スマホ等では同じ1回のタップでtouchendとclickの両方が発火し、
+  // このトグル関数が2回呼ばれて「開いた直後に閉じる」ことがあるための二重発火防止
+  const now = Date.now();
+  if (now - _lastUndoPopupToggle < 400) return;
+  _lastUndoPopupToggle = now;
   if (!_undoHistory || _undoHistory.length === 0) return;
   const existing = document.getElementById('undoChoicePopup');
   if (existing) { existing.remove(); return; }
@@ -5250,10 +5256,15 @@ function toggleUndoChoicePopup(ev) {
       '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1a6fa0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg> もっと前に戻す' +
     '</button>';
   document.body.appendChild(pop);
-  // 外側タップで閉じる
+  // 外側タップで閉じる（開いた直後の同一タップ由来のイベントでは閉じないよう、
+  // ボタン自身へのタップは「外側」として扱わない）
   setTimeout(() => {
     document.addEventListener('click', function closeOnce(e) {
-      if (!pop.contains(e.target)) { pop.remove(); document.removeEventListener('click', closeOnce); }
+      const btn = document.getElementById('floatingUndoBtn');
+      if (pop.contains(e.target)) return;
+      if (btn && btn.contains(e.target)) return;
+      pop.remove();
+      document.removeEventListener('click', closeOnce);
     });
   }, 0);
 }
